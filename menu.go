@@ -49,9 +49,12 @@ func main() {
 	searchEntry := widget.NewEntry()
 	searchEntry.SetPlaceHolder("Search")
 
-	searchButton := widget.NewButton("Search", func() {
-		keyword := searchEntry.Text
-		results := menu.Search(keyword)
+	resultLabel := widget.NewMultiLineEntry()
+	resultLabel.Disable()
+
+	// Update results as text changes
+	searchEntry.OnChanged = func(text string) {
+		results := menu.Search(text)
 
 		resultText := ""
 		for _, item := range results {
@@ -59,13 +62,10 @@ func main() {
 		}
 
 		resultLabel.SetText(resultText)
-	})
+	}
 
 	menuLabel := widget.NewLabel("Menu:")
-	resultLabel := widget.NewMultiLineEntry()
-	resultLabel.Disable()
-
-	searchContainer := container.NewHBox(searchEntry, searchButton)
+	searchContainer := container.NewHBox(searchEntry)
 	contentContainer := container.NewVBox(menuLabel, resultLabel)
 
 	myWindow.SetContent(container.NewVBox(searchContainer, contentContainer))
