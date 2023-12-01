@@ -77,6 +77,9 @@ func main() {
 	resultLabel := widget.NewLabel("")
 	resultLabel.Wrapping = fyne.TextWrapWord
 
+	menu.UpdateResultText()
+	resultLabel.SetText(menu.ResultText)
+
 	searchEntry.OnChanged = func(text string) {
 		menu.Search(text)
 		resultLabel.SetText(menu.ResultText)
