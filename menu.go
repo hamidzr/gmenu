@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -12,7 +13,6 @@ import (
 )
 
 type MenuItem struct {
-	ID    int
 	Title string
 }
 
@@ -23,13 +23,10 @@ type Menu struct {
 	ResultText string
 }
 
-func NewMenu() Menu {
-	items := []MenuItem{
-		{1, "Item pp 1"},
-		{2, "Item pp 2"},
-		{3, "Item abp 3"},
-		{4, "Item gga 4"},
-		{5, "Item 5"},
+func NewMenu(itemTitles []string) Menu {
+	items := make([]MenuItem, len(itemTitles))
+	for i, entry := range itemTitles {
+		items[i] = MenuItem{Title: entry}
 	}
 	if len(items) == 0 {
 		panic("Menu must have at least one item")
@@ -55,9 +52,9 @@ func (m *Menu) UpdateResultText() {
 	m.ResultText = "\n"
 	for i, item := range m.Filtered {
 		if i == m.Selected {
-			m.ResultText += fmt.Sprintf("-> [%d] %s\n", item.ID, item.Title)
+			m.ResultText += fmt.Sprintf("-> %s\n", item.Title)
 		} else {
-			m.ResultText += fmt.Sprintf("   [%d] %s\n", item.ID, item.Title)
+			m.ResultText += fmt.Sprintf("   %s\n", item.Title)
 		}
 	}
 }
@@ -76,8 +73,32 @@ func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
 	e.Entry.TypedKey(key)
 }
 
+func readItems() []string {
+	var items []string
+	// Check if there is any input from stdin (piped text)
+	info, _ := os.Stdin.Stat()
+	if (info.Mode() & os.ModeCharDevice) == 0 {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			line := scanner.Text()
+			items = append(items, line)
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "error reading standard input:", err)
+			os.Exit(1)
+		}
+	}
+
+	// Proceed only if there are items
+	if len(items) == 0 {
+		fmt.Fprintln(os.Stderr, "No items provided through standard input")
+		os.Exit(1)
+	}
+	return items
+}
+
 func main() {
-	menu := NewMenu()
+	menu := NewMenu(readItems())
 
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Menu")
@@ -97,7 +118,7 @@ func main() {
 		resultLabel.SetText(menu.ResultText)
 	}
 	// Implement arrow key navigation
-	searchEntry.onKeyDown = func(key *fyne.KeyEvent) {
+	keyHandler := func(key *fyne.KeyEvent) {
 		switch key.Name {
 		case fyne.KeyDown:
 			if menu.Selected < len(menu.Filtered)-1 {
@@ -116,8 +137,10 @@ func main() {
 		menu.UpdateResultText()
 		resultLabel.SetText(menu.ResultText)
 	}
+	searchEntry.onKeyDown = keyHandler
+	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
-	menuLabel := widget.NewLabel("Menu:")
+	menuLabel := widget.NewLabel("Matched Items:")
 	contentContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, resultLabel)
 
 	myWindow.SetContent(container.NewVBox(searchEntry, contentContainer))
