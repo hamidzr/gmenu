@@ -18,15 +18,6 @@ type MenuItem struct {
 	Title string
 }
 
-/*
-
-TODOs:
-- add cli support for same behavior but in the terminal
-- add propmpt option
-- survery dmenu option to provide compatibility
-
-*/
-
 type SearchMethod func([]MenuItem, string) []MenuItem
 
 func isDirectMatch(item MenuItem, keyword string) bool {
