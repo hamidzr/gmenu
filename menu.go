@@ -20,7 +20,10 @@ type MenuItem struct {
 
 /*
 
-TODO: add cli support for same behavior but in the terminal
+TODOs:
+- add cli support for same behavior but in the terminal
+- add propmpt option
+- survery dmenu option to provide compatibility
 
 */
 
