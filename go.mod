@@ -1,4 +1,4 @@
-module dmenu
+module gmenu
 
 go 1.21
 

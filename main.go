@@ -2,8 +2,9 @@ package main
 
 import (
 	"bufio"
-	"dmenu/render"
 	"fmt"
+	"gmenu/model"
+	"gmenu/render"
 	"os"
 	"strings"
 
@@ -19,17 +20,13 @@ import (
 // max number of rendered results.
 const resultLimit = 10
 
-type MenuItem struct {
-	Title string
-}
+type SearchMethod func([]model.MenuItem, string) []model.MenuItem
 
-type SearchMethod func([]MenuItem, string) []MenuItem
-
-func isDirectMatch(item MenuItem, keyword string) bool {
+func isDirectMatch(item model.MenuItem, keyword string) bool {
 	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
 }
-func directSearch(items []MenuItem, keyword string) []MenuItem {
-	matches := make([]MenuItem, 0)
+func directSearch(items []model.MenuItem, keyword string) []model.MenuItem {
+	matches := make([]model.MenuItem, 0)
 	for _, item := range items {
 		if isDirectMatch(item, keyword) {
 			matches = append(matches, item)
@@ -37,13 +34,13 @@ func directSearch(items []MenuItem, keyword string) []MenuItem {
 	}
 	return matches
 }
-func fuzzySearch(items []MenuItem, keyword string) []MenuItem {
+func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	entries := make([]string, len(items))
 	for i, item := range items {
 		entries[i] = item.Title
 	}
 	ranks := fuzzy.RankFind(keyword, entries)
-	matches := make([]MenuItem, 0)
+	matches := make([]model.MenuItem, 0)
 	for _, rank := range ranks {
 		matches = append(matches, items[rank.OriginalIndex])
 	}
@@ -51,47 +48,40 @@ func fuzzySearch(items []MenuItem, keyword string) []MenuItem {
 }
 
 type Menu struct {
-	Items        []MenuItem
-	Filtered     []MenuItem
+	Items    []model.MenuItem
+	Filtered []model.MenuItem
+	// zero-based index of the selected item in the filtered list
 	Selected     int
+	Query        string
 	ResultText   string
 	SearchMethod SearchMethod
 }
 
 func NewMenu(itemTitles []string) Menu {
-	items := make([]MenuItem, len(itemTitles))
+	items := make([]model.MenuItem, len(itemTitles))
 	for i, entry := range itemTitles {
-		items[i] = MenuItem{Title: entry}
+		items[i] = model.MenuItem{Title: entry}
 	}
 	if len(items) == 0 {
 		panic("Menu must have at least one item")
 	}
-	return Menu{Items: items, Filtered: items,
+
+	m := Menu{Items: items,
 		Selected:     0,
 		SearchMethod: fuzzySearch,
 	}
+	m.Search("")
+	return m
 }
 
+// Filters the menu filtered list to only include items that match the keyword.
 func (m *Menu) Search(keyword string) {
 	m.Filtered = m.SearchMethod(m.Items, keyword)
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
 	}
-	m.UpdateResultText()
-}
-
-// UpdateResultText creates a string representation of the filtered menu.
-func (m *Menu) UpdateResultText() {
-	m.ResultText = "\n"
-	for i, item := range m.Filtered {
-		if i > resultLimit {
-			break
-		}
-		if i == m.Selected {
-			m.ResultText += fmt.Sprintf("-> %s\n", item.Title)
-		} else {
-			m.ResultText += fmt.Sprintf("   %s\n", item.Title)
-		}
+	if len(m.Filtered) > resultLimit {
+		m.Filtered = m.Filtered[:resultLimit]
 	}
 }
 
@@ -150,21 +140,17 @@ func main() {
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder("Search")
 
-	resultLabel := widget.NewLabel("")
-	resultLabel.Wrapping = fyne.TextWrapWord
-
-	menu.UpdateResultText()
-	resultLabel.SetText(menu.ResultText)
+	itemsCanvas := render.NewItemsCanvas()
+	itemsCanvas.Update(menu.Filtered, menu.Selected)
 
 	searchEntry.OnChanged = func(text string) {
 		menu.Search(text)
-		resultLabel.SetText(menu.ResultText)
+		itemsCanvas.Update(menu.Filtered, menu.Selected)
 	}
 	keyHandler := func(key *fyne.KeyEvent) {
-		visibleResults := min(resultLimit, len(menu.Filtered))
 		switch key.Name {
 		case fyne.KeyDown:
-			if menu.Selected < visibleResults {
+			if menu.Selected < len(menu.Filtered)-1 {
 				menu.Selected++
 			}
 		case fyne.KeyUp:
@@ -172,30 +158,27 @@ func main() {
 				menu.Selected--
 			}
 		case fyne.KeyReturn:
-			if menu.Selected >= 0 && menu.Selected < visibleResults+1 {
+			if menu.Selected >= 0 && menu.Selected < len(menu.Filtered)+1 {
 				fmt.Fprintln(os.Stdout, menu.Filtered[menu.Selected].Title)
 				myApp.Quit()
 			}
 		case fyne.KeyEscape:
 			os.Exit(1)
 		}
-		menu.UpdateResultText()
-		resultLabel.SetText(menu.ResultText)
+		itemsCanvas.Update(menu.Filtered, menu.Selected)
 	}
 	searchEntry.onKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
 	menuLabel := widget.NewLabel("Matched Items:")
-	contentContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, resultLabel)
+	contentContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
 
 	myWindow.SetContent(container.NewVBox(searchEntry, contentContainer))
 	myWindow.Resize(fyne.NewSize(400, 300))     // Adjust as needed
 	myWindow.SetOnClosed(func() { os.Exit(0) }) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup
-	myWindow.Show()
 	searchEntry.FocusGained()
 	myWindow.Canvas().Focus(searchEntry)
-
 	myWindow.ShowAndRun()
 }
