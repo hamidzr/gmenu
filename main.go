@@ -76,9 +76,12 @@ func NewMenu(itemTitles []string) Menu {
 
 // Filters the menu filtered list to only include items that match the keyword.
 func (m *Menu) Search(keyword string) {
+	m.Query = keyword
 	m.Filtered = m.SearchMethod(m.Items, keyword)
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
+	} else {
+		m.Selected = -1
 	}
 	if len(m.Filtered) > resultLimit {
 		m.Filtered = m.Filtered[:resultLimit]
@@ -160,8 +163,11 @@ func main() {
 		case fyne.KeyReturn:
 			if menu.Selected >= 0 && menu.Selected < len(menu.Filtered)+1 {
 				fmt.Fprintln(os.Stdout, menu.Filtered[menu.Selected].Title)
-				myApp.Quit()
+			} else {
+				// TODO: cli option.
+				fmt.Fprintln(os.Stdout, menu.Query)
 			}
+			myApp.Quit()
 		case fyne.KeyEscape:
 			os.Exit(1)
 		}
