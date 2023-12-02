@@ -140,8 +140,9 @@ func main() {
 	if deskDriver, ok := myApp.Driver().(desktop.Driver); ok {
 		myWindow = deskDriver.CreateSplashWindow()
 	} else {
-		myWindow = myApp.NewWindow("choose")
+		myWindow = myApp.NewWindow("")
 	}
+	myWindow.SetTitle("gmenu")
 
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
