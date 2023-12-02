@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -107,8 +108,13 @@ func main() {
 	menu := NewMenu(readItems())
 
 	myApp := app.New()
-	myWindow := myApp.NewWindow("choose")
-	myWindow.CenterOnScreen()
+	var myWindow fyne.Window
+
+	if deskDriver, ok := myApp.Driver().(desktop.Driver); ok {
+		myWindow = deskDriver.CreateSplashWindow()
+	} else {
+		myWindow = myApp.NewWindow("choose")
+	}
 
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
