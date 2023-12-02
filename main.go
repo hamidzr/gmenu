@@ -133,7 +133,6 @@ func readItems() []string {
 
 func main() {
 	menu := NewMenu(readItems())
-
 	myApp := app.New()
 	var myWindow fyne.Window
 
