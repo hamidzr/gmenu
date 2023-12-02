@@ -14,6 +14,8 @@ import (
 	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
+const resultLimit = 10
+
 type MenuItem struct {
 	Title string
 }
@@ -68,13 +70,7 @@ func NewMenu(itemTitles []string) Menu {
 }
 
 func (m *Menu) Search(keyword string) {
-	m.Filtered = nil // Reset the filtered list
 	m.Filtered = m.SearchMethod(m.Items, keyword)
-	// for _, item := range m.Items {
-	// 	if m.SearchMethod(item, keyword) {
-	// 		m.Filtered = append(m.Filtered, item)
-	// 	}
-	// }
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
 	}
@@ -85,6 +81,9 @@ func (m *Menu) Search(keyword string) {
 func (m *Menu) UpdateResultText() {
 	m.ResultText = "\n"
 	for i, item := range m.Filtered {
+		if i > resultLimit {
+			break
+		}
 		if i == m.Selected {
 			m.ResultText += fmt.Sprintf("-> %s\n", item.Title)
 		} else {
@@ -158,9 +157,10 @@ func main() {
 		resultLabel.SetText(menu.ResultText)
 	}
 	keyHandler := func(key *fyne.KeyEvent) {
+		visibleResults := min(resultLimit, len(menu.Filtered))
 		switch key.Name {
 		case fyne.KeyDown:
-			if menu.Selected < len(menu.Filtered)-1 {
+			if menu.Selected < visibleResults {
 				menu.Selected++
 			}
 		case fyne.KeyUp:
@@ -168,7 +168,7 @@ func main() {
 				menu.Selected--
 			}
 		case fyne.KeyReturn:
-			if menu.Selected >= 0 && menu.Selected < len(menu.Filtered) {
+			if menu.Selected >= 0 && menu.Selected < visibleResults+1 {
 				fmt.Fprintln(os.Stdout, menu.Filtered[menu.Selected].Title)
 				myApp.Quit()
 			}
