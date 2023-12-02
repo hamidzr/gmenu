@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"dmenu/render"
 	"fmt"
 	"os"
 	"strings"
@@ -10,10 +11,12 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
+// max number of rendered results.
 const resultLimit = 10
 
 type MenuItem struct {
@@ -133,8 +136,9 @@ func readItems() []string {
 func main() {
 	menu := NewMenu(readItems())
 	myApp := app.New()
-	var myWindow fyne.Window
+	myApp.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
 
+	var myWindow fyne.Window
 	if deskDriver, ok := myApp.Driver().(desktop.Driver); ok {
 		myWindow = deskDriver.CreateSplashWindow()
 	} else {
