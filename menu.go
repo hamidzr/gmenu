@@ -16,6 +16,12 @@ type MenuItem struct {
 	Title string
 }
 
+/*
+
+TODO: add cli support for same behavior but in the terminal
+
+*/
+
 type Menu struct {
 	Items      []MenuItem
 	Filtered   []MenuItem
@@ -102,6 +108,7 @@ func main() {
 
 	myApp := app.New()
 	myWindow := myApp.NewWindow("choose")
+	myWindow.CenterOnScreen()
 
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
