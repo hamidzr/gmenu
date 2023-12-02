@@ -23,11 +23,18 @@ TODO: add cli support for same behavior but in the terminal
 
 */
 
+type SearchMethod func(MenuItem, string) bool
+
+func directSearch(item MenuItem, keyword string) bool {
+	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
+}
+
 type Menu struct {
-	Items      []MenuItem
-	Filtered   []MenuItem
-	Selected   int
-	ResultText string
+	Items        []MenuItem
+	Filtered     []MenuItem
+	Selected     int
+	ResultText   string
+	SearchMethod SearchMethod
 }
 
 func NewMenu(itemTitles []string) Menu {
@@ -38,13 +45,16 @@ func NewMenu(itemTitles []string) Menu {
 	if len(items) == 0 {
 		panic("Menu must have at least one item")
 	}
-	return Menu{Items: items, Filtered: items, Selected: 0}
+	return Menu{Items: items, Filtered: items,
+		Selected:     0,
+		SearchMethod: directSearch,
+	}
 }
 
 func (m *Menu) Search(keyword string) {
 	m.Filtered = nil // Reset the filtered list
 	for _, item := range m.Items {
-		if strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword)) {
+		if m.SearchMethod(item, keyword) {
 			m.Filtered = append(m.Filtered, item)
 		}
 	}
