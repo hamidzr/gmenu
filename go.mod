@@ -2,7 +2,10 @@ module dmenu
 
 go 1.20
 
-require fyne.io/fyne/v2 v2.3.4
+require (
+	fyne.io/fyne/v2 v2.3.4
+	github.com/lithammer/fuzzysearch v1.1.8
+)
 
 require (
 	fyne.io/systray v1.10.1-0.20230403195833-7dc3c09283d6 // indirect
@@ -27,9 +30,9 @@ require (
 	github.com/yuin/goldmark v1.4.13 // indirect
 	golang.org/x/image v0.3.0 // indirect
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )

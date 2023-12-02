@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
 type MenuItem struct {
@@ -23,10 +24,31 @@ TODO: add cli support for same behavior but in the terminal
 
 */
 
-type SearchMethod func(MenuItem, string) bool
+type SearchMethod func([]MenuItem, string) []MenuItem
 
-func directSearch(item MenuItem, keyword string) bool {
+func isDirectMatch(item MenuItem, keyword string) bool {
 	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
+}
+func directSearch(items []MenuItem, keyword string) []MenuItem {
+	matches := make([]MenuItem, 0)
+	for _, item := range items {
+		if isDirectMatch(item, keyword) {
+			matches = append(matches, item)
+		}
+	}
+	return matches
+}
+func fuzzySearch(items []MenuItem, keyword string) []MenuItem {
+	entries := make([]string, len(items))
+	for i, item := range items {
+		entries[i] = item.Title
+	}
+	ranks := fuzzy.RankFind(keyword, entries)
+	matches := make([]MenuItem, 0)
+	for _, rank := range ranks {
+		matches = append(matches, items[rank.OriginalIndex])
+	}
+	return matches
 }
 
 type Menu struct {
@@ -47,17 +69,18 @@ func NewMenu(itemTitles []string) Menu {
 	}
 	return Menu{Items: items, Filtered: items,
 		Selected:     0,
-		SearchMethod: directSearch,
+		SearchMethod: fuzzySearch,
 	}
 }
 
 func (m *Menu) Search(keyword string) {
 	m.Filtered = nil // Reset the filtered list
-	for _, item := range m.Items {
-		if m.SearchMethod(item, keyword) {
-			m.Filtered = append(m.Filtered, item)
-		}
-	}
+	m.Filtered = m.SearchMethod(m.Items, keyword)
+	// for _, item := range m.Items {
+	// 	if m.SearchMethod(item, keyword) {
+	// 		m.Filtered = append(m.Filtered, item)
+	// 	}
+	// }
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
 	}
