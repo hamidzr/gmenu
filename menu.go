@@ -101,7 +101,7 @@ func main() {
 	menu := NewMenu(readItems())
 
 	myApp := app.New()
-	myWindow := myApp.NewWindow("Menu")
+	myWindow := myApp.NewWindow("choose")
 
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
@@ -117,7 +117,6 @@ func main() {
 		menu.Search(text)
 		resultLabel.SetText(menu.ResultText)
 	}
-	// Implement arrow key navigation
 	keyHandler := func(key *fyne.KeyEvent) {
 		switch key.Name {
 		case fyne.KeyDown:
@@ -133,6 +132,8 @@ func main() {
 				fmt.Fprintln(os.Stdout, menu.Filtered[menu.Selected].Title)
 				myApp.Quit()
 			}
+		case fyne.KeyEscape:
+			os.Exit(1)
 		}
 		menu.UpdateResultText()
 		resultLabel.SetText(menu.ResultText)
