@@ -25,13 +25,17 @@ func NewItemsCanvas() *ItemsCanvas {
 	}
 }
 
+func (c *ItemsCanvas) ItemText(item model.MenuItem) string {
+	return item.Title
+}
+
 func (c *ItemsCanvas) Update(items []model.MenuItem, selected int) {
 	curText := "\n"
 	for i, item := range items {
 		if i == selected {
-			curText += fmt.Sprintf("-> [%d] %s\n", i, item.Title)
+			curText += fmt.Sprintf("-> %s\n", c.ItemText(item))
 		} else {
-			curText += fmt.Sprintf("   [%d] %s\n", i, item.Title)
+			curText += fmt.Sprintf("   %s\n", c.ItemText(item))
 		}
 	}
 	c.SetText(curText)

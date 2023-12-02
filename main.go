@@ -174,7 +174,7 @@ func main() {
 	contentContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
 
 	myWindow.SetContent(container.NewVBox(searchEntry, contentContainer))
-	myWindow.Resize(fyne.NewSize(400, 300))     // Adjust as needed
+	myWindow.Resize(fyne.NewSize(800, 300))
 	myWindow.SetOnClosed(func() { os.Exit(0) }) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup
