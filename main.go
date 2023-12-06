@@ -39,7 +39,7 @@ func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	for i, item := range items {
 		entries[i] = item.Title
 	}
-	ranks := fuzzy.RankFind(keyword, entries)
+	ranks := fuzzy.RankFindFold(keyword, entries)
 	matches := make([]model.MenuItem, 0)
 	for _, rank := range ranks {
 		matches = append(matches, items[rank.OriginalIndex])
@@ -184,7 +184,7 @@ func main() {
 	myWindow.SetOnClosed(func() { os.Exit(0) }) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup
-	searchEntry.FocusGained()
+	// searchEntry.FocusGained()
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.ShowAndRun()
 }
