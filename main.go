@@ -6,6 +6,7 @@ import (
 	"gmenu/model"
 	"gmenu/render"
 	"os"
+	"sort"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -39,8 +40,11 @@ func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	for i, item := range items {
 		entries[i] = item.Title
 	}
-	ranks := fuzzy.RankFindFold(keyword, entries)
+	ranks := fuzzy.RankFindNormalizedFold(keyword, entries)
 	matches := make([]model.MenuItem, 0)
+	sort.Slice(ranks, func(i, j int) bool {
+		return ranks[i].Distance < ranks[j].Distance
+	})
 	for _, rank := range ranks {
 		matches = append(matches, items[rank.OriginalIndex])
 	}
