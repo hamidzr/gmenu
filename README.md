@@ -3,6 +3,8 @@
 
 ## TODO
 
+- [x] a single instance with the same title
+- the current fuzzy search is not great
 - add cli support for same behavior but in the terminal
 - survey dmenu option to provide compatibility
     - add prompt option

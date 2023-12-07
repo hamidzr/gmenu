@@ -137,7 +137,26 @@ func readItems() []string {
 	return items
 }
 
+func createPidFile(name string) string {
+	dir := os.TempDir()
+	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
+	if _, err := os.Stat(pidFile); err == nil {
+		fmt.Println("Another instance of gmenu is already running. Exiting.")
+		fmt.Println("If this is not the case, please delete the pid file:", pidFile)
+		os.Exit(1)
+	}
+	f, err := os.Create(pidFile)
+	if err != nil {
+		fmt.Println("Failed to create pid file")
+		os.Exit(1)
+	}
+	defer f.Close()
+	return pidFile
+}
+
 func main() {
+	exitCode := 0
+	appTitle := "gmenu"
 	menu := NewMenu(readItems())
 	myApp := app.New()
 	myApp.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
@@ -148,7 +167,8 @@ func main() {
 	} else {
 		myWindow = myApp.NewWindow("")
 	}
-	myWindow.SetTitle("gmenu")
+	myWindow.SetTitle(appTitle)
+	pidFile := createPidFile(appTitle)
 
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
@@ -182,7 +202,9 @@ func main() {
 			}
 			myApp.Quit()
 		case fyne.KeyEscape:
-			os.Exit(1)
+			exitCode = 1
+			myApp.Quit()
+
 		}
 		itemsCanvas.Render(menu.Filtered, menu.Selected)
 	}
@@ -193,7 +215,10 @@ func main() {
 	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
-	myWindow.SetOnClosed(func() { os.Exit(0) }) // Ensure the application exits properly
+	myWindow.SetOnClosed(func() {
+		os.Remove(pidFile)
+		os.Exit(exitCode)
+	}) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup
 	// searchEntry.FocusGained()
