@@ -8,6 +8,7 @@
 - add cli support for same behavior but in the terminal
 - survey dmenu option to provide compatibility
     - add prompt option
+- preserve original input order on startup (and resets?)
 
 ```
 choose:
