@@ -88,6 +88,17 @@ func (m *Menu) Search(keyword string) {
 	}
 }
 
+// SetItems sets the menu items again.
+func (m *Menu) SetItems(itemTitles []string) {
+	items := make([]model.MenuItem, len(itemTitles))
+	for i, entry := range itemTitles {
+		items[i] = model.MenuItem{Title: entry}
+	}
+	m.Items = items
+	// TODO: sync and search
+	m.Search(m.Query)
+}
+
 // CustomEntry is a widget.Entry that captures certain key events.
 type CustomEntry struct {
 	widget.Entry
@@ -142,13 +153,15 @@ func main() {
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder("Search")
+	mainContainer := container.NewVBox(searchEntry)
+	myWindow.SetContent(mainContainer)
 
 	itemsCanvas := render.NewItemsCanvas()
-	itemsCanvas.Update(menu.Filtered, menu.Selected)
+	itemsCanvas.Render(menu.Filtered, menu.Selected)
 
 	searchEntry.OnChanged = func(text string) {
 		menu.Search(text)
-		itemsCanvas.Update(menu.Filtered, menu.Selected)
+		itemsCanvas.Render(menu.Filtered, menu.Selected)
 	}
 	keyHandler := func(key *fyne.KeyEvent) {
 		switch key.Name {
@@ -171,20 +184,20 @@ func main() {
 		case fyne.KeyEscape:
 			os.Exit(1)
 		}
-		itemsCanvas.Update(menu.Filtered, menu.Selected)
+		itemsCanvas.Render(menu.Filtered, menu.Selected)
 	}
 	searchEntry.onKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
 	menuLabel := widget.NewLabel("Matched Items:")
-	contentContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
-
-	myWindow.SetContent(container.NewVBox(searchEntry, contentContainer))
+	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
+	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
 	myWindow.SetOnClosed(func() { os.Exit(0) }) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup
 	// searchEntry.FocusGained()
 	myWindow.Canvas().Focus(searchEntry)
-	myWindow.ShowAndRun()
+	myWindow.Show()
+	myApp.Run()
 }

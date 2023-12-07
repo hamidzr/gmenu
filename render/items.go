@@ -14,22 +14,28 @@ render a list of items
 
 type ItemsCanvas struct {
 	*widget.Label
+	LengthLimit int
 }
 
 func NewItemsCanvas() *ItemsCanvas {
 	label := widget.NewLabel("")
-	label.Wrapping = fyne.TextWrapWord
+	// label.Wrapping = fyne.TextWrapWord
+	label.Wrapping = fyne.TextTruncate
 
 	return &ItemsCanvas{
-		Label: label,
+		Label:       label,
+		LengthLimit: 999,
 	}
 }
 
 func (c *ItemsCanvas) ItemText(item model.MenuItem) string {
+	if len(item.Title) > c.LengthLimit {
+		return item.Title[:c.LengthLimit] + "..."
+	}
 	return item.Title
 }
 
-func (c *ItemsCanvas) Update(items []model.MenuItem, selected int) {
+func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 	curText := "\n"
 	for i, item := range items {
 		if i == selected {
