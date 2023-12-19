@@ -15,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/lithammer/fuzzysearch/fuzzy"
+	"github.com/sahilm/fuzzy"
 )
 
 // max number of rendered results.
@@ -35,20 +35,25 @@ func directSearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	}
 	return matches
 }
+
 func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	entries := make([]string, len(items))
 	for i, item := range items {
 		entries[i] = item.Title
 	}
-	ranks := fuzzy.RankFindNormalizedFold(keyword, entries)
-	matches := make([]model.MenuItem, 0)
-	sort.Slice(ranks, func(i, j int) bool {
-		return ranks[i].Distance < ranks[j].Distance
+
+	matches := fuzzy.Find(keyword, entries)
+
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].Score > matches[j].Score
 	})
-	for _, rank := range ranks {
-		matches = append(matches, items[rank.OriginalIndex])
+
+	result := make([]model.MenuItem, 0)
+	for _, match := range matches {
+		result = append(result, items[match.Index])
 	}
-	return matches
+
+	return result
 }
 
 type Menu struct {
@@ -81,7 +86,11 @@ func NewMenu(itemTitles []string) Menu {
 // Filters the menu filtered list to only include items that match the keyword.
 func (m *Menu) Search(keyword string) {
 	m.Query = keyword
-	m.Filtered = m.SearchMethod(m.Items, keyword)
+	if keyword == "" {
+		m.Filtered = m.Items
+	} else {
+		m.Filtered = m.SearchMethod(m.Items, keyword)
+	}
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
 	} else {
