@@ -18,9 +18,6 @@ import (
 	"github.com/sahilm/fuzzy"
 )
 
-// max number of rendered results.
-const resultLimit = 10
-
 type SearchMethod func([]model.MenuItem, string) []model.MenuItem
 
 func isDirectMatch(item model.MenuItem, keyword string) bool {
@@ -60,10 +57,13 @@ type Menu struct {
 	Items    []model.MenuItem
 	Filtered []model.MenuItem
 	// zero-based index of the selected item in the filtered list
-	Selected     int
-	Query        string
-	ResultText   string
+	Selected int
+	Query    string
+	// ResultText   string
+	// MatchCount is the number of items that matched the search query.
+	MatchCount   int
 	SearchMethod SearchMethod
+	resultLimit  int
 }
 
 func NewMenu(itemTitles []string) Menu {
@@ -78,6 +78,7 @@ func NewMenu(itemTitles []string) Menu {
 	m := Menu{Items: items,
 		Selected:     0,
 		SearchMethod: fuzzySearch,
+		resultLimit:  10,
 	}
 	m.Search("")
 	return m
@@ -96,8 +97,9 @@ func (m *Menu) Search(keyword string) {
 	} else {
 		m.Selected = -1
 	}
-	if len(m.Filtered) > resultLimit {
-		m.Filtered = m.Filtered[:resultLimit]
+	m.MatchCount = len(m.Filtered)
+	if len(m.Filtered) > m.resultLimit {
+		m.Filtered = m.Filtered[:m.resultLimit]
 	}
 }
 
@@ -191,9 +193,15 @@ func main() {
 
 	itemsCanvas := render.NewItemsCanvas()
 	itemsCanvas.Render(menu.Filtered, menu.Selected)
+	// show match items out of total item count "Matched Items: [10/10]"
+	matchCounterLabel := func() string {
+		return fmt.Sprintf("Matched Items: [%d/%d]", menu.MatchCount, len(menu.Items))
+	}
+	menuLabel := widget.NewLabel(matchCounterLabel())
 
 	searchEntry.OnChanged = func(text string) {
 		menu.Search(text)
+		menuLabel.SetText(matchCounterLabel())
 		itemsCanvas.Render(menu.Filtered, menu.Selected)
 	}
 	keyHandler := func(key *fyne.KeyEvent) {
@@ -224,7 +232,6 @@ func main() {
 	searchEntry.onKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
-	menuLabel := widget.NewLabel("Matched Items:")
 	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
