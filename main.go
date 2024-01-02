@@ -85,6 +85,26 @@ func NewMenu(itemTitles []string) Menu {
 	return m
 }
 
+// UpdateItems overrides the menu items.
+func (m *Menu) UpdateItems(itemTitles []string) {
+	items := make([]model.MenuItem, len(itemTitles))
+	for i, entry := range itemTitles {
+		items[i] = model.MenuItem{Title: entry}
+	}
+	m.Items = items
+	m.Search(m.Query)
+}
+
+// AddItems adds the given items to the menu.
+func (m *Menu) AddItems(itemTitles []string) {
+	items := make([]model.MenuItem, len(itemTitles))
+	for i, entry := range itemTitles {
+		items[i] = model.MenuItem{Title: entry}
+	}
+	m.Items = append(m.Items, items...)
+	m.Search(m.Query)
+}
+
 // Filters the menu filtered list to only include items that match the keyword.
 func (m *Menu) Search(keyword string) {
 	m.Query = keyword
@@ -113,6 +133,98 @@ func (m *Menu) SetItems(itemTitles []string) {
 	m.Items = items
 	// TODO: sync and search
 	m.Search(m.Query)
+}
+
+type GMenu struct {
+	menu *Menu
+	app  fyne.App
+}
+
+// NewGMenu creates a new GMenu instance.
+func NewGMenu(initialItems []string) *GMenu {
+	menu := NewMenu(initialItems)
+	g := &GMenu{}
+	g.menu = &menu
+	g.setupUI()
+	return g
+}
+
+// setupUI creates the UI elements.
+func (g *GMenu) setupUI() {
+	exitCode := 0
+	appTitle := "gmenu"
+	myApp := app.New()
+	g.app = myApp
+	myApp.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
+
+	var myWindow fyne.Window
+	if deskDriver, ok := myApp.Driver().(desktop.Driver); ok {
+		myWindow = deskDriver.CreateSplashWindow()
+	} else {
+		myWindow = myApp.NewWindow("")
+	}
+	myWindow.SetTitle(appTitle)
+	pidFile := createPidFile(appTitle)
+
+	searchEntry := &CustomEntry{}
+	searchEntry.ExtendBaseWidget(searchEntry)
+	searchEntry.SetPlaceHolder("Search")
+	mainContainer := container.NewVBox(searchEntry)
+	myWindow.SetContent(mainContainer)
+
+	itemsCanvas := render.NewItemsCanvas()
+	itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+	// show match items out of total item count "Matched Items: [10/10]"
+	matchCounterLabel := func() string {
+		return fmt.Sprintf("Matched Items: [%d/%d]", g.menu.MatchCount, len(g.menu.Items))
+	}
+	menuLabel := widget.NewLabel(matchCounterLabel())
+
+	searchEntry.OnChanged = func(text string) {
+		g.menu.Search(text)
+		menuLabel.SetText(matchCounterLabel())
+		itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+	}
+	keyHandler := func(key *fyne.KeyEvent) {
+		switch key.Name {
+		case fyne.KeyDown:
+			if g.menu.Selected < len(g.menu.Filtered)-1 {
+				g.menu.Selected++
+			}
+		case fyne.KeyUp:
+			if g.menu.Selected > 0 {
+				g.menu.Selected--
+			}
+		case fyne.KeyReturn:
+			if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
+				fmt.Fprintln(os.Stdout, g.menu.Filtered[g.menu.Selected].Title)
+			} else {
+				// TODO: cli option.
+				fmt.Fprintln(os.Stdout, g.menu.Query)
+			}
+			myApp.Quit()
+		case fyne.KeyEscape:
+			exitCode = 1
+			myApp.Quit()
+
+		}
+		itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+	}
+	searchEntry.onKeyDown = keyHandler
+	myWindow.Canvas().SetOnTypedKey(keyHandler)
+
+	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
+	mainContainer.Add(resultsContainer)
+	myWindow.Resize(fyne.NewSize(800, 300))
+	myWindow.SetOnClosed(func() {
+		os.Remove(pidFile)
+		os.Exit(exitCode)
+	}) // Ensure the application exits properly
+
+	// Set focus to the search entry on startup
+	// searchEntry.FocusGained()
+	myWindow.Canvas().Focus(searchEntry)
+	myWindow.Show()
 }
 
 // CustomEntry is a widget.Entry that captures certain key events.
@@ -183,81 +295,9 @@ func initCLI() *cobra.Command {
 }
 
 func run() {
-	exitCode := 0
-	appTitle := "gmenu"
-	menu := NewMenu(readItems())
-	myApp := app.New()
-	myApp.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
-
-	var myWindow fyne.Window
-	if deskDriver, ok := myApp.Driver().(desktop.Driver); ok {
-		myWindow = deskDriver.CreateSplashWindow()
-	} else {
-		myWindow = myApp.NewWindow("")
-	}
-	myWindow.SetTitle(appTitle)
-	pidFile := createPidFile(appTitle)
-
-	searchEntry := &CustomEntry{}
-	searchEntry.ExtendBaseWidget(searchEntry)
-	searchEntry.SetPlaceHolder("Search")
-	mainContainer := container.NewVBox(searchEntry)
-	myWindow.SetContent(mainContainer)
-
-	itemsCanvas := render.NewItemsCanvas()
-	itemsCanvas.Render(menu.Filtered, menu.Selected)
-	// show match items out of total item count "Matched Items: [10/10]"
-	matchCounterLabel := func() string {
-		return fmt.Sprintf("Matched Items: [%d/%d]", menu.MatchCount, len(menu.Items))
-	}
-	menuLabel := widget.NewLabel(matchCounterLabel())
-
-	searchEntry.OnChanged = func(text string) {
-		menu.Search(text)
-		menuLabel.SetText(matchCounterLabel())
-		itemsCanvas.Render(menu.Filtered, menu.Selected)
-	}
-	keyHandler := func(key *fyne.KeyEvent) {
-		switch key.Name {
-		case fyne.KeyDown:
-			if menu.Selected < len(menu.Filtered)-1 {
-				menu.Selected++
-			}
-		case fyne.KeyUp:
-			if menu.Selected > 0 {
-				menu.Selected--
-			}
-		case fyne.KeyReturn:
-			if menu.Selected >= 0 && menu.Selected < len(menu.Filtered)+1 {
-				fmt.Fprintln(os.Stdout, menu.Filtered[menu.Selected].Title)
-			} else {
-				// TODO: cli option.
-				fmt.Fprintln(os.Stdout, menu.Query)
-			}
-			myApp.Quit()
-		case fyne.KeyEscape:
-			exitCode = 1
-			myApp.Quit()
-
-		}
-		itemsCanvas.Render(menu.Filtered, menu.Selected)
-	}
-	searchEntry.onKeyDown = keyHandler
-	myWindow.Canvas().SetOnTypedKey(keyHandler)
-
-	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
-	mainContainer.Add(resultsContainer)
-	myWindow.Resize(fyne.NewSize(800, 300))
-	myWindow.SetOnClosed(func() {
-		os.Remove(pidFile)
-		os.Exit(exitCode)
-	}) // Ensure the application exits properly
-
-	// Set focus to the search entry on startup
-	// searchEntry.FocusGained()
-	myWindow.Canvas().Focus(searchEntry)
-	myWindow.Show()
-	myApp.Run()
+	items := readItems()
+	gmenu := NewGMenu(items)
+	gmenu.app.Run()
 }
 
 func main() {
