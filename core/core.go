@@ -56,8 +56,8 @@ func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 }
 
 type Menu struct {
-	Items      []model.MenuItem
-	Query      string
+	items      []model.MenuItem
+	query      string
 	itemsMutex sync.Mutex
 	queryMutex sync.Mutex
 
@@ -77,7 +77,7 @@ func NewMenu(itemTitles []string) Menu {
 		resultLimit:  10,
 	}
 	items := m.titlesToMenuItem(itemTitles)
-	m.Items = items
+	m.items = items
 
 	if len(items) == 0 {
 		panic("Menu must have at least one item")
@@ -90,9 +90,9 @@ func NewMenu(itemTitles []string) Menu {
 // Filters the menu filtered list to only include items that match the keyword.
 func (m *Menu) Search(keyword string) {
 	if keyword == "" {
-		m.Filtered = m.Items
+		m.Filtered = m.items
 	} else {
-		m.Filtered = m.SearchMethod(m.Items, keyword)
+		m.Filtered = m.SearchMethod(m.items, keyword)
 	}
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
@@ -148,7 +148,7 @@ func (g *GMenu) SelectedValue() (string, error) {
 	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
 		return g.menu.Filtered[g.menu.Selected].Title, nil
 	}
-	return g.menu.Query, nil
+	return g.menu.query, nil
 }
 
 // setupUI creates the UI elements.
@@ -181,7 +181,7 @@ func (g *GMenu) setupUI() {
 	itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 	// show match items out of total item count "Matched Items: [10/10]"
 	matchCounterLabel := func() string {
-		return fmt.Sprintf("Matched Items: [%d/%d]", g.menu.MatchCount, len(g.menu.Items))
+		return fmt.Sprintf("Matched Items: [%d/%d]", g.menu.MatchCount, len(g.menu.items))
 	}
 	menuLabel := widget.NewLabel(matchCounterLabel())
 
@@ -194,16 +194,16 @@ func (g *GMenu) setupUI() {
 			select {
 			case query := <-queryChan:
 				g.menu.queryMutex.Lock()
-				g.menu.Query = query
+				g.menu.query = query
 				g.menu.queryMutex.Unlock()
 				g.menu.Search(query)
 				menuLabel.SetText(matchCounterLabel())
 				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 			case items := <-itemsChan:
 				g.menu.itemsMutex.Lock()
-				g.menu.Items = items
+				g.menu.items = items
 				g.menu.itemsMutex.Unlock()
-				g.menu.Search(g.menu.Query)
+				g.menu.Search(g.menu.query)
 				menuLabel.SetText(matchCounterLabel())
 				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 			case <-doneChan:
