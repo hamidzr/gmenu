@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/sahilm/fuzzy"
+	"github.com/spf13/cobra"
 )
 
 type SearchMethod func([]model.MenuItem, string) []model.MenuItem
@@ -169,7 +170,19 @@ func createPidFile(name string) string {
 	return pidFile
 }
 
-func main() {
+func initCLI() *cobra.Command {
+	var RootCmd = &cobra.Command{
+		Use:   "gmenu",
+		Short: "gmenu is a fuzzy menu selector",
+		Run: func(cmd *cobra.Command, args []string) {
+			run()
+		},
+	}
+
+	return RootCmd
+}
+
+func run() {
 	exitCode := 0
 	appTitle := "gmenu"
 	menu := NewMenu(readItems())
@@ -245,4 +258,12 @@ func main() {
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.Show()
 	myApp.Run()
+}
+
+func main() {
+	cmd := initCLI()
+	if err := cmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
