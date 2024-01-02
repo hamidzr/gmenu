@@ -135,14 +135,17 @@ func (m *Menu) SetItems(itemTitles []string) {
 }
 
 type GMenu struct {
-	menu *Menu
-	app  fyne.App
+	menu     *Menu
+	app      fyne.App
+	exitCode int
 }
 
 // NewGMenu creates a new GMenu instance.
 func NewGMenu(initialItems []string) *GMenu {
 	menu := NewMenu(initialItems)
-	g := &GMenu{}
+	g := &GMenu{
+		exitCode: -1,
+	}
 	g.menu = &menu
 	g.setupUI()
 	return g
@@ -153,9 +156,24 @@ func (g *GMenu) Run() {
 	g.app.Run()
 }
 
+// SelectedItem returns the selected item.
+func (g *GMenu) SelectedValue() (string, error) {
+	// TODO: check if the app is running.
+	if g.exitCode == -1 {
+		return "", fmt.Errorf("gmenu has not exited yet")
+	}
+	// TODO: cli option for allowing query.
+	if g.exitCode != 0 {
+		return "", fmt.Errorf("gmenu exited with code %d", g.exitCode)
+	}
+	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
+		return g.menu.Filtered[g.menu.Selected].Title, nil
+	}
+	return g.menu.Query, nil
+}
+
 // setupUI creates the UI elements.
 func (g *GMenu) setupUI() {
-	exitCode := 0
 	appTitle := "gmenu"
 	myApp := app.New()
 	g.app = myApp
@@ -200,15 +218,10 @@ func (g *GMenu) setupUI() {
 				g.menu.Selected--
 			}
 		case fyne.KeyReturn:
-			if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
-				fmt.Fprintln(os.Stdout, g.menu.Filtered[g.menu.Selected].Title)
-			} else {
-				// TODO: cli option.
-				fmt.Fprintln(os.Stdout, g.menu.Query)
-			}
+			g.exitCode = 0
 			myApp.Quit()
 		case fyne.KeyEscape:
-			exitCode = 1
+			g.exitCode = 1
 			myApp.Quit()
 
 		}
@@ -221,8 +234,10 @@ func (g *GMenu) setupUI() {
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
 	myWindow.SetOnClosed(func() {
+		if g.exitCode == -1 {
+			g.exitCode = 0
+		}
 		os.Remove(pidFile)
-		os.Exit(exitCode)
 	}) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup

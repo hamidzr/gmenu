@@ -49,6 +49,12 @@ func run() {
 	items := readItems()
 	gmenu := core.NewGMenu(items)
 	gmenu.Run()
+	val, err := gmenu.SelectedValue()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	fmt.Println(val)
 }
 
 func main() {
