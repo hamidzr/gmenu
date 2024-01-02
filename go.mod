@@ -1,4 +1,4 @@
-module gmenu
+module github.com/hamidzr/gmenu
 
 go 1.21
 

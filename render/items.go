@@ -2,7 +2,8 @@ package render
 
 import (
 	"fmt"
-	"gmenu/model"
+
+	"github.com/hamidzr/gmenu/model"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"

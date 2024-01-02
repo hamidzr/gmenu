@@ -3,11 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"gmenu/model"
-	"gmenu/render"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/hamidzr/gmenu/model"
+	"github.com/hamidzr/gmenu/render"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
