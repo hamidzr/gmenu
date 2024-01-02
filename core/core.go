@@ -151,6 +151,15 @@ func (g *GMenu) SetItems(items []string) {
 	g.menu.ItemsChan <- g.menu.titlesToMenuItem(items)
 }
 
+// AddItems adds items to the menu.
+func (g *GMenu) AddItems(items []string) {
+	newMenuItems := g.menu.titlesToMenuItem(items)
+	g.menu.itemsMutex.Lock()
+	newItems := append(g.menu.items, newMenuItems...)
+	g.menu.itemsMutex.Unlock()
+	g.menu.ItemsChan <- newItems
+}
+
 // SelectedItem returns the selected item.
 func (g *GMenu) SelectedValue() (string, error) {
 	// TODO: check if the app is running. using the doneChan?
