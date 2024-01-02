@@ -5,6 +5,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/hamidzr/gmenu/model"
 	"github.com/hamidzr/gmenu/render"
@@ -54,11 +56,14 @@ func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 }
 
 type Menu struct {
-	Items    []model.MenuItem
+	Items      []model.MenuItem
+	Query      string
+	itemsMutex sync.Mutex
+	queryMutex sync.Mutex
+
 	Filtered []model.MenuItem
 	// zero-based index of the selected item in the filtered list
 	Selected int
-	Query    string
 	// ResultText   string
 	// MatchCount is the number of items that matched the search query.
 	MatchCount   int
@@ -67,46 +72,23 @@ type Menu struct {
 }
 
 func NewMenu(itemTitles []string) Menu {
-	items := make([]model.MenuItem, len(itemTitles))
-	for i, entry := range itemTitles {
-		items[i] = model.MenuItem{Title: entry}
+	m := Menu{Selected: 0,
+		SearchMethod: fuzzySearch,
+		resultLimit:  10,
 	}
+	items := m.titlesToMenuItem(itemTitles)
+	m.Items = items
+
 	if len(items) == 0 {
 		panic("Menu must have at least one item")
 	}
 
-	m := Menu{Items: items,
-		Selected:     0,
-		SearchMethod: fuzzySearch,
-		resultLimit:  10,
-	}
 	m.Search("")
 	return m
 }
 
-// UpdateItems overrides the menu items.
-func (m *Menu) UpdateItems(itemTitles []string) {
-	items := make([]model.MenuItem, len(itemTitles))
-	for i, entry := range itemTitles {
-		items[i] = model.MenuItem{Title: entry}
-	}
-	m.Items = items
-	m.Search(m.Query)
-}
-
-// AddItems adds the given items to the menu.
-func (m *Menu) AddItems(itemTitles []string) {
-	items := make([]model.MenuItem, len(itemTitles))
-	for i, entry := range itemTitles {
-		items[i] = model.MenuItem{Title: entry}
-	}
-	m.Items = append(m.Items, items...)
-	m.Search(m.Query)
-}
-
 // Filters the menu filtered list to only include items that match the keyword.
 func (m *Menu) Search(keyword string) {
-	m.Query = keyword
 	if keyword == "" {
 		m.Filtered = m.Items
 	} else {
@@ -123,15 +105,12 @@ func (m *Menu) Search(keyword string) {
 	}
 }
 
-// SetItems sets the menu items again.
-func (m *Menu) SetItems(itemTitles []string) {
-	items := make([]model.MenuItem, len(itemTitles))
-	for i, entry := range itemTitles {
+func (m *Menu) titlesToMenuItem(titles []string) []model.MenuItem {
+	items := make([]model.MenuItem, len(titles))
+	for i, entry := range titles {
 		items[i] = model.MenuItem{Title: entry}
 	}
-	m.Items = items
-	// TODO: sync and search
-	m.Search(m.Query)
+	return items
 }
 
 type GMenu struct {
@@ -158,7 +137,7 @@ func (g *GMenu) Run() {
 
 // SelectedItem returns the selected item.
 func (g *GMenu) SelectedValue() (string, error) {
-	// TODO: check if the app is running.
+	// TODO: check if the app is running. using the doneChan?
 	if g.exitCode == -1 {
 		return "", fmt.Errorf("gmenu has not exited yet")
 	}
@@ -174,6 +153,10 @@ func (g *GMenu) SelectedValue() (string, error) {
 
 // setupUI creates the UI elements.
 func (g *GMenu) setupUI() {
+	queryChan := make(chan string)
+	itemsChan := make(chan []model.MenuItem)
+	doneChan := make(chan bool)
+
 	appTitle := "gmenu"
 	myApp := app.New()
 	g.app = myApp
@@ -203,10 +186,35 @@ func (g *GMenu) setupUI() {
 	menuLabel := widget.NewLabel(matchCounterLabel())
 
 	searchEntry.OnChanged = func(text string) {
-		g.menu.Search(text)
-		menuLabel.SetText(matchCounterLabel())
-		itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+		queryChan <- text
 	}
+
+	go func() {
+		for {
+			select {
+			case query := <-queryChan:
+				g.menu.queryMutex.Lock()
+				g.menu.Query = query
+				g.menu.queryMutex.Unlock()
+				g.menu.Search(query)
+				menuLabel.SetText(matchCounterLabel())
+				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+			case items := <-itemsChan:
+				g.menu.itemsMutex.Lock()
+				g.menu.Items = items
+				g.menu.itemsMutex.Unlock()
+				g.menu.Search(g.menu.Query)
+				menuLabel.SetText(matchCounterLabel())
+				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+			case <-doneChan:
+				return
+			default:
+				// CHECK: should we?
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}()
+
 	keyHandler := func(key *fyne.KeyEvent) {
 		switch key.Name {
 		case fyne.KeyDown:
@@ -234,6 +242,7 @@ func (g *GMenu) setupUI() {
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
 	myWindow.SetOnClosed(func() {
+		doneChan <- true
 		if g.exitCode == -1 {
 			g.exitCode = 0
 		}
