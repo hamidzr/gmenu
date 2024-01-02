@@ -23,7 +23,6 @@ func initCLI() *cobra.Command {
 
 func readItems() []string {
 	var items []string
-	// Check if there is any input from stdin (piped text)
 	info, _ := os.Stdin.Stat()
 	if (info.Mode() & os.ModeCharDevice) == 0 {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -36,19 +35,24 @@ func readItems() []string {
 			os.Exit(1)
 		}
 	}
-
-	// Proceed only if there are items
-	if len(items) == 0 {
-		fmt.Fprintln(os.Stderr, "No items provided through standard input")
-		os.Exit(1)
-	}
 	return items
 }
 
 func run() {
-	items := readItems()
-	gmenu := core.NewGMenu(items)
+	gmenu := core.NewGMenu([]string{"Loading"})
+	go func() {
+		items := readItems()
+		if len(items) == 0 {
+			fmt.Fprintln(os.Stderr, "No items provided through standard input")
+			gmenu.Quit(1)
+			return
+		}
+		gmenu.SetItems(items)
+	}()
 	gmenu.Run()
+	if gmenu.ExitCode != 0 {
+		os.Exit(gmenu.ExitCode)
+	}
 	val, err := gmenu.SelectedValue()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

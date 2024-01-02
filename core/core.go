@@ -116,16 +116,18 @@ func (m *Menu) titlesToMenuItem(titles []string) []model.MenuItem {
 }
 
 type GMenu struct {
+	AppTitle string
 	menu     *Menu
 	app      fyne.App
-	exitCode int
+	ExitCode int
 }
 
 // NewGMenu creates a new GMenu instance.
 func NewGMenu(initialItems []string) *GMenu {
 	menu := NewMenu(initialItems)
 	g := &GMenu{
-		exitCode: -1,
+		AppTitle: "gmenu",
+		ExitCode: -1,
 	}
 	g.menu = &menu
 	g.setupUI()
@@ -133,19 +135,31 @@ func NewGMenu(initialItems []string) *GMenu {
 }
 
 // Run starts the application.
-func (g *GMenu) Run() {
+func (g *GMenu) Run() error {
+	pidFile, err := createPidFile(g.AppTitle)
+	if err != nil {
+		g.Quit(1)
+		return err
+	}
 	g.app.Run()
+	defer os.Remove(pidFile)
+	return nil
+}
+
+// SetItems sets the items to be displayed in the menu.
+func (g *GMenu) SetItems(items []string) {
+	g.menu.ItemsChan <- g.menu.titlesToMenuItem(items)
 }
 
 // SelectedItem returns the selected item.
 func (g *GMenu) SelectedValue() (string, error) {
 	// TODO: check if the app is running. using the doneChan?
-	if g.exitCode == -1 {
+	if g.ExitCode == -1 {
 		return "", fmt.Errorf("gmenu has not exited yet")
 	}
 	// TODO: cli option for allowing query.
-	if g.exitCode != 0 {
-		return "", fmt.Errorf("gmenu exited with code %d", g.exitCode)
+	if g.ExitCode != 0 {
+		return "", fmt.Errorf("gmenu exited with code %d", g.ExitCode)
 	}
 	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
 		return g.menu.Filtered[g.menu.Selected].Title, nil
@@ -153,25 +167,26 @@ func (g *GMenu) SelectedValue() (string, error) {
 	return g.menu.query, nil
 }
 
+// Quit exits the application.
+func (g *GMenu) Quit(code int) {
+	g.ExitCode = code
+	g.app.Quit()
+}
+
 // setupUI creates the UI elements.
 func (g *GMenu) setupUI() {
 	queryChan := make(chan string)
-	doneChan := make(chan bool)
 
-	appTitle := "gmenu"
-	myApp := app.New()
-	g.app = myApp
-	myApp.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
+	g.app = app.New()
+	g.app.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
 
 	var myWindow fyne.Window
-	if deskDriver, ok := myApp.Driver().(desktop.Driver); ok {
+	if deskDriver, ok := g.app.Driver().(desktop.Driver); ok {
 		myWindow = deskDriver.CreateSplashWindow()
 	} else {
-		myWindow = myApp.NewWindow("")
+		myWindow = g.app.NewWindow("")
 	}
-	myWindow.SetTitle(appTitle)
-	pidFile := createPidFile(appTitle)
-
+	myWindow.SetTitle(g.AppTitle)
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder("Search")
@@ -207,8 +222,6 @@ func (g *GMenu) setupUI() {
 				g.menu.Search(g.menu.query)
 				menuLabel.SetText(matchCounterLabel())
 				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
-			case <-doneChan:
-				return
 			default:
 				// CHECK: should we?
 				time.Sleep(10 * time.Millisecond)
@@ -227,11 +240,9 @@ func (g *GMenu) setupUI() {
 				g.menu.Selected--
 			}
 		case fyne.KeyReturn:
-			g.exitCode = 0
-			myApp.Quit()
+			g.Quit(0)
 		case fyne.KeyEscape:
-			g.exitCode = 1
-			myApp.Quit()
+			g.Quit(1)
 
 		}
 		itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
@@ -242,13 +253,6 @@ func (g *GMenu) setupUI() {
 	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
-	myWindow.SetOnClosed(func() {
-		if g.exitCode == -1 {
-			g.exitCode = 0
-		}
-		os.Remove(pidFile)
-		doneChan <- true
-	}) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup
 	// searchEntry.FocusGained()
@@ -270,19 +274,20 @@ func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
 	e.Entry.TypedKey(key)
 }
 
-func createPidFile(name string) string {
+func createPidFile(name string) (string, error) {
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); err == nil {
 		fmt.Println("Another instance of gmenu is already running. Exiting.")
 		fmt.Println("If this is not the case, please delete the pid file:", pidFile)
-		os.Exit(1)
+		return "", fmt.Errorf("pid file already exists")
+
 	}
 	f, err := os.Create(pidFile)
+	defer f.Close()
 	if err != nil {
 		fmt.Println("Failed to create pid file")
-		os.Exit(1)
+		return "", err
 	}
-	defer f.Close()
-	return pidFile
+	return pidFile, nil
 }
