@@ -60,6 +60,7 @@ type Menu struct {
 	query      string
 	itemsMutex sync.Mutex
 	queryMutex sync.Mutex
+	ItemsChan  chan []model.MenuItem
 
 	Filtered []model.MenuItem
 	// zero-based index of the selected item in the filtered list
@@ -75,6 +76,7 @@ func NewMenu(itemTitles []string) Menu {
 	m := Menu{Selected: 0,
 		SearchMethod: fuzzySearch,
 		resultLimit:  10,
+		ItemsChan:    make(chan []model.MenuItem),
 	}
 	items := m.titlesToMenuItem(itemTitles)
 	m.items = items
@@ -154,7 +156,6 @@ func (g *GMenu) SelectedValue() (string, error) {
 // setupUI creates the UI elements.
 func (g *GMenu) setupUI() {
 	queryChan := make(chan string)
-	itemsChan := make(chan []model.MenuItem)
 	doneChan := make(chan bool)
 
 	appTitle := "gmenu"
@@ -199,7 +200,7 @@ func (g *GMenu) setupUI() {
 				g.menu.Search(query)
 				menuLabel.SetText(matchCounterLabel())
 				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
-			case items := <-itemsChan:
+			case items := <-g.menu.ItemsChan:
 				g.menu.itemsMutex.Lock()
 				g.menu.items = items
 				g.menu.itemsMutex.Unlock()
@@ -210,7 +211,7 @@ func (g *GMenu) setupUI() {
 				return
 			default:
 				// CHECK: should we?
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 			}
 		}
 	}()
@@ -242,11 +243,11 @@ func (g *GMenu) setupUI() {
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
 	myWindow.SetOnClosed(func() {
-		doneChan <- true
 		if g.exitCode == -1 {
 			g.exitCode = 0
 		}
 		os.Remove(pidFile)
+		doneChan <- true
 	}) // Ensure the application exits properly
 
 	// Set focus to the search entry on startup
