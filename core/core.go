@@ -137,12 +137,16 @@ func NewGMenu(initialItems []string) *GMenu {
 // Run starts the application.
 func (g *GMenu) Run() error {
 	pidFile, err := createPidFile(g.AppTitle)
+	defer func() {
+		if pidFile != "" {
+			os.Remove(pidFile)
+		}
+	}()
 	if err != nil {
 		g.Quit(1)
 		return err
 	}
 	g.app.Run()
-	defer os.Remove(pidFile)
 	return nil
 }
 
