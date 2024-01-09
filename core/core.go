@@ -121,6 +121,7 @@ func (m *Menu) titlesToMenuItem(titles []string) []model.MenuItem {
 
 type GMenu struct {
 	AppTitle string
+	prompt   string
 	menuID   string
 	menu     *Menu
 	app      fyne.App
@@ -128,11 +129,12 @@ type GMenu struct {
 }
 
 // NewGMenu creates a new GMenu instance.
-func NewGMenu(initialItems []string, title string) *GMenu {
+func NewGMenu(initialItems []string, title string, prompt string) *GMenu {
 	menu := NewMenu(initialItems)
 	menuID := strings.ReplaceAll(title, " ", "")
 	menuID = strings.ToLower(menuID)
 	g := &GMenu{
+		prompt:   prompt,
 		AppTitle: title,
 		menuID:   menuID,
 		ExitCode: unsetInt,
@@ -216,7 +218,7 @@ func (g *GMenu) setupUI() {
 	myWindow.SetTitle(g.AppTitle)
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
-	searchEntry.SetPlaceHolder("Search")
+	searchEntry.SetPlaceHolder(g.prompt)
 	mainContainer := container.NewVBox(searchEntry)
 	myWindow.SetContent(mainContainer)
 

@@ -12,10 +12,13 @@ import (
 type CliArgs struct {
 	// Title string
 	title string
+	// Menu prompt string
+	prompt string
 }
 
 var cliArgs = CliArgs{
-	title: "gmenu",
+	title:  "gmenu",
+	prompt: "Search",
 }
 
 func initCLI() *cobra.Command {
@@ -28,6 +31,8 @@ func initCLI() *cobra.Command {
 	}
 
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.title, "title", "t", cliArgs.title, "Title of the menu window")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.prompt, "prompt", "p", cliArgs.prompt, "Prompt of the menu window")
+
 	return RootCmd
 }
 
@@ -49,7 +54,7 @@ func readItems() []string {
 }
 
 func run() {
-	gmenu := core.NewGMenu([]string{"Loading"}, cliArgs.title)
+	gmenu := core.NewGMenu([]string{"Loading"}, cliArgs.title, cliArgs.prompt)
 	go func() {
 		items := readItems()
 		if len(items) == 0 {
