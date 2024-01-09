@@ -20,6 +20,10 @@ import (
 	"github.com/sahilm/fuzzy"
 )
 
+const (
+	unsetInt = -1
+)
+
 type SearchMethod func([]model.MenuItem, string) []model.MenuItem
 
 func isDirectMatch(item model.MenuItem, keyword string) bool {
@@ -99,7 +103,7 @@ func (m *Menu) Search(keyword string) {
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
 	} else {
-		m.Selected = -1
+		m.Selected = unsetInt
 	}
 	m.MatchCount = len(m.Filtered)
 	if len(m.Filtered) > m.resultLimit {
@@ -127,7 +131,7 @@ func NewGMenu(initialItems []string) *GMenu {
 	menu := NewMenu(initialItems)
 	g := &GMenu{
 		AppTitle: "gmenu",
-		ExitCode: -1,
+		ExitCode: unsetInt,
 	}
 	g.menu = &menu
 	g.setupUI()
@@ -167,7 +171,7 @@ func (g *GMenu) AddItems(items []string) {
 // SelectedItem returns the selected item.
 func (g *GMenu) SelectedValue() (string, error) {
 	// TODO: check if the app is running. using the doneChan?
-	if g.ExitCode == -1 {
+	if g.ExitCode == unsetInt {
 		return "", fmt.Errorf("gmenu has not exited yet")
 	}
 	// TODO: cli option for allowing query.
@@ -193,11 +197,17 @@ func (g *GMenu) setupUI() {
 	g.app = app.New()
 	g.app.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
 
+	g.app.Lifecycle().SetOnExitedForeground(func() {
+		if g.ExitCode == unsetInt {
+			g.Quit(1)
+		}
+	})
+
 	var myWindow fyne.Window
 	if deskDriver, ok := g.app.Driver().(desktop.Driver); ok {
 		myWindow = deskDriver.CreateSplashWindow()
 	} else {
-		myWindow = g.app.NewWindow("")
+		myWindow = g.app.NewWindow(g.AppTitle)
 	}
 	myWindow.SetTitle(g.AppTitle)
 	searchEntry := &CustomEntry{}
@@ -256,10 +266,12 @@ func (g *GMenu) setupUI() {
 			g.Quit(0)
 		case fyne.KeyEscape:
 			g.Quit(1)
-
+		default:
+			return
 		}
 		itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 	}
+
 	searchEntry.onKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
@@ -267,8 +279,6 @@ func (g *GMenu) setupUI() {
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
 
-	// Set focus to the search entry on startup
-	// searchEntry.FocusGained()
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.Show()
 }
@@ -279,6 +289,7 @@ type CustomEntry struct {
 	onKeyDown func(key *fyne.KeyEvent)
 }
 
+// TypedKey implements the fyne.TypedKeyReceiver interface.
 func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
 	if e.onKeyDown != nil {
 		e.onKeyDown(key)

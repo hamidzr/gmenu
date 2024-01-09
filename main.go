@@ -49,7 +49,10 @@ func run() {
 		}
 		gmenu.SetItems(items)
 	}()
-	gmenu.Run()
+	if err := gmenu.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, err, "run err")
+		os.Exit(1)
+	}
 	if gmenu.ExitCode != 0 {
 		os.Exit(gmenu.ExitCode)
 	}

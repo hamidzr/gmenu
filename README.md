@@ -3,6 +3,9 @@
 
 ## TODO
 
+- [x] close on focus loss
+- [ ] instance lock only based on menu name. pid
+- app should have a name for activity monitor and ps faux
 - [x] a single instance with the same title
 - [x] the current fuzzy search is not great
 - add cli support for same behavior but in the terminal
