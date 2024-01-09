@@ -121,26 +121,30 @@ func (m *Menu) titlesToMenuItem(titles []string) []model.MenuItem {
 
 type GMenu struct {
 	AppTitle string
+	menuID   string
 	menu     *Menu
 	app      fyne.App
 	ExitCode int
 }
 
 // NewGMenu creates a new GMenu instance.
-func NewGMenu(initialItems []string) *GMenu {
+func NewGMenu(initialItems []string, title string) *GMenu {
 	menu := NewMenu(initialItems)
+	menuID := strings.ReplaceAll(title, " ", "")
+	menuID = strings.ToLower(menuID)
 	g := &GMenu{
-		AppTitle: "gmenu",
+		AppTitle: title,
+		menuID:   menuID,
 		ExitCode: unsetInt,
+		menu:     &menu,
 	}
-	g.menu = &menu
 	g.setupUI()
 	return g
 }
 
 // Run starts the application.
 func (g *GMenu) Run() error {
-	pidFile, err := createPidFile(g.AppTitle)
+	pidFile, err := createPidFile(g.menuID)
 	defer func() {
 		if pidFile != "" {
 			os.Remove(pidFile)

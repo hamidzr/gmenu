@@ -9,6 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type CliArgs struct {
+	// Title string
+	title string
+}
+
+var cliArgs = CliArgs{
+	title: "gmenu",
+}
+
 func initCLI() *cobra.Command {
 	var RootCmd = &cobra.Command{
 		Use:   "gmenu",
@@ -18,6 +27,7 @@ func initCLI() *cobra.Command {
 		},
 	}
 
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.title, "title", "t", cliArgs.title, "Title of the menu window")
 	return RootCmd
 }
 
@@ -39,7 +49,7 @@ func readItems() []string {
 }
 
 func run() {
-	gmenu := core.NewGMenu([]string{"Loading"})
+	gmenu := core.NewGMenu([]string{"Loading"}, cliArgs.title)
 	go func() {
 		items := readItems()
 		if len(items) == 0 {
