@@ -3,6 +3,7 @@
 
 ## TODO
 
+- remember last entry and have it auto selected on start.
 - [x] close on focus loss
 - [ ] instance lock only based on menu name. pid
 - app should have a name for activity monitor and ps faux
