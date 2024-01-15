@@ -145,16 +145,18 @@ func NewGMenu(initialItems []string, title string,
 	if err != nil {
 		return nil, err
 	}
-	var menu *Menu
+	lastEntry := ""
 	if menuID != "" {
 		cache, err := store.LoadCache(menuID)
 		if err != nil {
 			return nil, err
 		}
-		menu = NewMenu(initialItems, cache.LastEntry)
-	} else {
-		menu = NewMenu(initialItems, "")
+		if canBeHighlighted(cache.LastEntry) {
+			lastEntry = cache.LastEntry
+		}
+
 	}
+	menu := NewMenu(initialItems, lastEntry)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,
@@ -165,6 +167,20 @@ func NewGMenu(initialItems []string, title string,
 	}
 	g.setupUI()
 	return g, nil
+}
+
+// canBeHighlighted returns true if the menu item can be highlighted
+// programmatically via exiting fayne interface.
+func canBeHighlighted(entry string) bool {
+	// TODO: find a better way to select all on searchEnty.
+	for _, c := range entry {
+		if !(c >= 'a' && c <= 'z' ||
+			c >= 'A' && c <= 'Z' ||
+			c >= '0' && c <= '9') {
+			return false
+		}
+	}
+	return true
 }
 
 // Run starts the application.
@@ -265,7 +281,9 @@ func (g *GMenu) setupUI() {
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.SetText(g.menu.query)
-	searchEntry.DoubleTapped(nil)
+	if g.menu.query != "" {
+		searchEntry.DoubleTapped(nil)
+	}
 	mainContainer := container.NewVBox(searchEntry)
 	myWindow.SetContent(mainContainer)
 
