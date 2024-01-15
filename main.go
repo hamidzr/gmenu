@@ -54,7 +54,11 @@ func readItems() []string {
 }
 
 func run() {
-	gmenu := core.NewGMenu([]string{"Loading"}, cliArgs.title, cliArgs.prompt)
+	gmenu, err := core.NewGMenu([]string{"Loading"}, cliArgs.title, cliArgs.prompt)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err, "failed to create gmenu")
+		os.Exit(1)
+	}
 	go func() {
 		items := readItems()
 		if len(items) == 0 {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/hamidzr/gmenu/model"
 	"github.com/hamidzr/gmenu/render"
+	"github.com/hamidzr/gmenu/store"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -76,7 +77,7 @@ type Menu struct {
 	resultLimit  int
 }
 
-func NewMenu(itemTitles []string) Menu {
+func NewMenu(itemTitles []string, initValue string) Menu {
 	m := Menu{Selected: 0,
 		SearchMethod: fuzzySearch,
 		resultLimit:  10,
@@ -89,7 +90,7 @@ func NewMenu(itemTitles []string) Menu {
 		panic("Menu must have at least one item")
 	}
 
-	m.Search("")
+	m.Search(initValue)
 	return m
 }
 
@@ -125,23 +126,37 @@ type GMenu struct {
 	menuID   string
 	menu     *Menu
 	app      fyne.App
+	store    store.Store
 	ExitCode int
 }
 
 // NewGMenu creates a new GMenu instance.
-func NewGMenu(initialItems []string, title string, prompt string) *GMenu {
-	menu := NewMenu(initialItems)
+func NewGMenu(initialItems []string, title string, prompt string) (*GMenu, error) {
 	menuID := strings.ReplaceAll(title, " ", "")
 	menuID = strings.ToLower(menuID)
+
+	store, err := store.NewFileStore(
+		store.CacheDir(),
+		store.ConfigDir(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	cache, err := store.LoadCache(menuID)
+	if err != nil {
+		return nil, err
+	}
+	menu := NewMenu(initialItems, cache.LastEntry)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,
 		menuID:   menuID,
 		ExitCode: unsetInt,
 		menu:     &menu,
+		store:    store,
 	}
 	g.setupUI()
-	return g
+	return g, nil
 }
 
 // Run starts the application.
@@ -174,6 +189,19 @@ func (g *GMenu) AddItems(items []string) {
 	g.menu.ItemsChan <- newItems
 }
 
+func (g *GMenu) cacheSelectedVal(value string) error {
+	cache, err := g.store.LoadCache(g.menuID)
+	if err != nil {
+		return err
+	}
+	cache.LastEntry = value
+	err = g.store.SaveCache(g.menuID, cache)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // SelectedItem returns the selected item.
 func (g *GMenu) SelectedValue() (string, error) {
 	// TODO: check if the app is running. using the doneChan?
@@ -185,7 +213,12 @@ func (g *GMenu) SelectedValue() (string, error) {
 		return "", fmt.Errorf("gmenu exited with code %d", g.ExitCode)
 	}
 	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
-		return g.menu.Filtered[g.menu.Selected].Title, nil
+		selected := g.menu.Filtered[g.menu.Selected].Title
+		err := g.cacheSelectedVal(selected)
+		if err != nil {
+			return "", err
+		}
+		return selected, nil
 	}
 	return g.menu.query, nil
 }
