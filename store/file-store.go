@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -9,6 +10,8 @@ type FileStore struct {
 	cacheDir  string
 	configDir string
 }
+
+var unsetMenuIDErr = fmt.Errorf("menuID cannot be empty")
 
 func NewFileStore(cacheDir, configDir string) (*FileStore, error) {
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {

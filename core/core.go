@@ -82,6 +82,7 @@ func NewMenu(itemTitles []string, initValue string) *Menu {
 		SearchMethod: fuzzySearch,
 		resultLimit:  10,
 		ItemsChan:    make(chan []model.MenuItem),
+		query:        initValue,
 	}
 	items := m.titlesToMenuItem(itemTitles)
 	m.items = items
@@ -96,6 +97,9 @@ func NewMenu(itemTitles []string, initValue string) *Menu {
 
 // Filters the menu filtered list to only include items that match the keyword.
 func (m *Menu) Search(keyword string) {
+	m.queryMutex.Lock()
+	m.query = keyword
+	m.queryMutex.Unlock()
 	if keyword == "" {
 		m.Filtered = m.items
 	} else {
@@ -131,10 +135,9 @@ type GMenu struct {
 }
 
 // NewGMenu creates a new GMenu instance.
-func NewGMenu(initialItems []string, title string, prompt string) (*GMenu, error) {
-	menuID := strings.ReplaceAll(title, " ", "")
-	menuID = strings.ToLower(menuID)
-
+func NewGMenu(initialItems []string, title string,
+	prompt string, menuID string,
+) (*GMenu, error) {
 	store, err := store.NewFileStore(
 		store.CacheDir(),
 		store.ConfigDir(),
@@ -142,11 +145,16 @@ func NewGMenu(initialItems []string, title string, prompt string) (*GMenu, error
 	if err != nil {
 		return nil, err
 	}
-	cache, err := store.LoadCache(menuID)
-	if err != nil {
-		return nil, err
+	var menu *Menu
+	if menuID != "" {
+		cache, err := store.LoadCache(menuID)
+		if err != nil {
+			return nil, err
+		}
+		menu = NewMenu(initialItems, cache.LastEntry)
+	} else {
+		menu = NewMenu(initialItems, "")
 	}
-	menu := NewMenu(initialItems, cache.LastEntry)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,
@@ -190,11 +198,15 @@ func (g *GMenu) AddItems(items []string) {
 }
 
 func (g *GMenu) cacheSelectedVal(value string) error {
+	if g.menuID == "" {
+		// skip caching if menuID is not set.
+		return nil
+	}
 	cache, err := g.store.LoadCache(g.menuID)
 	if err != nil {
 		return err
 	}
-	cache.LastEntry = value
+	cache.SetLastEntry(value)
 	err = g.store.SaveCache(g.menuID, cache)
 	if err != nil {
 		return err
@@ -252,6 +264,8 @@ func (g *GMenu) setupUI() {
 	searchEntry := &CustomEntry{}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
+	searchEntry.SetText(g.menu.query)
+	searchEntry.DoubleTapped(nil)
 	mainContainer := container.NewVBox(searchEntry)
 	myWindow.SetContent(mainContainer)
 
@@ -271,9 +285,6 @@ func (g *GMenu) setupUI() {
 		for {
 			select {
 			case query := <-queryChan:
-				g.menu.queryMutex.Lock()
-				g.menu.query = query
-				g.menu.queryMutex.Unlock()
 				g.menu.Search(query)
 				menuLabel.SetText(matchCounterLabel())
 				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
@@ -302,6 +313,7 @@ func (g *GMenu) setupUI() {
 				g.menu.Selected--
 			}
 		case fyne.KeyReturn:
+			searchEntry.Disable()
 			g.Quit(0)
 		case fyne.KeyEscape:
 			g.Quit(1)

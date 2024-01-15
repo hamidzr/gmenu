@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hamidzr/gmenu/constants"
 	"github.com/hamidzr/gmenu/core"
 	"github.com/spf13/cobra"
 )
@@ -14,11 +15,14 @@ type CliArgs struct {
 	title string
 	// Menu prompt string
 	prompt string
+	// Menu ID
+	menuID string
 }
 
 var cliArgs = CliArgs{
-	title:  "gmenu",
+	title:  constants.ProjectName,
 	prompt: "Search",
+	menuID: "",
 }
 
 func initCLI() *cobra.Command {
@@ -32,6 +36,7 @@ func initCLI() *cobra.Command {
 
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.title, "title", "t", cliArgs.title, "Title of the menu window")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.prompt, "prompt", "p", cliArgs.prompt, "Prompt of the menu window")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.menuID, "menu-id", "m", cliArgs.menuID, "Menu ID")
 
 	return RootCmd
 }
@@ -54,7 +59,9 @@ func readItems() []string {
 }
 
 func run() {
-	gmenu, err := core.NewGMenu([]string{"Loading"}, cliArgs.title, cliArgs.prompt)
+	gmenu, err := core.NewGMenu(
+		[]string{"Loading"}, cliArgs.title, cliArgs.prompt, cliArgs.menuID,
+	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err, "failed to create gmenu")
 		os.Exit(1)

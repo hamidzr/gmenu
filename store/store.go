@@ -1,9 +1,17 @@
 package store
 
+import "time"
+
 type Cache struct {
 	UsageCount       map[string]int `json:"usageCount"`
 	NotFoundAccepted []string       `json:"notFoundAccepted"`
 	LastEntry        string         `json:"lastEntry"`
+	LastEntryTime    int64          `json:"lastEntryTime"`
+}
+
+func (c *Cache) SetLastEntry(entry string) {
+	c.LastEntry = entry
+	c.LastEntryTime = time.Now().Unix()
 }
 
 type Config struct {
