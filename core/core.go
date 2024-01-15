@@ -77,7 +77,7 @@ type Menu struct {
 	resultLimit  int
 }
 
-func NewMenu(itemTitles []string, initValue string) Menu {
+func NewMenu(itemTitles []string, initValue string) *Menu {
 	m := Menu{Selected: 0,
 		SearchMethod: fuzzySearch,
 		resultLimit:  10,
@@ -91,7 +91,7 @@ func NewMenu(itemTitles []string, initValue string) Menu {
 	}
 
 	m.Search(initValue)
-	return m
+	return &m
 }
 
 // Filters the menu filtered list to only include items that match the keyword.
@@ -152,7 +152,7 @@ func NewGMenu(initialItems []string, title string, prompt string) (*GMenu, error
 		AppTitle: title,
 		menuID:   menuID,
 		ExitCode: unsetInt,
-		menu:     &menu,
+		menu:     menu,
 		store:    store,
 	}
 	g.setupUI()
