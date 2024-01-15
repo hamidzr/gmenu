@@ -282,7 +282,7 @@ func (g *GMenu) setupUI() {
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.SetText(g.menu.query)
 	if g.menu.query != "" {
-		searchEntry.DoubleTapped(nil)
+		searchEntry.SelectAll()
 	}
 	mainContainer := container.NewVBox(searchEntry)
 	myWindow.SetContent(mainContainer)
@@ -356,6 +356,12 @@ func (g *GMenu) setupUI() {
 type CustomEntry struct {
 	widget.Entry
 	onKeyDown func(key *fyne.KeyEvent)
+}
+
+// SelectAll selects all text in the entry.
+func (e *CustomEntry) SelectAll() {
+	// TODO: this cannot select anything outside non-alphanumeric characters.
+	e.Entry.DoubleTapped(nil)
 }
 
 // TypedKey implements the fyne.TypedKeyReceiver interface.
