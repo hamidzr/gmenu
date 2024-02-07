@@ -25,12 +25,15 @@ const (
 	unsetInt = -1
 )
 
+// SearchMethod how to search for items given a keyword.
 type SearchMethod func([]model.MenuItem, string) []model.MenuItem
 
 func isDirectMatch(item model.MenuItem, keyword string) bool {
 	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
 }
-func directSearch(items []model.MenuItem, keyword string) []model.MenuItem {
+
+// DirectSearch matches items directly to a keyword.
+func DirectSearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	matches := make([]model.MenuItem, 0)
 	for _, item := range items {
 		if isDirectMatch(item, keyword) {
@@ -40,7 +43,8 @@ func directSearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	return matches
 }
 
-func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
+// FuzzySearch fuzzy matches items to a keyword and sorts them by score.
+func FuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	entries := make([]string, len(items))
 	for i, item := range items {
 		entries[i] = item.Title
@@ -60,6 +64,11 @@ func fuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 	return result
 }
 
+var SearchMethods = map[string]SearchMethod{
+	"direct": DirectSearch,
+	"fuzzy":  FuzzySearch,
+}
+
 type Menu struct {
 	items      []model.MenuItem
 	query      string
@@ -77,9 +86,13 @@ type Menu struct {
 	resultLimit  int
 }
 
-func NewMenu(itemTitles []string, initValue string) *Menu {
+func NewMenu(
+	itemTitles []string,
+	initValue string,
+	searchMethod SearchMethod,
+) *Menu {
 	m := Menu{Selected: 0,
-		SearchMethod: fuzzySearch,
+		SearchMethod: searchMethod,
 		resultLimit:  10,
 		ItemsChan:    make(chan []model.MenuItem),
 		query:        initValue,
@@ -135,8 +148,12 @@ type GMenu struct {
 }
 
 // NewGMenu creates a new GMenu instance.
-func NewGMenu(initialItems []string, title string,
-	prompt string, menuID string,
+func NewGMenu(
+	initialItems []string,
+	title string,
+	prompt string,
+	menuID string,
+	searchMethod SearchMethod,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore(
 		store.CacheDir(),
@@ -156,7 +173,7 @@ func NewGMenu(initialItems []string, title string,
 		}
 
 	}
-	menu := NewMenu(initialItems, lastEntry)
+	menu := NewMenu(initialItems, lastEntry, searchMethod)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,

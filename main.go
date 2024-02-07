@@ -17,12 +17,15 @@ type CliArgs struct {
 	prompt string
 	// Menu ID
 	menuID string
+	// Search method
+	searchMethod string
 }
 
 var cliArgs = CliArgs{
-	title:  constants.ProjectName,
-	prompt: "Search",
-	menuID: "",
+	title:        constants.ProjectName,
+	prompt:       "Search",
+	menuID:       "",
+	searchMethod: "fuzzy",
 }
 
 func initCLI() *cobra.Command {
@@ -37,6 +40,7 @@ func initCLI() *cobra.Command {
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.title, "title", "t", cliArgs.title, "Title of the menu window")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.prompt, "prompt", "p", cliArgs.prompt, "Prompt of the menu window")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.menuID, "menu-id", "m", cliArgs.menuID, "Menu ID")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.searchMethod, "search-method", "s", cliArgs.searchMethod, "Search method")
 
 	return RootCmd
 }
@@ -59,8 +63,13 @@ func readItems() []string {
 }
 
 func run() {
+	searchMethod, ok := core.SearchMethods[cliArgs.searchMethod]
+	if !ok {
+		fmt.Fprintln(os.Stderr, "Invalid search method")
+		os.Exit(1)
+	}
 	gmenu, err := core.NewGMenu(
-		[]string{"Loading"}, cliArgs.title, cliArgs.prompt, cliArgs.menuID,
+		[]string{"Loading"}, cliArgs.title, cliArgs.prompt, cliArgs.menuID, searchMethod,
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err, "failed to create gmenu")
