@@ -19,13 +19,16 @@ type CliArgs struct {
 	menuID string
 	// Search method
 	searchMethod string
+	// Preserve the order of the input items.
+	preserveOrder bool
 }
 
 var cliArgs = CliArgs{
-	title:        constants.ProjectName,
-	prompt:       "Search",
-	menuID:       "",
-	searchMethod: "fuzzy",
+	title:         constants.ProjectName,
+	prompt:        "Search",
+	menuID:        "",
+	searchMethod:  "fuzzy",
+	preserveOrder: false,
 }
 
 func initCLI() *cobra.Command {
@@ -41,6 +44,7 @@ func initCLI() *cobra.Command {
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.prompt, "prompt", "p", cliArgs.prompt, "Prompt of the menu window")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.menuID, "menu-id", "m", cliArgs.menuID, "Menu ID")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.searchMethod, "search-method", "s", cliArgs.searchMethod, "Search method")
+	RootCmd.PersistentFlags().BoolVarP(&cliArgs.preserveOrder, "preserve-order", "o", cliArgs.preserveOrder, "Preserve the order of the input items")
 
 	return RootCmd
 }
@@ -69,7 +73,8 @@ func run() {
 		os.Exit(1)
 	}
 	gmenu, err := core.NewGMenu(
-		[]string{"Loading"}, cliArgs.title, cliArgs.prompt, cliArgs.menuID, searchMethod,
+		[]string{"Loading"}, cliArgs.title, cliArgs.prompt, cliArgs.menuID,
+		searchMethod, cliArgs.preserveOrder,
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err, "failed to create gmenu")

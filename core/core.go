@@ -26,14 +26,14 @@ const (
 )
 
 // SearchMethod how to search for items given a keyword.
-type SearchMethod func([]model.MenuItem, string) []model.MenuItem
+type SearchMethod func(items []model.MenuItem, query string, preserveOrder bool) []model.MenuItem
 
 func isDirectMatch(item model.MenuItem, keyword string) bool {
 	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
 }
 
 // DirectSearch matches items directly to a keyword.
-func DirectSearch(items []model.MenuItem, keyword string) []model.MenuItem {
+func DirectSearch(items []model.MenuItem, keyword string, _ bool) []model.MenuItem {
 	matches := make([]model.MenuItem, 0)
 	for _, item := range items {
 		if isDirectMatch(item, keyword) {
@@ -44,7 +44,7 @@ func DirectSearch(items []model.MenuItem, keyword string) []model.MenuItem {
 }
 
 // FuzzySearch fuzzy matches items to a keyword and sorts them by score.
-func FuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
+func FuzzySearch(items []model.MenuItem, keyword string, preserveOrder bool) []model.MenuItem {
 	entries := make([]string, len(items))
 	for i, item := range items {
 		entries[i] = item.Title
@@ -52,10 +52,11 @@ func FuzzySearch(items []model.MenuItem, keyword string) []model.MenuItem {
 
 	matches := fuzzy.Find(keyword, entries)
 
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].Score > matches[j].Score
-	})
-
+	if !preserveOrder {
+		sort.Slice(matches, func(i, j int) bool {
+			return matches[i].Score > matches[j].Score
+		})
+	}
 	result := make([]model.MenuItem, 0)
 	for _, match := range matches {
 		result = append(result, items[match.Index])
@@ -81,21 +82,24 @@ type Menu struct {
 	Selected int
 	// ResultText   string
 	// MatchCount is the number of items that matched the search query.
-	MatchCount   int
-	SearchMethod SearchMethod
-	resultLimit  int
+	MatchCount    int
+	SearchMethod  SearchMethod
+	resultLimit   int
+	preserveOrder bool
 }
 
 func NewMenu(
 	itemTitles []string,
 	initValue string,
 	searchMethod SearchMethod,
+	preserveOrder bool,
 ) *Menu {
 	m := Menu{Selected: 0,
-		SearchMethod: searchMethod,
-		resultLimit:  10,
-		ItemsChan:    make(chan []model.MenuItem),
-		query:        initValue,
+		SearchMethod:  searchMethod,
+		resultLimit:   10,
+		ItemsChan:     make(chan []model.MenuItem),
+		query:         initValue,
+		preserveOrder: preserveOrder,
 	}
 	items := m.titlesToMenuItem(itemTitles)
 	m.items = items
@@ -116,7 +120,7 @@ func (m *Menu) Search(keyword string) {
 	if keyword == "" {
 		m.Filtered = m.items
 	} else {
-		m.Filtered = m.SearchMethod(m.items, keyword)
+		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder)
 	}
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
@@ -154,6 +158,7 @@ func NewGMenu(
 	prompt string,
 	menuID string,
 	searchMethod SearchMethod,
+	preserveOrder bool,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore(
 		store.CacheDir(),
@@ -173,7 +178,7 @@ func NewGMenu(
 		}
 
 	}
-	menu := NewMenu(initialItems, lastEntry, searchMethod)
+	menu := NewMenu(initialItems, lastEntry, searchMethod, preserveOrder)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,
