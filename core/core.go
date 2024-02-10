@@ -226,13 +226,26 @@ func (g *GMenu) SetItems(items []string) {
 	g.menu.ItemsChan <- g.menu.titlesToMenuItem(items)
 }
 
-// AddItems adds items to the menu.
-func (g *GMenu) AddItems(items []string) {
+// addItems adds items to the menu.
+func (g *GMenu) addItems(items []string, tail bool) {
 	newMenuItems := g.menu.titlesToMenuItem(items)
 	g.menu.itemsMutex.Lock()
-	newItems := append(g.menu.items, newMenuItems...)
+	var newItems []model.MenuItem
+	if tail {
+		newItems = append(g.menu.items, newMenuItems...)
+	} else {
+		newItems = append(newMenuItems, g.menu.items...)
+	}
 	g.menu.itemsMutex.Unlock()
 	g.menu.ItemsChan <- newItems
+}
+
+func (g *GMenu) PrependItems(items []string) {
+	g.addItems(items, false)
+}
+
+func (g *GMenu) AppendItems(items []string) {
+	g.addItems(items, true)
 }
 
 func (g *GMenu) cacheSelectedVal(value string) error {
