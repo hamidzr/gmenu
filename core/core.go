@@ -52,16 +52,26 @@ func FuzzySearch(items []model.MenuItem, keyword string, preserveOrder bool) []m
 
 	matches := fuzzy.Find(keyword, entries)
 
+	result := make([]model.MenuItem, 0)
 	if !preserveOrder {
 		sort.Slice(matches, func(i, j int) bool {
 			return matches[i].Score > matches[j].Score
 		})
+		for _, match := range matches {
+			result = append(result, items[match.Index])
+		}
+	} else {
+		matchIndices := make([]int, len(matches))
+		for _, match := range matches {
+			matchIndices = append(matchIndices, match.Index)
+		}
+		sort.Slice(matchIndices, func(i, j int) bool {
+			return matchIndices[i] < matchIndices[j]
+		})
+		for _, ogIndex := range matchIndices {
+			result = append(result, items[ogIndex])
+		}
 	}
-	result := make([]model.MenuItem, 0)
-	for _, match := range matches {
-		result = append(result, items[match.Index])
-	}
-
 	return result
 }
 
