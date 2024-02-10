@@ -26,53 +26,59 @@ const (
 )
 
 // SearchMethod how to search for items given a keyword.
-type SearchMethod func(items []model.MenuItem, query string, preserveOrder bool) []model.MenuItem
+type SearchMethod func(items []model.MenuItem, query string,
+	preserveOrder bool, limit int) []model.MenuItem
 
 func isDirectMatch(item model.MenuItem, keyword string) bool {
 	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
 }
 
 // DirectSearch matches items directly to a keyword.
-func DirectSearch(items []model.MenuItem, keyword string, _ bool) []model.MenuItem {
+func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
 	matches := make([]model.MenuItem, 0)
 	for _, item := range items {
 		if isDirectMatch(item, keyword) {
 			matches = append(matches, item)
 		}
 	}
-	return matches
+	return matches[:min(limit, len(matches))]
 }
 
 // FuzzySearch fuzzy matches items to a keyword and sorts them by score.
-func FuzzySearch(items []model.MenuItem, keyword string, preserveOrder bool) []model.MenuItem {
+func FuzzySearch(items []model.MenuItem, keyword string,
+	preserveOrder bool, limit int) []model.MenuItem {
 	entries := make([]string, len(items))
 	for i, item := range items {
 		entries[i] = item.Title
 	}
 
 	matches := fuzzy.Find(keyword, entries)
-
-	result := make([]model.MenuItem, 0)
+	results := make([]model.MenuItem, 0)
+	sort.Slice(matches, func(i, j int) bool {
+		if matches[i].Score == matches[j].Score {
+			return matches[i].Index < matches[j].Index
+		}
+		return matches[i].Score > matches[j].Score
+	})
+	matches = matches[:min(limit, len(matches))]
 	if !preserveOrder {
-		sort.Slice(matches, func(i, j int) bool {
-			return matches[i].Score > matches[j].Score
-		})
 		for _, match := range matches {
-			result = append(result, items[match.Index])
+			results = append(results, items[match.Index])
 		}
-	} else {
-		matchIndices := make([]int, len(matches))
-		for _, match := range matches {
-			matchIndices = append(matchIndices, match.Index)
-		}
-		sort.Slice(matchIndices, func(i, j int) bool {
-			return matchIndices[i] < matchIndices[j]
-		})
-		for _, ogIndex := range matchIndices {
-			result = append(result, items[ogIndex])
-		}
+		return results
 	}
-	return result
+	matchIndices := make([]int, 0, len(matches))
+	for _, match := range matches {
+		matchIndices = append(matchIndices, match.Index)
+	}
+	sort.Slice(matchIndices, func(i, j int) bool {
+		return matchIndices[i] < matchIndices[j]
+	})
+	for _, ogIndex := range matchIndices {
+		results = append(results, items[ogIndex])
+	}
+
+	return results
 }
 
 var SearchMethods = map[string]SearchMethod{
@@ -130,7 +136,7 @@ func (m *Menu) Search(keyword string) {
 	if keyword == "" {
 		m.Filtered = m.items
 	} else {
-		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder)
+		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder, m.resultLimit)
 	}
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
