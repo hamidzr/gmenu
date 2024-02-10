@@ -328,7 +328,11 @@ func (g *GMenu) setupUI() {
 		myWindow = g.app.NewWindow(g.AppTitle)
 	}
 	myWindow.SetTitle(g.AppTitle)
-	searchEntry := &CustomEntry{}
+	entryDisabledKeys := map[fyne.KeyName]bool{
+		fyne.KeyUp:   true,
+		fyne.KeyDown: true,
+	}
+	searchEntry := &CustomEntry{disabledKeys: entryDisabledKeys}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.SetText(g.menu.query)
@@ -406,7 +410,8 @@ func (g *GMenu) setupUI() {
 // CustomEntry is a widget.Entry that captures certain key events.
 type CustomEntry struct {
 	widget.Entry
-	onKeyDown func(key *fyne.KeyEvent)
+	onKeyDown    func(key *fyne.KeyEvent)
+	disabledKeys map[fyne.KeyName]bool
 }
 
 // SelectAll selects all text in the entry.
@@ -420,7 +425,11 @@ func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
 	if e.onKeyDown != nil {
 		e.onKeyDown(key)
 	}
-	// Call the parent method to ensure regular input handling.
+	if e.disabledKeys != nil {
+		if e.disabledKeys[key.Name] {
+			return
+		}
+	}
 	e.Entry.TypedKey(key)
 }
 
