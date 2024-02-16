@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -66,11 +65,6 @@ func FuzzySearch(items []model.MenuItem, keyword string,
 	})
 	matches = matches[:min(limit, len(matches))]
 	matches = filterOutUnlikelyMatches(matches)
-
-	fmt.Println(keyword)
-	for _, m := range matches {
-		fmt.Println(m.Score, m.Index, m.Str)
-	}
 	if !preserveOrder {
 		for _, match := range matches {
 			results = append(results, items[match.Index])
@@ -84,7 +78,6 @@ func FuzzySearch(items []model.MenuItem, keyword string,
 	sort.Slice(matchIndices, func(i, j int) bool {
 		return matchIndices[i] < matchIndices[j]
 	})
-	fmt.Println(matchIndices)
 	for _, ogIndex := range matchIndices {
 		results = append(results, items[ogIndex])
 	}
