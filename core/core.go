@@ -3,8 +3,6 @@ package core
 import (
 	"fmt"
 	"os"
-	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -18,73 +16,17 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/sahilm/fuzzy"
 )
+
+/*
+TODO:
+- on failure clean up the pid file
+
+*/
 
 const (
 	unsetInt = -1
 )
-
-// SearchMethod how to search for items given a keyword.
-type SearchMethod func(items []model.MenuItem, query string,
-	preserveOrder bool, limit int) []model.MenuItem
-
-func isDirectMatch(item model.MenuItem, keyword string) bool {
-	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
-}
-
-// DirectSearch matches items directly to a keyword.
-func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
-	matches := make([]model.MenuItem, 0)
-	for _, item := range items {
-		if isDirectMatch(item, keyword) {
-			matches = append(matches, item)
-		}
-	}
-	return matches[:min(limit, len(matches))]
-}
-
-// FuzzySearch fuzzy matches items to a keyword and sorts them by score.
-func FuzzySearch(items []model.MenuItem, keyword string,
-	preserveOrder bool, limit int) []model.MenuItem {
-	entries := make([]string, len(items))
-	for i, item := range items {
-		entries[i] = item.Title
-	}
-
-	matches := fuzzy.Find(keyword, entries)
-	results := make([]model.MenuItem, 0)
-	sort.Slice(matches, func(i, j int) bool {
-		if matches[i].Score == matches[j].Score {
-			return matches[i].Index < matches[j].Index
-		}
-		return matches[i].Score > matches[j].Score
-	})
-	matches = matches[:min(limit, len(matches))]
-	if !preserveOrder {
-		for _, match := range matches {
-			results = append(results, items[match.Index])
-		}
-		return results
-	}
-	matchIndices := make([]int, 0, len(matches))
-	for _, match := range matches {
-		matchIndices = append(matchIndices, match.Index)
-	}
-	sort.Slice(matchIndices, func(i, j int) bool {
-		return matchIndices[i] < matchIndices[j]
-	})
-	for _, ogIndex := range matchIndices {
-		results = append(results, items[ogIndex])
-	}
-
-	return results
-}
-
-var SearchMethods = map[string]SearchMethod{
-	"direct": DirectSearch,
-	"fuzzy":  FuzzySearch,
-}
 
 type Menu struct {
 	items      []model.MenuItem
