@@ -259,7 +259,9 @@ func (g *GMenu) setupUI() {
 	queryChan := make(chan string)
 
 	g.app = app.New()
-	g.app.Settings().SetTheme(render.MainTheme{theme.DefaultTheme()})
+	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
+	minWidth := float32(500)
+	minHeight := float32(300)
 
 	g.app.Lifecycle().SetOnExitedForeground(func() {
 		if g.ExitCode == unsetInt {
@@ -301,6 +303,14 @@ func (g *GMenu) setupUI() {
 		queryChan <- text
 	}
 
+	resizeBasedOnResults := func() {
+		size := fyne.NewSize(minWidth, minHeight)
+		resultsSize := itemsCanvas.Container.Size()
+		size.Width = max(minWidth, resultsSize.Width)
+		size.Height = resultsSize.Height
+		myWindow.Resize(size)
+	}
+
 	go func() {
 		for {
 			select {
@@ -308,6 +318,7 @@ func (g *GMenu) setupUI() {
 				g.menu.Search(query)
 				menuLabel.SetText(matchCounterLabel())
 				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+				resizeBasedOnResults()
 			case items := <-g.menu.ItemsChan:
 				g.menu.itemsMutex.Lock()
 				g.menu.items = items
@@ -351,9 +362,8 @@ func (g *GMenu) setupUI() {
 	searchEntry.OnKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
+	myWindow.Resize(fyne.NewSize(minWidth, minHeight))
 	mainContainer.Add(itemsCanvas.Container)
-	windowSize := fyne.NewSize(800, 300)
-	myWindow.Resize(windowSize)
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.Show()
 }
