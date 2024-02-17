@@ -52,7 +52,8 @@ func NewMenu(
 	searchMethod SearchMethod,
 	preserveOrder bool,
 ) *Menu {
-	m := Menu{Selected: 0,
+	m := Menu{
+		Selected:      0,
 		SearchMethod:  searchMethod,
 		resultLimit:   10,
 		ItemsChan:     make(chan []model.MenuItem),
@@ -346,10 +347,10 @@ func (g *GMenu) setupUI() {
 	searchEntry.onKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
-	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Container)
-	mainContainer.Add(resultsContainer)
-	myWindow.Resize(fyne.NewSize(800, 300))
-
+	mainContainer.Add(menuLabel)
+	mainContainer.Add(itemsCanvas.Container)
+	windowSize := fyne.NewSize(800, 300)
+	myWindow.Resize(windowSize)
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.Show()
 }

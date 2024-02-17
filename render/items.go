@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/hamidzr/gmenu/model"
@@ -39,22 +40,37 @@ func (c *ItemsCanvas) ItemText(item model.MenuItem) string {
 
 // Render updates the container with items, highlighting the selected one.
 func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
-	c.Container.Objects = nil
+	c.Container.Objects = nil // Clear current items
 
 	for i, item := range items {
-		label := widget.NewLabel(c.ItemText(item))
+		text := c.ItemText(item)
+
+		// Create a label for the item
+		label := widget.NewLabel(text)
+		label.Wrapping = fyne.TextTruncate // Ensure text fits within the container
+
+		// Create a background for the label
+		background := canvas.NewRectangle(theme.BackgroundColor())
 		if i == selected {
 			// Highlight the selected item
 			label.TextStyle = fyne.TextStyle{Bold: true}
-			background := canvas.NewRectangle(theme.PrimaryColor())
 			background.FillColor = theme.PrimaryColor()
-			border := container.NewWithoutLayout(background, label)
-			background.Resize(border.Size())
-			c.Container.Add(border)
 		} else {
-			c.Container.Add(label)
+			// Optional: Add a border or separator for unselected items
+			// This can be adjusted to your preference
+			background.StrokeColor = theme.ShadowColor()
+			background.FillColor = theme.BackgroundColor()
+			background.StrokeWidth = 1
 		}
+
+		// Create a container for the label with the background
+		// Use MaxLayout to ensure the label fills the width
+		itemContainer := container.NewMax(background, label)
+		itemContainer.Layout = layout.NewMaxLayout()
+
+		c.Container.Add(itemContainer)
 	}
 
-	c.Container.Refresh()
+	c.Container.Add(layout.NewSpacer()) // Add a final spacer for consistent look
+	c.Container.Refresh()               // Refresh the container to apply changes
 }
