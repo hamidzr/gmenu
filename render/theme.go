@@ -12,9 +12,9 @@ type MainTheme struct {
 func defaultThemeSizes() map[fyne.ThemeSizeName]float32 {
 	sizes := map[fyne.ThemeSizeName]float32{
 		theme.SizeNameInlineIcon:         float32(24),
-		theme.SizeNameInnerPadding:       float32(14),
-		theme.SizeNameLineSpacing:        float32(6),
-		theme.SizeNamePadding:            float32(10),
+		theme.SizeNameInnerPadding:       float32(10),
+		theme.SizeNameLineSpacing:        float32(2),
+		theme.SizeNamePadding:            float32(0),
 		theme.SizeNameScrollBar:          float32(10),
 		theme.SizeNameScrollBarSmall:     float32(2),
 		theme.SizeNameSeparatorThickness: float32(1),

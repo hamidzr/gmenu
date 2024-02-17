@@ -1,6 +1,8 @@
 package render
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -49,17 +51,13 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 		label := widget.NewLabel(text)
 		label.Wrapping = fyne.TextTruncate // Ensure text fits within the container
 
-		// Create a background for the label
 		background := canvas.NewRectangle(theme.BackgroundColor())
 		if i == selected {
 			// Highlight the selected item
 			label.TextStyle = fyne.TextStyle{Bold: true}
 			background.FillColor = theme.PrimaryColor()
 		} else {
-			// Optional: Add a border or separator for unselected items
-			// This can be adjusted to your preference
-			background.StrokeColor = theme.ShadowColor()
-			background.FillColor = theme.BackgroundColor()
+			background.StrokeColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
 			background.StrokeWidth = 1
 		}
 
