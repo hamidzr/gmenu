@@ -5,21 +5,21 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// CustomEntry is a widget.Entry that captures certain key events.
-type CustomEntry struct {
+// SearchEntry is a widget.Entry that captures certain key events.
+type SearchEntry struct {
 	widget.Entry
 	OnKeyDown    func(key *fyne.KeyEvent)
 	DisabledKeys map[fyne.KeyName]bool
 }
 
 // SelectAll selects all text in the entry.
-func (e *CustomEntry) SelectAll() {
+func (e *SearchEntry) SelectAll() {
 	// TODO: this cannot select anything outside non-alphanumeric characters.
 	e.Entry.DoubleTapped(nil)
 }
 
 // TypedKey implements the fyne.TypedKeyReceiver interface.
-func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
+func (e *SearchEntry) TypedKey(key *fyne.KeyEvent) {
 	if e.OnKeyDown != nil {
 		e.OnKeyDown(key)
 	}

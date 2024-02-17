@@ -28,7 +28,7 @@ const (
 	unsetInt = -1
 )
 
-type Menu struct {
+type menu struct {
 	items      []model.MenuItem
 	query      string
 	itemsMutex sync.Mutex
@@ -46,13 +46,13 @@ type Menu struct {
 	preserveOrder bool
 }
 
-func NewMenu(
+func newMenu(
 	itemTitles []string,
 	initValue string,
 	searchMethod SearchMethod,
 	preserveOrder bool,
-) *Menu {
-	m := Menu{
+) *menu {
+	m := menu{
 		Selected:      0,
 		SearchMethod:  searchMethod,
 		resultLimit:   10,
@@ -72,7 +72,7 @@ func NewMenu(
 }
 
 // Filters the menu filtered list to only include items that match the keyword.
-func (m *Menu) Search(keyword string) {
+func (m *menu) Search(keyword string) {
 	m.queryMutex.Lock()
 	m.query = keyword
 	m.queryMutex.Unlock()
@@ -92,7 +92,7 @@ func (m *Menu) Search(keyword string) {
 	}
 }
 
-func (m *Menu) titlesToMenuItem(titles []string) []model.MenuItem {
+func (m *menu) titlesToMenuItem(titles []string) []model.MenuItem {
 	items := make([]model.MenuItem, len(titles))
 	for i, entry := range titles {
 		items[i] = model.MenuItem{Title: entry}
@@ -100,11 +100,12 @@ func (m *Menu) titlesToMenuItem(titles []string) []model.MenuItem {
 	return items
 }
 
+// GMenu is the main application struct for GoMenu.
 type GMenu struct {
 	AppTitle string
 	prompt   string
 	menuID   string
-	menu     *Menu
+	menu     *menu
 	app      fyne.App
 	store    store.Store
 	ExitCode int
@@ -137,7 +138,7 @@ func NewGMenu(
 		}
 
 	}
-	menu := NewMenu(initialItems, lastEntry, searchMethod, preserveOrder)
+	menu := newMenu(initialItems, lastEntry, searchMethod, preserveOrder)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,
@@ -199,10 +200,12 @@ func (g *GMenu) addItems(items []string, tail bool) {
 	g.menu.ItemsChan <- newItems
 }
 
+// PrependItems adds items to the beginning of the menu.
 func (g *GMenu) PrependItems(items []string) {
 	g.addItems(items, false)
 }
 
+// AppendItems adds items to the end of the menu.
 func (g *GMenu) AppendItems(items []string) {
 	g.addItems(items, true)
 }
@@ -224,7 +227,7 @@ func (g *GMenu) cacheSelectedVal(value string) error {
 	return nil
 }
 
-// SelectedItem returns the selected item.
+// SelectedValue returns the selected item.
 func (g *GMenu) SelectedValue() (string, error) {
 	// TODO: check if the app is running. using the doneChan?
 	if g.ExitCode == unsetInt {
@@ -275,7 +278,7 @@ func (g *GMenu) setupUI() {
 		fyne.KeyUp:   true,
 		fyne.KeyDown: true,
 	}
-	searchEntry := &render.CustomEntry{DisabledKeys: entryDisabledKeys}
+	searchEntry := &render.SearchEntry{DisabledKeys: entryDisabledKeys}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.SetText(g.menu.query)
