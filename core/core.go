@@ -322,10 +322,15 @@ func (g *GMenu) setupUI() {
 		case fyne.KeyDown:
 			if g.menu.Selected < len(g.menu.Filtered)-1 {
 				g.menu.Selected++
+			} else { // wrap
+				g.menu.Selected = 0
 			}
+
 		case fyne.KeyUp:
 			if g.menu.Selected > 0 {
 				g.menu.Selected--
+			} else { // wrap
+				g.menu.Selected = len(g.menu.Filtered) - 1
 			}
 		case fyne.KeyReturn:
 			searchEntry.Disable()
