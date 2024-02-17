@@ -275,7 +275,7 @@ func (g *GMenu) setupUI() {
 		fyne.KeyUp:   true,
 		fyne.KeyDown: true,
 	}
-	searchEntry := &CustomEntry{disabledKeys: entryDisabledKeys}
+	searchEntry := &render.CustomEntry{DisabledKeys: entryDisabledKeys}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.SetText(g.menu.query)
@@ -344,7 +344,7 @@ func (g *GMenu) setupUI() {
 		itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 	}
 
-	searchEntry.onKeyDown = keyHandler
+	searchEntry.OnKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
 	mainContainer.Add(menuLabel)
@@ -353,32 +353,6 @@ func (g *GMenu) setupUI() {
 	myWindow.Resize(windowSize)
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.Show()
-}
-
-// CustomEntry is a widget.Entry that captures certain key events.
-type CustomEntry struct {
-	widget.Entry
-	onKeyDown    func(key *fyne.KeyEvent)
-	disabledKeys map[fyne.KeyName]bool
-}
-
-// SelectAll selects all text in the entry.
-func (e *CustomEntry) SelectAll() {
-	// TODO: this cannot select anything outside non-alphanumeric characters.
-	e.Entry.DoubleTapped(nil)
-}
-
-// TypedKey implements the fyne.TypedKeyReceiver interface.
-func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
-	if e.onKeyDown != nil {
-		e.onKeyDown(key)
-	}
-	if e.disabledKeys != nil {
-		if e.disabledKeys[key.Name] {
-			return
-		}
-	}
-	e.Entry.TypedKey(key)
 }
 
 func createPidFile(name string) (string, error) {
