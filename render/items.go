@@ -54,7 +54,7 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 		background := canvas.NewRectangle(theme.BackgroundColor())
 		if i == selected {
 			// Highlight the selected item
-			label.TextStyle = fyne.TextStyle{Bold: true}
+			// label.TextStyle = fyne.TextStyle{Bold: true}
 			background.FillColor = theme.PrimaryColor()
 		} else {
 			background.StrokeColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
