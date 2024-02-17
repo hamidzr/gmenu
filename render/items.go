@@ -13,6 +13,7 @@ import (
 render a list of items
 */
 
+// ItemsCanvas is a container for showing a list of items.
 type ItemsCanvas struct {
 	Container   *fyne.Container
 	LengthLimit int
@@ -38,7 +39,6 @@ func (c *ItemsCanvas) ItemText(item model.MenuItem) string {
 
 // Render updates the container with items, highlighting the selected one.
 func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
-	// Clear existing items
 	c.Container.Objects = nil
 
 	for i, item := range items {
@@ -49,8 +49,6 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 			background := canvas.NewRectangle(theme.PrimaryColor())
 			background.FillColor = theme.PrimaryColor()
 			border := container.NewWithoutLayout(background, label)
-			border.Resize(fyne.NewSize(label.MinSize().Width+16, label.MinSize().Height+8))
-			label.Move(fyne.NewPos(8, 4))
 			background.Resize(border.Size())
 			c.Container.Add(border)
 		} else {
@@ -58,6 +56,5 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 		}
 	}
 
-	// Refresh the container to apply changes
 	c.Container.Refresh()
 }
