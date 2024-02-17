@@ -3,7 +3,6 @@ package render
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -39,6 +38,6 @@ func NewInputArea(searchEntry *SearchEntry, matchLabel *widget.Label) *fyne.Cont
 		searchEntry,
 		matchLabel,
 	)
-	cont.Layout = layout.NewGridLayoutWithColumns(2)
+	cont.Layout = NewProportionalLayout(100)
 	return cont
 }
