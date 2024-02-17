@@ -1,12 +1,12 @@
 package render
 
 import (
-	"fmt"
-
-	"github.com/hamidzr/gmenu/model"
-
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/hamidzr/gmenu/model"
 )
 
 /*
@@ -14,21 +14,21 @@ render a list of items
 */
 
 type ItemsCanvas struct {
-	*widget.Label
+	Container   *fyne.Container
 	LengthLimit int
 }
 
+// NewItemsCanvas initializes ItemsCanvas with a container.
 func NewItemsCanvas() *ItemsCanvas {
-	label := widget.NewLabel("")
-	// label.Wrapping = fyne.TextWrapWord
-	label.Wrapping = fyne.TextTruncate
-
+	// Create an empty container for items
+	cont := container.NewVBox()
 	return &ItemsCanvas{
-		Label:       label,
+		Container:   cont,
 		LengthLimit: 999,
 	}
 }
 
+// ItemText shortens item text if necessary.
 func (c *ItemsCanvas) ItemText(item model.MenuItem) string {
 	if len(item.Title) > c.LengthLimit {
 		return item.Title[:c.LengthLimit] + "..."
@@ -36,14 +36,28 @@ func (c *ItemsCanvas) ItemText(item model.MenuItem) string {
 	return item.Title
 }
 
+// Render updates the container with items, highlighting the selected one.
 func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
-	curText := "\n"
+	// Clear existing items
+	c.Container.Objects = nil
+
 	for i, item := range items {
+		label := widget.NewLabel(c.ItemText(item))
 		if i == selected {
-			curText += fmt.Sprintf("-> %s\n", c.ItemText(item))
+			// Highlight the selected item
+			label.TextStyle = fyne.TextStyle{Bold: true}
+			background := canvas.NewRectangle(theme.PrimaryColor())
+			background.FillColor = theme.PrimaryColor()
+			border := container.NewWithoutLayout(background, label)
+			border.Resize(fyne.NewSize(label.MinSize().Width+16, label.MinSize().Height+8))
+			label.Move(fyne.NewPos(8, 4))
+			background.Resize(border.Size())
+			c.Container.Add(border)
 		} else {
-			curText += fmt.Sprintf("   %s\n", c.ItemText(item))
+			c.Container.Add(label)
 		}
 	}
-	c.SetText(curText)
+
+	// Refresh the container to apply changes
+	c.Container.Refresh()
 }

@@ -346,7 +346,7 @@ func (g *GMenu) setupUI() {
 	searchEntry.onKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
-	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Label)
+	resultsContainer := container.NewBorder(nil, nil, nil, nil, menuLabel, itemsCanvas.Container)
 	mainContainer.Add(resultsContainer)
 	myWindow.Resize(fyne.NewSize(800, 300))
 
