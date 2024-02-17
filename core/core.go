@@ -285,16 +285,17 @@ func (g *GMenu) setupUI() {
 	if g.menu.query != "" {
 		searchEntry.SelectAll()
 	}
-	mainContainer := container.NewVBox(searchEntry)
-	myWindow.SetContent(mainContainer)
-
 	itemsCanvas := render.NewItemsCanvas()
 	itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
-	// show match items out of total item count "Matched Items: [10/10]"
+	// show match items out of total item count.
 	matchCounterLabel := func() string {
-		return fmt.Sprintf("Matched Items: [%d/%d]", g.menu.MatchCount, len(g.menu.items))
+		return fmt.Sprintf("[%d/%d]", g.menu.MatchCount, len(g.menu.items))
 	}
 	menuLabel := widget.NewLabel(matchCounterLabel())
+
+	inputBox := render.NewInputArea(searchEntry, menuLabel)
+	mainContainer := container.NewVBox(inputBox)
+	myWindow.SetContent(mainContainer)
 
 	searchEntry.OnChanged = func(text string) {
 		queryChan <- text
@@ -350,7 +351,6 @@ func (g *GMenu) setupUI() {
 	searchEntry.OnKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
-	mainContainer.Add(menuLabel)
 	mainContainer.Add(itemsCanvas.Container)
 	windowSize := fyne.NewSize(800, 300)
 	myWindow.Resize(windowSize)

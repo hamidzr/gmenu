@@ -2,6 +2,8 @@ package render
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -29,4 +31,14 @@ func (e *SearchEntry) TypedKey(key *fyne.KeyEvent) {
 		}
 	}
 	e.Entry.TypedKey(key)
+}
+
+// NewInputArea returns a horizontal container with input widgets.
+func NewInputArea(searchEntry *SearchEntry, matchLabel *widget.Label) *fyne.Container {
+	cont := container.NewMax(
+		searchEntry,
+		matchLabel,
+	)
+	cont.Layout = layout.NewGridLayoutWithColumns(2)
+	return cont
 }
