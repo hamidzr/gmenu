@@ -168,17 +168,26 @@ func canBeHighlighted(entry string) bool {
 // Run starts the application.
 func (g *GMenu) Run() error {
 	pidFile, err := createPidFile(g.menuID)
-	defer func() {
-		if pidFile != "" {
-			os.Remove(pidFile)
-		}
-	}()
 	if err != nil {
 		g.Quit(1)
 		return err
 	}
 	g.app.Run()
-	return nil
+	if pidFile != "" {
+		if err := os.Remove(pidFile); err != nil {
+			fmt.Println("Failed to remove pid file:", pidFile)
+			return err
+		}
+	}
+	selectedVal, err := g.SelectedValue()
+	if err != nil {
+		if cacheErr := g.clearCache(); cacheErr != nil {
+			fmt.Println("Failed to clear cache:", cacheErr)
+		}
+		return err
+	}
+	err = g.cacheState(selectedVal)
+	return err
 }
 
 // SetItems sets the items to be displayed in the menu.
@@ -210,7 +219,24 @@ func (g *GMenu) AppendItems(items []string) {
 	g.addItems(items, true)
 }
 
-func (g *GMenu) cacheSelectedVal(value string) error {
+func (g *GMenu) clearCache() error {
+	if g.menuID == "" {
+		return nil
+	}
+	cache, err := g.store.LoadCache()
+	if err != nil {
+		return err
+	}
+	cache.SetLastInput("")
+	cache.SetLastEntry("")
+	err = g.store.SaveCache(cache)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *GMenu) cacheState(value string) error {
 	if g.menuID == "" {
 		// skip caching if menuID is not set.
 		return nil
@@ -240,10 +266,6 @@ func (g *GMenu) SelectedValue() (string, error) {
 	}
 	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
 		selected := g.menu.Filtered[g.menu.Selected].Title
-		err := g.cacheSelectedVal(selected)
-		if err != nil {
-			return "", err
-		}
 		return selected, nil
 	}
 	return g.menu.query, nil
