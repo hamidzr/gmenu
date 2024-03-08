@@ -7,10 +7,10 @@ import (
 	"github.com/hamidzr/gmenu/constants"
 )
 
-func ConfigDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", constants.ProjectName)
+func ConfigDir(menuID string) string {
+	return filepath.Join(os.Getenv("HOME"), ".config", constants.ProjectName, menuID)
 }
 
-func CacheDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".cache", constants.ProjectName)
+func CacheDir(menuID string) string {
+	return filepath.Join(os.Getenv("HOME"), ".cache", constants.ProjectName, menuID)
 }

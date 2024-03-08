@@ -121,15 +121,15 @@ func NewGMenu(
 	preserveOrder bool,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore(
-		store.CacheDir(),
-		store.ConfigDir(),
+		store.CacheDir(menuID),
+		store.ConfigDir(menuID),
 	)
 	if err != nil {
 		return nil, err
 	}
 	lastInput := ""
 	if menuID != "" {
-		cache, err := store.LoadCache(menuID)
+		cache, err := store.LoadCache()
 		if err != nil {
 			return nil, err
 		}
@@ -215,13 +215,13 @@ func (g *GMenu) cacheSelectedVal(value string) error {
 		// skip caching if menuID is not set.
 		return nil
 	}
-	cache, err := g.store.LoadCache(g.menuID)
+	cache, err := g.store.LoadCache()
 	if err != nil {
 		return err
 	}
 	cache.SetLastInput(g.menu.query)
 	cache.SetLastEntry(value)
-	err = g.store.SaveCache(g.menuID, cache)
+	err = g.store.SaveCache(cache)
 	if err != nil {
 		return err
 	}

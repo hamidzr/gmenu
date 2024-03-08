@@ -34,8 +34,8 @@ type Config struct {
 }
 
 type Store interface {
-	SaveCache(menuID string, data Cache) error
-	LoadCache(menuID string) (Cache, error)
-	SaveConfig(menuID string, config Config) error
-	LoadConfig(menuID string) (Config, error)
+	SaveCache(data Cache) error
+	LoadCache() (Cache, error)
+	SaveConfig(config Config) error
+	LoadConfig() (Config, error)
 }
