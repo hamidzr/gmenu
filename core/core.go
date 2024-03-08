@@ -401,10 +401,12 @@ func createPidFile(name string) (string, error) {
 
 	}
 	f, err := os.Create(pidFile)
-	defer f.Close()
 	if err != nil {
 		fmt.Println("Failed to create pid file")
+		if ferr := f.Close(); ferr != nil {
+			fmt.Println("Failed to close pid file:", ferr)
+		}
 		return "", err
 	}
-	return pidFile, nil
+	return pidFile, f.Close()
 }
