@@ -127,18 +127,18 @@ func NewGMenu(
 	if err != nil {
 		return nil, err
 	}
-	lastEntry := ""
+	lastInput := ""
 	if menuID != "" {
 		cache, err := store.LoadCache(menuID)
 		if err != nil {
 			return nil, err
 		}
-		if canBeHighlighted(cache.LastEntry) {
-			lastEntry = cache.LastEntry
+		if canBeHighlighted(cache.LastInput) {
+			lastInput = cache.LastInput
 		}
 
 	}
-	menu := newMenu(initialItems, lastEntry, searchMethod, preserveOrder)
+	menu := newMenu(initialItems, lastInput, searchMethod, preserveOrder)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,
@@ -219,6 +219,7 @@ func (g *GMenu) cacheSelectedVal(value string) error {
 	if err != nil {
 		return err
 	}
+	cache.SetLastInput(g.menu.query)
 	cache.SetLastEntry(value)
 	err = g.store.SaveCache(g.menuID, cache)
 	if err != nil {

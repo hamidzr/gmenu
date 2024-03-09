@@ -5,13 +5,21 @@ import "time"
 type Cache struct {
 	UsageCount       map[string]int `json:"usageCount"`
 	NotFoundAccepted []string       `json:"notFoundAccepted"`
-	LastEntry        string         `json:"lastEntry"`
-	LastEntryTime    int64          `json:"lastEntryTime"`
+	// LastEntry is the last entry that was selected by the user.
+	LastEntry     string `json:"lastEntry"`
+	LastEntryTime int64  `json:"lastEntryTime"`
+	// LastInput is the last input that was entered by the user.
+	LastInput string `json:"lastInput"`
 }
 
 func (c *Cache) SetLastEntry(entry string) {
 	c.LastEntry = entry
 	c.LastEntryTime = time.Now().Unix()
+}
+
+// SetLastInput sets the last input to the cache.
+func (c *Cache) SetLastInput(input string) {
+	c.LastInput = input
 }
 
 type Config struct {
