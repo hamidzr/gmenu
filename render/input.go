@@ -9,8 +9,8 @@ import (
 // SearchEntry is a widget.Entry that captures certain key events.
 type SearchEntry struct {
 	widget.Entry
-	OnKeyDown    func(key *fyne.KeyEvent)
-	DisabledKeys map[fyne.KeyName]bool
+	OnKeyDown            func(key *fyne.KeyEvent)
+	PropagationBlacklist map[fyne.KeyName]bool
 }
 
 // SelectAll selects all text in the entry.
@@ -19,13 +19,18 @@ func (e *SearchEntry) SelectAll() {
 	e.Entry.DoubleTapped(nil)
 }
 
+// AcceptsTab implements the fyne.Tabbable interface.
+func (e *SearchEntry) AcceptsTab() bool {
+	return true
+}
+
 // TypedKey implements the fyne.TypedKeyReceiver interface.
 func (e *SearchEntry) TypedKey(key *fyne.KeyEvent) {
 	if e.OnKeyDown != nil {
 		e.OnKeyDown(key)
 	}
-	if e.DisabledKeys != nil {
-		if e.DisabledKeys[key.Name] {
+	if e.PropagationBlacklist != nil {
+		if e.PropagationBlacklist[key.Name] {
 			return
 		}
 	}

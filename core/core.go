@@ -302,8 +302,9 @@ func (g *GMenu) setupUI() {
 	entryDisabledKeys := map[fyne.KeyName]bool{
 		fyne.KeyUp:   true,
 		fyne.KeyDown: true,
+		fyne.KeyTab:  true,
 	}
-	searchEntry := &render.SearchEntry{DisabledKeys: entryDisabledKeys}
+	searchEntry := &render.SearchEntry{PropagationBlacklist: entryDisabledKeys}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.SetText(g.menu.query)
@@ -358,7 +359,7 @@ func (g *GMenu) setupUI() {
 
 	keyHandler := func(key *fyne.KeyEvent) {
 		switch key.Name {
-		case fyne.KeyDown:
+		case fyne.KeyDown, fyne.KeyTab:
 			if g.menu.Selected < len(g.menu.Filtered)-1 {
 				g.menu.Selected++
 			} else { // wrap
