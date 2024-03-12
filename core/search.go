@@ -12,15 +12,19 @@ import (
 type SearchMethod func(items []model.MenuItem, query string,
 	preserveOrder bool, limit int) []model.MenuItem
 
-func isDirectMatch(item model.MenuItem, keyword string) bool {
-	return strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword))
+// IsDirectMatch checks if a string contains a keyword.
+func IsDirectMatch(s string, keyword string, smartMatch bool) bool {
+	if smartMatch && strings.ToLower(keyword) != keyword {
+		return strings.Contains(s, keyword)
+	}
+	return strings.Contains(strings.ToLower(s), strings.ToLower(keyword))
 }
 
 // DirectSearch matches items directly to a keyword.
 func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
 	matches := make([]model.MenuItem, 0)
 	for _, item := range items {
-		if isDirectMatch(item, keyword) {
+		if IsDirectMatch(item.Title, keyword, true) {
 			matches = append(matches, item)
 		}
 	}
@@ -49,7 +53,8 @@ func filterOutUnlikelyMatches(matches []fuzzy.Match) []fuzzy.Match {
 
 // FuzzySearch fuzzy matches items to a keyword and sorts them by score.
 func FuzzySearch(items []model.MenuItem, keyword string,
-	preserveOrder bool, limit int) []model.MenuItem {
+	preserveOrder bool, limit int,
+) []model.MenuItem {
 	entries := make([]string, len(items))
 	for i, item := range items {
 		entries[i] = item.Title
@@ -85,6 +90,7 @@ func FuzzySearch(items []model.MenuItem, keyword string,
 	return results
 }
 
+// SearchMethods is a map of search methods.
 var SearchMethods = map[string]SearchMethod{
 	"direct": DirectSearch,
 	"fuzzy":  FuzzySearch,
