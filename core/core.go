@@ -120,7 +120,7 @@ func NewGMenu(
 	searchMethod SearchMethod,
 	preserveOrder bool,
 ) (*GMenu, error) {
-	store, err := store.NewFileStore(menuID)
+	store, err := store.NewFileStore[store.Cache, store.Config](menuID)
 	if err != nil {
 		return nil, err
 	}

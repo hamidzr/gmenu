@@ -5,12 +5,14 @@ import (
 	"os"
 )
 
-type FileStore struct {
+// FileStore is a store that saves data to files in the cache and config directories.
+type FileStore[C any, Cfg any] struct {
 	cacheDir  string
 	configDir string
 }
 
-func NewFileStore(namespace string) (*FileStore, error) {
+// NewFileStore initializes a new FileStore with directories for cache and config.
+func NewFileStore[C any, Cfg any](namespace string) (*FileStore[C, Cfg], error) {
 	cacheDir := CacheDir(namespace)
 	configDir := ConfigDir(namespace)
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
@@ -19,13 +21,14 @@ func NewFileStore(namespace string) (*FileStore, error) {
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return nil, err
 	}
-	return &FileStore{
+	return &FileStore[C, Cfg]{
 		cacheDir:  cacheDir,
 		configDir: configDir,
 	}, nil
 }
 
-func (fs *FileStore) SaveCache(data Cache) error {
+// SaveCache serializes and saves the cache data to a file.
+func (fs *FileStore[C, Cfg]) SaveCache(data C) error {
 	serialized, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -34,10 +37,10 @@ func (fs *FileStore) SaveCache(data Cache) error {
 	return os.WriteFile(filePath, serialized, 0o644)
 }
 
-func (fs *FileStore) LoadCache() (Cache, error) {
-	var data Cache
+// LoadCache reads and deserializes the cache data from a file.
+func (fs *FileStore[C, Cfg]) LoadCache() (C, error) {
+	var data C
 	filePath := fs.cacheDir + "/cache.json"
-	// if file doesn't exist return empty cache
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return data, nil
 	}
@@ -49,7 +52,8 @@ func (fs *FileStore) LoadCache() (Cache, error) {
 	return data, err
 }
 
-func (fs *FileStore) SaveConfig(config Config) error {
+// SaveConfig serializes and saves the config data to a file.
+func (fs *FileStore[C, Cfg]) SaveConfig(config Cfg) error {
 	serialized, err := json.Marshal(config)
 	if err != nil {
 		return err
@@ -58,8 +62,9 @@ func (fs *FileStore) SaveConfig(config Config) error {
 	return os.WriteFile(filePath, serialized, 0o644)
 }
 
-func (fs *FileStore) LoadConfig() (Config, error) {
-	var config Config
+// LoadConfig reads and deserializes the config data from a file.
+func (fs *FileStore[C, Cfg]) LoadConfig() (Cfg, error) {
+	var config Cfg
 	filePath := fs.configDir + "/config.json"
 	serialized, err := os.ReadFile(filePath)
 	if err != nil {
