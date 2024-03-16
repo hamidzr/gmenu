@@ -2,7 +2,9 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // FileStore is a store that saves data to files in the cache and config directories.
@@ -12,9 +14,13 @@ type FileStore[C any, Cfg any] struct {
 }
 
 // NewFileStore initializes a new FileStore with directories for cache and config.
-func NewFileStore[C any, Cfg any](namespace string) (*FileStore[C, Cfg], error) {
-	cacheDir := CacheDir(namespace)
-	configDir := ConfigDir(namespace)
+func NewFileStore[C any, Cfg any](namespace []string) (*FileStore[C, Cfg], error) {
+	cacheDir := CacheDir("")
+	configDir := ConfigDir("")
+	for _, dir := range namespace {
+		cacheDir = filepath.Join(cacheDir, dir)
+		configDir = filepath.Join(configDir, dir)
+	}
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return nil, err
 	}
@@ -34,6 +40,7 @@ func (fs *FileStore[C, Cfg]) SaveCache(data C) error {
 		return err
 	}
 	filePath := fs.cacheDir + "/cache.json"
+	fmt.Println("Saving cache to", filePath)
 	return os.WriteFile(filePath, serialized, 0o644)
 }
 
