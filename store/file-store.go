@@ -10,7 +10,9 @@ type FileStore struct {
 	configDir string
 }
 
-func NewFileStore(cacheDir, configDir string) (*FileStore, error) {
+func NewFileStore(namespace string) (*FileStore, error) {
+	cacheDir := CacheDir(namespace)
+	configDir := ConfigDir(namespace)
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return nil, err
 	}
