@@ -13,6 +13,8 @@ type FileStore[C any, Cfg any] struct {
 	configDir string
 }
 
+// TODO cache and cofnig logic are the same.
+
 // NewFileStore initializes a new FileStore with directories for cache and config.
 func NewFileStore[C any, Cfg any](namespace []string) (*FileStore[C, Cfg], error) {
 	cacheDir := CacheDir("")

@@ -57,15 +57,16 @@ func calculateInsertions(str1, str2 string) int {
 func FuzzySearchV2(items []model.MenuItem, query string, preserveOrder bool, limit int) []model.MenuItem {
 	// var results []string
 	matchedList := make([]model.MenuItem, 0)
+	fmt.Println("Query, order, limit ", query, preserveOrder, limit)
 
 	for _, item := range items {
 		// distance := levenshtein.DistanceForStrings([]rune(query), []rune(item.Title), levenshtein.DefaultOptions)
 		distance := calculateInsertions(query, item.Title)
 		maxLen := max(len(query), len(item.Title))
 		score := 100 - (distance * 100 / maxLen) // Convert distance to a similarity score
-		fmt.Println(distance, " ", item.Title, " ", query, score)
 
-		if score > 50 { // You can adjust this threshold as needed
+		if score > 0 { // You can adjust this threshold as needed
+			fmt.Println(distance, " ", item.Title, " ", query, score)
 			// result := fmt.Sprintf("%s (Score: %d%%)", item, score)
 			matchedList = append(matchedList, item)
 		}
@@ -82,7 +83,25 @@ func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []m
 			matches = append(matches, item)
 		}
 	}
+	if limit == 0 {
+		return matches
+	}
 	return matches[:min(limit, len(matches))]
+}
+
+// DirectSearchWithSeparator breaks down the keyword into subqueries.
+func DirectSearchWithSeparator(separator string) SearchMethod {
+	search := func(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
+		// split keyword into words
+		subQs := strings.Split(keyword, separator)
+		newSubset := items // copy?
+		// matches := make([]model.MenuItem, 0)
+		for _, subQ := range subQs {
+			newSubset = DirectSearch(newSubset, subQ, false, 0)
+		}
+		return newSubset[:min(limit, len(newSubset))]
+	}
+	return search
 }
 
 // filterOutUnlikelyMatches takes in a sorted list of fuzzy matches and returns

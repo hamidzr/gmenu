@@ -1,10 +1,9 @@
 # gmenu / gomenu
 
-
 ## TODO
 
 - remember last entry and have it auto selected on start.
-    - or put it as the first option..
+  - or put it as the first option..
 - [x] close on focus loss
 - [ ] instance lock only based on menu name. pid
 - app should have a name for activity monitor and ps faux
@@ -12,8 +11,9 @@
 - [x] the current fuzzy search is not great
 - add cli support for same behavior but in the terminal
 - survey dmenu option to provide compatibility
-    - add prompt option
+  - add prompt option
 - preserve original input order on startup (and resets?)
+- simple fuzzy to ignore some letters eg space - \_
 
 ```
 choose:
