@@ -204,6 +204,7 @@ func (g *GMenu) addItems(items []string, tail bool) {
 	}
 	g.menu.itemsMutex.Unlock()
 	g.menu.ItemsChan <- newItems
+	// TODO: add using SetItems?
 }
 
 // PrependItems adds items to the beginning of the menu.
@@ -342,7 +343,15 @@ func (g *GMenu) setupUI() {
 				resizeBasedOnResults()
 			case items := <-g.menu.ItemsChan:
 				g.menu.itemsMutex.Lock()
-				g.menu.items = items
+				deduplicated := make([]model.MenuItem, 0)
+				seen := make(map[string]struct{})
+				for _, item := range items {
+					if _, ok := seen[item.Title]; !ok {
+						seen[item.Title] = struct{}{}
+						deduplicated = append(deduplicated, item)
+					}
+				}
+				g.menu.items = deduplicated
 				g.menu.itemsMutex.Unlock()
 				g.menu.Search(g.menu.query)
 				menuLabel.SetText(matchCounterLabel())
