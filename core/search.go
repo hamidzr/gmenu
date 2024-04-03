@@ -14,7 +14,7 @@ type SearchMethod func(items []model.MenuItem, query string,
 	preserveOrder bool, limit int) []model.MenuItem
 
 // IsDirectMatch checks if a string contains a keyword.
-func IsDirectMatch(s string, keyword string, smartMatch bool) bool {
+func IsDirectMatch(s, keyword string, smartMatch bool) bool {
 	if smartMatch && strings.ToLower(keyword) != keyword {
 		return strings.Contains(s, keyword)
 	}
@@ -54,6 +54,20 @@ func calculateInsertions(str1, str2 string) int {
 	return insertions
 }
 
+// fuzzyContains checks if all characters in the query exist in the title in order.
+func fuzzyContains(title, query string) bool {
+	queryIndex := 0
+	for i := 0; i < len(title); i++ {
+		if title[i] == query[queryIndex] {
+			queryIndex++
+			if queryIndex == len(query) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func FuzzySearchV2(items []model.MenuItem, query string, preserveOrder bool, limit int) []model.MenuItem {
 	// var results []string
 	matchedList := make([]model.MenuItem, 0)
@@ -75,6 +89,13 @@ func FuzzySearchV2(items []model.MenuItem, query string, preserveOrder bool, lim
 	return matchedList
 }
 
+func applyLimit(matches []model.MenuItem, limit int) []model.MenuItem {
+	if limit == 0 {
+		return matches
+	}
+	return matches[:min(limit, len(matches))]
+}
+
 // DirectSearch matches items directly to a keyword.
 func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
 	matches := make([]model.MenuItem, 0)
@@ -83,25 +104,38 @@ func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []m
 			matches = append(matches, item)
 		}
 	}
-	if limit == 0 {
-		return matches
-	}
-	return matches[:min(limit, len(matches))]
+	return applyLimit(matches, limit)
 }
 
-// DirectSearchWithSeparator breaks down the keyword into subqueries.
-func DirectSearchWithSeparator(separator string) SearchMethod {
-	search := func(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
+// FuzzySearchBrute is a brute force fuzzy search.
+func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
+	matches := make([]model.MenuItem, 0)
+	for _, item := range items {
+		if fuzzyContains(item.Title, keyword) {
+			matches = append(matches, item)
+		}
+	}
+	return applyLimit(matches, limit)
+}
+
+// SearchWithSeparator breaks down the keyword into subqueries.
+func SearchWithSeparator(separator string, searchMethod SearchMethod) SearchMethod {
+	search := func(items []model.MenuItem, keyword string, preserveOrder bool, limit int) []model.MenuItem {
 		// split keyword into words
 		subQs := strings.Split(keyword, separator)
 		newSubset := items // copy?
 		// matches := make([]model.MenuItem, 0)
 		for _, subQ := range subQs {
-			newSubset = DirectSearch(newSubset, subQ, false, 0)
+			newSubset = searchMethod(newSubset, subQ, false, 0)
 		}
 		return newSubset[:min(limit, len(newSubset))]
 	}
 	return search
+}
+
+// DirectSearchWithSeparator is a direct search with a separator.
+func DirectSearchWithSeparator(separator string) SearchMethod {
+	return SearchWithSeparator(separator, DirectSearch)
 }
 
 // filterOutUnlikelyMatches takes in a sorted list of fuzzy matches and returns
@@ -165,7 +199,10 @@ func FuzzySearch(items []model.MenuItem, keyword string,
 
 // SearchMethods is a map of search methods.
 var SearchMethods = map[string]SearchMethod{
-	"direct": DirectSearch,
-	"fuzzy":  FuzzySearch,
-	"fuzzy2": FuzzySearchV2,
+	"direct":  DirectSearch,
+	"fuzzy":   SearchWithSeparator(" ", FuzzySearchBrute),
+	"fuzzy1":  FuzzySearch,
+	"fuzzy2":  FuzzySearchV2,
+	"fuzzy3":  FuzzySearchBrute,
+	"default": SearchWithSeparator(" ", FuzzySearchBrute),
 }
