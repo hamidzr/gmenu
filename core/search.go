@@ -68,6 +68,7 @@ func fuzzyContains(title, query string) bool {
 	return false
 }
 
+// FuzzySearchV2 is a fuzzy search that uses a different scoring mechanism.
 func FuzzySearchV2(items []model.MenuItem, query string, preserveOrder bool, limit int) []model.MenuItem {
 	// var results []string
 	matchedList := make([]model.MenuItem, 0)
@@ -108,14 +109,21 @@ func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []m
 }
 
 // FuzzySearchBrute is a brute force fuzzy search.
+// Direct matches are prioritized over fuzzy matches.
 func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
-	matches := make([]model.MenuItem, 0)
+	if keyword == "" {
+		return items
+	}
+	direcMatches := make([]model.MenuItem, 0)
+	fuzzyMatches := make([]model.MenuItem, 0)
 	for _, item := range items {
-		if fuzzyContains(item.Title, keyword) {
-			matches = append(matches, item)
+		if IsDirectMatch(item.Title, keyword, true) {
+			direcMatches = append(direcMatches, item)
+		} else if fuzzyContains(item.Title, keyword) {
+			fuzzyMatches = append(fuzzyMatches, item)
 		}
 	}
-	return applyLimit(matches, limit)
+	return applyLimit(append(direcMatches, fuzzyMatches...), limit)
 }
 
 // SearchWithSeparator breaks down the keyword into subqueries.

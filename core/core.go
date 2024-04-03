@@ -79,7 +79,10 @@ func (m *menu) Search(keyword string) {
 	if keyword == "" {
 		m.Filtered = m.items
 	} else {
+		// start := time.Now()
 		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder, m.resultLimit)
+		// elapsed := time.Since(start)
+		// fmt.Println("Search took", elapsed)
 	}
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
@@ -189,7 +192,9 @@ func (g *GMenu) Run() error {
 
 // SetItems sets the items to be displayed in the menu.
 func (g *GMenu) SetItems(items []string) {
+	g.menu.itemsMutex.Lock()
 	g.menu.ItemsChan <- g.menu.titlesToMenuItem(items)
+	g.menu.itemsMutex.Unlock()
 }
 
 // addItems adds items to the menu.
@@ -214,6 +219,7 @@ func (g *GMenu) PrependItems(items []string) {
 
 // AppendItems adds items to the end of the menu.
 func (g *GMenu) AppendItems(items []string) {
+	// fmt.Println("appending len items", len(items))
 	g.addItems(items, true)
 }
 
