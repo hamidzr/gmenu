@@ -2,7 +2,7 @@
 
 ## TODO
 
-- remember last entry and have it auto selected on start.
+- [x] remember last entry and have it auto selected on start.
   - or put it as the first option..
 - [x] close on focus loss
 - [ ] instance lock only based on menu name. pid
@@ -13,7 +13,8 @@
 - survey dmenu option to provide compatibility
   - add prompt option
 - preserve original input order on startup (and resets?)
-- simple fuzzy to ignore some letters eg space - \_
+- [x] simple fuzzy to ignore some letters eg space - \_
+- [ ] search: fuzzy with char presense check and relative count
 
 ```
 choose:
