@@ -54,11 +54,12 @@ func calculateInsertions(str1, str2 string) int {
 	return insertions
 }
 
-// fuzzyContains checks if all characters in the query exist in the title in order.
-func fuzzyContains(title, query string) bool {
+// fuzzyContains checks if all characters in the query exist in the string in order.
+// TODO: compute how many chars/ratio violate this?
+func fuzzyContains(s, query string) bool {
 	queryIndex := 0
-	for i := 0; i < len(title); i++ {
-		if title[i] == query[queryIndex] {
+	for i := 0; i < len(s); i++ {
+		if s[i] == query[queryIndex] {
 			queryIndex++
 			if queryIndex == len(query) {
 				return true
@@ -67,6 +68,10 @@ func fuzzyContains(title, query string) bool {
 	}
 	return false
 }
+
+// calculates the ratio of the query chars that exists in s in anyorder.
+// func matching(s, query string) float32 {
+// }
 
 // FuzzySearchV2 is a fuzzy search that uses a different scoring mechanism.
 func FuzzySearchV2(items []model.MenuItem, query string, preserveOrder bool, limit int) []model.MenuItem {
