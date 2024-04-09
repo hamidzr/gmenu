@@ -15,6 +15,7 @@
 - preserve original input order on startup (and resets?)
 - [x] simple fuzzy to ignore some letters eg space - \_
 - [ ] search: fuzzy with char presense check and relative count
+- auto pick single list of options. preapply a query as well
 
 ```
 choose:

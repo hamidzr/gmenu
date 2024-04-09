@@ -103,6 +103,12 @@ func (m *menu) titlesToMenuItem(titles []string) []model.MenuItem {
 	return items
 }
 
+// Dimensions define geometry of the application window.
+type Dimensions struct {
+	MinWidth  float32
+	MinHeight float32
+}
+
 // GMenu is the main application struct for GoMenu.
 type GMenu struct {
 	AppTitle string
@@ -112,6 +118,7 @@ type GMenu struct {
 	app      fyne.App
 	store    store.Store
 	ExitCode int
+	dims     Dimensions
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -146,6 +153,10 @@ func NewGMenu(
 		ExitCode: unsetInt,
 		menu:     menu,
 		store:    store,
+		dims: Dimensions{
+			MinWidth:  600,
+			MinHeight: 300,
+		},
 	}
 	g.setupUI()
 	return g, nil
@@ -287,8 +298,6 @@ func (g *GMenu) setupUI() {
 
 	g.app = app.New()
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
-	minWidth := float32(500)
-	minHeight := float32(300)
 
 	g.app.Lifecycle().SetOnExitedForeground(func() {
 		if g.ExitCode == unsetInt {
@@ -332,9 +341,9 @@ func (g *GMenu) setupUI() {
 	}
 
 	resizeBasedOnResults := func() {
-		size := fyne.NewSize(minWidth, minHeight)
+		size := fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight)
 		resultsSize := itemsCanvas.Container.Size()
-		size.Width = max(minWidth, resultsSize.Width)
+		size.Width = max(g.dims.MinWidth, resultsSize.Width)
 		size.Height = resultsSize.Height
 		myWindow.Resize(size)
 	}
@@ -398,7 +407,7 @@ func (g *GMenu) setupUI() {
 	searchEntry.OnKeyDown = keyHandler
 	myWindow.Canvas().SetOnTypedKey(keyHandler)
 
-	myWindow.Resize(fyne.NewSize(minWidth, minHeight))
+	myWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
 	mainContainer.Add(itemsCanvas.Container)
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.Show()
