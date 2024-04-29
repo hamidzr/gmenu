@@ -56,7 +56,10 @@ func calculateInsertions(str1, str2 string) int {
 
 // fuzzyContains checks if all characters in the query exist in the string in order.
 // TODO: compute how many chars/ratio violate this?
-func fuzzyContains(s, query string) bool {
+func fuzzyContains(s, query string, ignoreCase bool) bool {
+	if ignoreCase {
+		s, query = strings.ToLower(s), strings.ToLower(query)
+	}
 	queryIndex := 0
 	for i := 0; i < len(s); i++ {
 		if s[i] == query[queryIndex] {
@@ -124,7 +127,7 @@ func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int)
 	for _, item := range items {
 		if IsDirectMatch(item.Title, keyword, true) {
 			direcMatches = append(direcMatches, item)
-		} else if fuzzyContains(item.Title, keyword) {
+		} else if fuzzyContains(item.Title, keyword, true) {
 			fuzzyMatches = append(fuzzyMatches, item)
 		}
 	}
