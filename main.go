@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CliArgs is a struct to hold the root CLI arguments.
 type CliArgs struct {
 	// Title string
 	title string
@@ -32,7 +33,7 @@ var cliArgs = CliArgs{
 }
 
 func initCLI() *cobra.Command {
-	var RootCmd = &cobra.Command{
+	RootCmd := &cobra.Command{
 		Use:   "gmenu",
 		Short: "gmenu is a fuzzy menu selector",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -87,7 +88,7 @@ func run() {
 			gmenu.Quit(1)
 			return
 		}
-		gmenu.SetItems(items)
+		gmenu.SetItems(items, nil)
 	}()
 	if err := gmenu.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err, "run err")
@@ -101,7 +102,7 @@ func run() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Println(val)
+	fmt.Println(val.ComputedTitle())
 }
 
 func main() {

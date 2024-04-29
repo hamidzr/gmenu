@@ -197,14 +197,18 @@ func (g *GMenu) Run() error {
 		}
 		return err
 	}
-	err = g.cacheState(selectedVal)
+	err = g.cacheState(selectedVal.ComputedTitle())
 	return err
 }
 
 // SetItems sets the items to be displayed in the menu.
-func (g *GMenu) SetItems(items []string) {
+func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable) {
+	menuItems := g.menu.titlesToMenuItem(items)
+	for _, item := range serializables {
+		menuItems = append(menuItems, model.MenuItem{AType: &item})
+	}
 	g.menu.itemsMutex.Lock()
-	g.menu.ItemsChan <- g.menu.titlesToMenuItem(items)
+	g.menu.ItemsChan <- menuItems
 	g.menu.itemsMutex.Unlock()
 }
 
@@ -270,20 +274,20 @@ func (g *GMenu) cacheState(value string) error {
 }
 
 // SelectedValue returns the selected item.
-func (g *GMenu) SelectedValue() (string, error) {
+func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	// TODO: check if the app is running. using the doneChan?
 	if g.ExitCode == unsetInt {
-		return "", fmt.Errorf("gmenu has not exited yet")
+		return nil, fmt.Errorf("gmenu has not exited yet")
 	}
 	// TODO: cli option for allowing query.
 	if g.ExitCode != 0 {
-		return "", fmt.Errorf("gmenu exited with code %d", g.ExitCode)
+		return nil, fmt.Errorf("gmenu exited with code %d", g.ExitCode)
 	}
 	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
-		selected := g.menu.Filtered[g.menu.Selected].Title
-		return selected, nil
+		selected := g.menu.Filtered[g.menu.Selected]
+		return &selected, nil
 	}
-	return g.menu.query, nil
+	return &model.MenuItem{Title: g.menu.query}, nil
 }
 
 // Quit exits the application.
@@ -361,8 +365,8 @@ func (g *GMenu) setupUI() {
 				deduplicated := make([]model.MenuItem, 0)
 				seen := make(map[string]struct{})
 				for _, item := range items {
-					if _, ok := seen[item.Title]; !ok {
-						seen[item.Title] = struct{}{}
+					if _, ok := seen[item.ComputedTitle()]; !ok {
+						seen[item.ComputedTitle()] = struct{}{}
 						deduplicated = append(deduplicated, item)
 					}
 				}

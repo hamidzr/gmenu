@@ -84,12 +84,12 @@ func FuzzySearchV2(items []model.MenuItem, query string, preserveOrder bool, lim
 
 	for _, item := range items {
 		// distance := levenshtein.DistanceForStrings([]rune(query), []rune(item.Title), levenshtein.DefaultOptions)
-		distance := calculateInsertions(query, item.Title)
-		maxLen := max(len(query), len(item.Title))
+		distance := calculateInsertions(query, item.ComputedTitle())
+		maxLen := max(len(query), len(item.ComputedTitle()))
 		score := 100 - (distance * 100 / maxLen) // Convert distance to a similarity score
 
 		if score > 0 { // You can adjust this threshold as needed
-			fmt.Println(distance, " ", item.Title, " ", query, score)
+			fmt.Println(distance, " ", item.ComputedTitle(), " ", query, score)
 			// result := fmt.Sprintf("%s (Score: %d%%)", item, score)
 			matchedList = append(matchedList, item)
 		}
@@ -109,7 +109,7 @@ func applyLimit(matches []model.MenuItem, limit int) []model.MenuItem {
 func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
 	matches := make([]model.MenuItem, 0)
 	for _, item := range items {
-		if IsDirectMatch(item.Title, keyword, true) {
+		if IsDirectMatch(item.ComputedTitle(), keyword, true) {
 			matches = append(matches, item)
 		}
 	}
@@ -125,9 +125,9 @@ func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int)
 	direcMatches := make([]model.MenuItem, 0)
 	fuzzyMatches := make([]model.MenuItem, 0)
 	for _, item := range items {
-		if IsDirectMatch(item.Title, keyword, true) {
+		if IsDirectMatch(item.ComputedTitle(), keyword, true) {
 			direcMatches = append(direcMatches, item)
-		} else if fuzzyContains(item.Title, keyword, true) {
+		} else if fuzzyContains(item.ComputedTitle(), keyword, true) {
 			fuzzyMatches = append(fuzzyMatches, item)
 		}
 	}
@@ -180,7 +180,7 @@ func FuzzySearch(items []model.MenuItem, keyword string,
 ) []model.MenuItem {
 	entries := make([]string, len(items))
 	for i, item := range items {
-		entries[i] = item.Title
+		entries[i] = item.ComputedTitle()
 	}
 
 	matches := fuzzy.Find(keyword, entries)

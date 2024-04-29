@@ -34,10 +34,10 @@ func NewItemsCanvas() *ItemsCanvas {
 
 // ItemText shortens item text if necessary.
 func (c *ItemsCanvas) ItemText(item model.MenuItem) string {
-	if len(item.Title) > c.LengthLimit {
-		return item.Title[:c.LengthLimit] + "..."
+	if len(item.ComputedTitle()) > c.LengthLimit {
+		return item.ComputedTitle()[:c.LengthLimit] + "..."
 	}
-	return item.Title
+	return item.ComputedTitle()
 }
 
 // Render updates the container with items, highlighting the selected one.
