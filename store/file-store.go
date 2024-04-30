@@ -2,7 +2,6 @@ package store
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -42,7 +41,7 @@ func (fs *FileStore[C, Cfg]) SaveCache(data C) error {
 		return err
 	}
 	filePath := fs.cacheDir + "/cache.json"
-	fmt.Println("Saving cache to", filePath)
+	// fmt.Println("Saving cache to", filePath)
 	return os.WriteFile(filePath, serialized, 0o644)
 }
 
