@@ -205,7 +205,8 @@ func (g *GMenu) Run() error {
 func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable) {
 	menuItems := g.menu.titlesToMenuItem(items)
 	for _, item := range serializables {
-		menuItems = append(menuItems, model.MenuItem{AType: &item})
+		myItem := item
+		menuItems = append(menuItems, model.MenuItem{AType: &myItem})
 	}
 	g.menu.itemsMutex.Lock()
 	g.menu.ItemsChan <- menuItems
