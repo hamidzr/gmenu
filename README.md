@@ -2,6 +2,7 @@
 
 ## TODO
 
+- [ ] ctrl+c to work like esc
 - [x] remember last entry and have it auto selected on start.
   - or put it as the first option..
 - [x] close on focus loss
