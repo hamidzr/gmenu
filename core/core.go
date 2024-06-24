@@ -129,13 +129,14 @@ func NewGMenu(
 	menuID string,
 	searchMethod SearchMethod,
 	preserveOrder bool,
+	initialQuery string,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", menuID})
 	if err != nil {
 		return nil, err
 	}
 	lastInput := ""
-	if menuID != "" {
+	if menuID != "" && initialQuery == "" {
 		cache, err := store.LoadCache()
 		if err != nil {
 			return nil, err
@@ -143,9 +144,12 @@ func NewGMenu(
 		if canBeHighlighted(cache.LastInput) {
 			lastInput = cache.LastInput
 		}
-
 	}
-	menu := newMenu(initialItems, lastInput, searchMethod, preserveOrder)
+	initValue := lastInput
+	if initialQuery != "" {
+		initValue = initialQuery
+	}
+	menu := newMenu(initialItems, initValue, searchMethod, preserveOrder)
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,

@@ -22,6 +22,10 @@ type CliArgs struct {
 	searchMethod string
 	// Preserve the order of the input items.
 	preserveOrder bool
+	// initial query
+	initialQuery string
+	// TODO: Allow custom output.
+	// allowCustomOutput bool
 }
 
 var cliArgs = CliArgs{
@@ -30,6 +34,8 @@ var cliArgs = CliArgs{
 	menuID:        "",
 	searchMethod:  "fuzzy",
 	preserveOrder: false,
+	initialQuery:  "",
+	// allowCustomOutput: true,
 }
 
 func initCLI() *cobra.Command {
@@ -42,6 +48,7 @@ func initCLI() *cobra.Command {
 	}
 
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.title, "title", "t", cliArgs.title, "Title of the menu window")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.initialQuery, "initial-query", "q", cliArgs.initialQuery, "Initial query to search for")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.prompt, "prompt", "p", cliArgs.prompt, "Prompt of the menu window")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.menuID, "menu-id", "m", cliArgs.menuID, "Menu ID")
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.searchMethod, "search-method", "s", cliArgs.searchMethod, "Search method")
@@ -75,7 +82,7 @@ func run() {
 	}
 	gmenu, err := core.NewGMenu(
 		[]string{"Loading"}, cliArgs.title, cliArgs.prompt, cliArgs.menuID,
-		searchMethod, cliArgs.preserveOrder,
+		searchMethod, cliArgs.preserveOrder, cliArgs.initialQuery,
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err, "failed to create gmenu")
