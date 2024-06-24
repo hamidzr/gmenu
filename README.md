@@ -3,6 +3,7 @@
 ## TODO
 
 - [ ] ctrl+c to work like esc
+- [ ] no focus border color for input
 - [x] remember last entry and have it auto selected on start.
   - or put it as the first option..
 - [x] close on focus loss
@@ -15,8 +16,8 @@
   - add prompt option
 - preserve original input order on startup (and resets?)
 - [x] simple fuzzy to ignore some letters eg space - \_
-- [ ] search: fuzzy with char presense check and relative count
-- auto pick single list of options. preapply a query as well
+- [ ] search: fuzzy with char presence check and relative count
+- [ ] auto pick single list of options. preapply a query as well
 
 ```
 choose:
