@@ -2,6 +2,7 @@
 
 ## TODO
 
+- [ ] multiple selection: select two inputs for guillm.
 - [ ] ctrl+c to work like esc
 - [ ] no focus border color for input
 - [x] remember last entry and have it auto selected on start.
