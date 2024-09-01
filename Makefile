@@ -3,3 +3,6 @@ build:
 
 build-all:
 	bash ./scripts/build.sh
+
+test:
+	gotestsum -- ./...
