@@ -136,15 +136,16 @@ func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int)
 
 // SearchWithSeparator breaks down the keyword into subqueries.
 func SearchWithSeparator(separator string, searchMethod SearchMethod) SearchMethod {
-	search := func(items []model.MenuItem, keyword string, preserveOrder bool, limit int) []model.MenuItem {
+	search := func(items []model.MenuItem, query string, preserveOrder bool, limit int) []model.MenuItem {
 		// split keyword into words
-		subQs := strings.Split(keyword, separator)
-		newSubset := items // copy?
+		subQs := strings.Split(query, separator)
+		matchedSubset := items // copy?
 		// matches := make([]model.MenuItem, 0)
 		for _, subQ := range subQs {
-			newSubset = searchMethod(newSubset, subQ, false, 0)
+			fmt.Println("Subquery: ", subQ, "subset", matchedSubset)
+			matchedSubset = searchMethod(matchedSubset, subQ, false, 0)
 		}
-		return newSubset[:min(limit, len(newSubset))]
+		return matchedSubset[:min(limit, len(matchedSubset))]
 	}
 	return search
 }
