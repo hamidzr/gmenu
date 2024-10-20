@@ -11,6 +11,7 @@ type GmenuSerializable interface {
 type MenuItem struct {
 	Title string
 	AType *GmenuSerializable
+	Score int
 }
 
 // ComputedTitle returns the title of the menu item.
