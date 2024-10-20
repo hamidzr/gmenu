@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/hamidzr/gmenu/render"
 	"github.com/hamidzr/gmenu/store"
@@ -71,7 +72,7 @@ func NewGMenu(
 		prompt:   prompt,
 		AppTitle: title,
 		menuID:   menuID,
-		ExitCode: unsetInt,
+		ExitCode: constant.UnsetInt,
 		menu:     menu,
 		store:    store,
 		dims: Dimensions{

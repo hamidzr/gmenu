@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hamidzr/gmenu/constants"
+	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/core"
 	"github.com/hamidzr/gmenu/internal/logger"
 	"github.com/sirupsen/logrus"
@@ -31,7 +31,7 @@ type CliArgs struct {
 }
 
 var cliArgs = CliArgs{
-	title:         constants.ProjectName,
+	title:         constant.ProjectName,
 	prompt:        "Search",
 	menuID:        "",
 	searchMethod:  "fuzzy",

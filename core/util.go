@@ -3,26 +3,24 @@ package core
 import (
 	"fmt"
 	"os"
-)
 
-const (
-	unsetInt = -1
+	"github.com/sirupsen/logrus"
 )
 
 func createPidFile(name string) (string, error) {
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); err == nil {
-		fmt.Println("Another instance of gmenu is already running. Exiting.")
-		fmt.Println("If this is not the case, please delete the pid file:", pidFile)
+		logrus.Warn("Another instance of gmenu is already running. Exiting.")
+		logrus.Warn("If this is not the case, please delete the pid file:", pidFile)
 		return "", fmt.Errorf("pid file already exists")
 
 	}
 	f, err := os.Create(pidFile)
 	if err != nil {
-		fmt.Println("Failed to create pid file")
+		logrus.Error("Failed to create pid file")
 		if ferr := f.Close(); ferr != nil {
-			fmt.Println("Failed to close pid file:", ferr)
+			logrus.Error("Failed to close pid file:", ferr)
 		}
 		return "", err
 	}
