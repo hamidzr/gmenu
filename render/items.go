@@ -49,7 +49,7 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 
 		// Create a label for the item
 		label := widget.NewLabel(text)
-		label.Wrapping = fyne.TextTruncate // Ensure text fits within the container
+		label.Truncation = fyne.TextTruncateEllipsis
 
 		background := canvas.NewRectangle(theme.BackgroundColor())
 		if i == selected {
@@ -63,7 +63,7 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 
 		// Create a container for the label with the background
 		// Use MaxLayout to ensure the label fills the width
-		itemContainer := container.NewMax(background, label)
+		itemContainer := container.NewStack(background, label)
 		itemContainer.Layout = layout.NewMaxLayout()
 
 		c.Container.Add(itemContainer)

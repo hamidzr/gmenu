@@ -187,7 +187,7 @@ func (g *GMenu) cacheState(value string) error {
 // SelectedValue returns the selected item.
 func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	// TODO: check if the app is running. using the doneChan?
-	if g.ExitCode == unsetInt {
+	if g.ExitCode == constant.UnsetInt {
 		return nil, fmt.Errorf("gmenu has not exited yet")
 	}
 	// TODO: cli option for allowing query.
@@ -215,7 +215,7 @@ func (g *GMenu) setupUI() {
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
 
 	g.app.Lifecycle().SetOnExitedForeground(func() {
-		if g.ExitCode == unsetInt {
+		if g.ExitCode == constant.UnsetInt {
 			g.Quit(1)
 		}
 	})

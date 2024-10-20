@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/model"
 )
 
@@ -66,7 +67,7 @@ func (m *menu) Search(keyword string) {
 	if len(m.Filtered) > 0 {
 		m.Selected = 0
 	} else {
-		m.Selected = unsetInt
+		m.Selected = constant.UnsetInt
 	}
 	m.MatchCount = len(m.Filtered)
 	if len(m.Filtered) > m.resultLimit {
