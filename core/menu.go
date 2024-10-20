@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/hamidzr/gmenu/model"
@@ -29,7 +30,7 @@ func newMenu(
 	initValue string,
 	searchMethod SearchMethod,
 	preserveOrder bool,
-) *menu {
+) (*menu, error) {
 	m := menu{
 		Selected:      0,
 		SearchMethod:  searchMethod,
@@ -42,11 +43,11 @@ func newMenu(
 	m.items = items
 
 	if len(items) == 0 {
-		panic("Menu must have at least one item")
+		return nil, errors.New("Menu must have at least one item")
 	}
 
 	m.Search(initValue)
-	return &m
+	return &m, nil
 }
 
 // Filters the menu filtered list to only include items that match the keyword.

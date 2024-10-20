@@ -63,7 +63,10 @@ func NewGMenu(
 	if initialQuery != "" {
 		initValue = initialQuery
 	}
-	menu := newMenu(initialItems, initValue, searchMethod, preserveOrder)
+	menu, err := newMenu(initialItems, initValue, searchMethod, preserveOrder)
+	if err != nil {
+		return nil, err
+	}
 	g := &GMenu{
 		prompt:   prompt,
 		AppTitle: title,
