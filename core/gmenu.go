@@ -3,12 +3,7 @@ package core
 import (
 	"fmt"
 	"os"
-	"sync"
 	"time"
-
-	"github.com/hamidzr/gmenu/model"
-	"github.com/hamidzr/gmenu/render"
-	"github.com/hamidzr/gmenu/store"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -16,92 +11,11 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/hamidzr/gmenu/model"
+	"github.com/hamidzr/gmenu/render"
+	"github.com/hamidzr/gmenu/store"
+	"github.com/sirupsen/logrus"
 )
-
-/*
-TODO:
-- on failure clean up the pid file
-
-*/
-
-const (
-	unsetInt = -1
-)
-
-type menu struct {
-	items      []model.MenuItem
-	query      string
-	itemsMutex sync.Mutex
-	queryMutex sync.Mutex
-	ItemsChan  chan []model.MenuItem
-
-	Filtered []model.MenuItem
-	// zero-based index of the selected item in the filtered list
-	Selected int
-	// ResultText   string
-	// MatchCount is the number of items that matched the search query.
-	MatchCount    int
-	SearchMethod  SearchMethod
-	resultLimit   int
-	preserveOrder bool
-}
-
-func newMenu(
-	itemTitles []string,
-	initValue string,
-	searchMethod SearchMethod,
-	preserveOrder bool,
-) *menu {
-	m := menu{
-		Selected:      0,
-		SearchMethod:  searchMethod,
-		resultLimit:   10,
-		ItemsChan:     make(chan []model.MenuItem),
-		query:         initValue,
-		preserveOrder: preserveOrder,
-	}
-	items := m.titlesToMenuItem(itemTitles)
-	m.items = items
-
-	if len(items) == 0 {
-		panic("Menu must have at least one item")
-	}
-
-	m.Search(initValue)
-	return &m
-}
-
-// Filters the menu filtered list to only include items that match the keyword.
-func (m *menu) Search(keyword string) {
-	m.queryMutex.Lock()
-	m.query = keyword
-	m.queryMutex.Unlock()
-	if keyword == "" {
-		m.Filtered = m.items
-	} else {
-		// start := time.Now()
-		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder, m.resultLimit)
-		// elapsed := time.Since(start)
-		// fmt.Println("Search took", elapsed)
-	}
-	if len(m.Filtered) > 0 {
-		m.Selected = 0
-	} else {
-		m.Selected = unsetInt
-	}
-	m.MatchCount = len(m.Filtered)
-	if len(m.Filtered) > m.resultLimit {
-		m.Filtered = m.Filtered[:m.resultLimit]
-	}
-}
-
-func (m *menu) titlesToMenuItem(titles []string) []model.MenuItem {
-	items := make([]model.MenuItem, len(titles))
-	for i, entry := range titles {
-		items[i] = model.MenuItem{Title: entry}
-	}
-	return items
-}
 
 // Dimensions define geometry of the application window.
 type Dimensions struct {
@@ -166,34 +80,22 @@ func NewGMenu(
 	return g, nil
 }
 
-// canBeHighlighted returns true if the menu item can be highlighted
-// programmatically via exiting fayne interface.
-func canBeHighlighted(entry string) bool {
-	// TODO: find a better way to select all on searchEnty.
-	for _, c := range entry {
-		if !(c >= 'a' && c <= 'z' ||
-			c >= 'A' && c <= 'Z' ||
-			c >= '0' && c <= '9') {
-			return false
-		}
-	}
-	return true
-}
-
 // Run starts the application.
 func (g *GMenu) Run() error {
 	pidFile, err := createPidFile(g.menuID)
+	defer func() {
+		if pidFile != "" {
+			if err := os.Remove(pidFile); err != nil {
+				fmt.Println("Failed to remove pid file:", pidFile)
+				logrus.Error(err)
+			}
+		}
+	}()
 	if err != nil {
 		g.Quit(1)
 		return err
 	}
 	g.app.Run()
-	if pidFile != "" {
-		if err := os.Remove(pidFile); err != nil {
-			fmt.Println("Failed to remove pid file:", pidFile)
-			return err
-		}
-	}
 	selectedVal, err := g.SelectedValue()
 	if err != nil {
 		if cacheErr := g.clearCache(); cacheErr != nil {
@@ -420,24 +322,4 @@ func (g *GMenu) setupUI() {
 	mainContainer.Add(itemsCanvas.Container)
 	myWindow.Canvas().Focus(searchEntry)
 	myWindow.Show()
-}
-
-func createPidFile(name string) (string, error) {
-	dir := os.TempDir()
-	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
-	if _, err := os.Stat(pidFile); err == nil {
-		fmt.Println("Another instance of gmenu is already running. Exiting.")
-		fmt.Println("If this is not the case, please delete the pid file:", pidFile)
-		return "", fmt.Errorf("pid file already exists")
-
-	}
-	f, err := os.Create(pidFile)
-	if err != nil {
-		fmt.Println("Failed to create pid file")
-		if ferr := f.Close(); ferr != nil {
-			fmt.Println("Failed to close pid file:", ferr)
-		}
-		return "", err
-	}
-	return pidFile, f.Close()
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/hamidzr/gmenu/model"
 	"github.com/sahilm/fuzzy"
+	"github.com/sirupsen/logrus"
 )
 
 // SearchMethod how to search for items given a keyword.
@@ -142,7 +143,7 @@ func SearchWithSeparator(separator string, searchMethod SearchMethod) SearchMeth
 		matchedSubset := items // copy?
 		// matches := make([]model.MenuItem, 0)
 		for _, subQ := range subQs {
-			fmt.Println("Subquery: ", subQ, "subset", matchedSubset)
+			logrus.Trace("Subquery: ", subQ, "subset", matchedSubset)
 			matchedSubset = searchMethod(matchedSubset, subQ, false, 0)
 		}
 		return matchedSubset[:min(limit, len(matchedSubset))]
