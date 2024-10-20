@@ -7,6 +7,8 @@ import (
 
 	"github.com/hamidzr/gmenu/constants"
 	"github.com/hamidzr/gmenu/core"
+	"github.com/hamidzr/gmenu/internal/logger"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -67,7 +69,7 @@ func readItems() []string {
 			items = append(items, line)
 		}
 		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "error reading standard input:", err)
+			logrus.Error("error reading standard input:", err)
 			os.Exit(1)
 		}
 	}
@@ -77,7 +79,7 @@ func readItems() []string {
 func run() {
 	searchMethod, ok := core.SearchMethods[cliArgs.searchMethod]
 	if !ok {
-		fmt.Fprintln(os.Stderr, "Invalid search method")
+		logrus.Error("Invalid search method")
 		os.Exit(1)
 	}
 	gmenu, err := core.NewGMenu(
@@ -85,28 +87,28 @@ func run() {
 		searchMethod, cliArgs.preserveOrder, cliArgs.initialQuery,
 	)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err, "failed to create gmenu")
+		logrus.Error(err, "failed to create gmenu")
 		os.Exit(1)
 	}
 	go func() {
 		items := readItems()
 		if len(items) == 0 {
-			fmt.Fprintln(os.Stderr, "No items provided through standard input")
+			logrus.Error("No items provided through standard input")
 			gmenu.Quit(1)
 			return
 		}
 		gmenu.SetItems(items, nil)
 	}()
 	if err := gmenu.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, err, "run err")
-		os.Exit(1)
+		logrus.WithError(err).Error("run() err")
 	}
 	if gmenu.ExitCode != 0 {
+		logrus.Trace("Quitting gmenu with code: ", gmenu.ExitCode)
 		os.Exit(gmenu.ExitCode)
 	}
 	val, err := gmenu.SelectedValue()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		logrus.Error(err)
 		os.Exit(1)
 	}
 	fmt.Println(val.ComputedTitle())
@@ -114,8 +116,9 @@ func run() {
 
 func main() {
 	cmd := initCLI()
+	logger.SetupLogger()
 	if err := cmd.Execute(); err != nil {
-		fmt.Println(err)
+		logrus.Error(err)
 		os.Exit(1)
 	}
 }

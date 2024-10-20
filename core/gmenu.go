@@ -86,7 +86,7 @@ func NewGMenu(
 // Run starts the application.
 func (g *GMenu) Run() error {
 	pidFile, err := createPidFile(g.menuID)
-	defer func() {
+	defer func() { // clean up the pid file.
 		if pidFile != "" {
 			if err := os.Remove(pidFile); err != nil {
 				fmt.Println("Failed to remove pid file:", pidFile)
