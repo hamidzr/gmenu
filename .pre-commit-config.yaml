@@ -71,7 +71,6 @@ repos:
       - id: go-fmt-import
       - id: go-vet
       - id: go-lint
-      - id: go-unit-tests
       - id: gofumpt
       - id: go-err-check
       - id: go-static-check

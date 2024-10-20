@@ -1,10 +1,12 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hamidzr/gmenu/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/rand"
 )
 
@@ -102,10 +104,9 @@ func TestFuzzy(t *testing.T) {
 			},
 		},
 		{
-			unorderedInputs, "ats ap", [][]string{
-				{"whats app", "whatsapp"},
-				{"whatsapp", "whaxtsapp"},
-			}, nil,
+			items:         unorderedInputs,
+			query:         "ats ap",
+			expectedItems: &[]string{"whats app"},
 		},
 	}
 
@@ -113,6 +114,7 @@ func TestFuzzy(t *testing.T) {
 	for i := 0; i < 10; i++ { // for each order of inputs.
 		unorderedInputs = shuffle(unorderedInputs)
 		for _, tc := range testCases {
+			fmt.Println("test case", tc)
 			itemStrs := strToItems(tc.items)
 			res := FuzzySearchBrute(itemStrs, tc.query, false, 3)
 			resStrs := itemsToStr(res)
@@ -124,6 +126,8 @@ func TestFuzzy(t *testing.T) {
 			for _, relOrder := range tc.expectedRelOrders { // for each expected order.
 				assert.Len(t, relOrder, 2, "bad test case. expectedRelOrders should have 2 elements")
 				assert.NotEqual(t, relOrder[0], relOrder[1], "bad test case. expectedRelOrders should have 2 different elements")
+				require.Greater(t, len(resStrs), 1, "need at least 2 results to compare order", resStrs)
+
 				// ensure the first item comes before the seoncd.
 				var sawFirst, sawSecond bool
 				for _, item := range resStrs { // scan the results.
@@ -142,5 +146,103 @@ func TestFuzzy(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestFuzzySearch(t *testing.T) {
+	items := []model.MenuItem{
+		{Title: "apple"},
+		{Title: "banana"},
+		{Title: "apricot"},
+	}
+	results := FuzzySearch(items, "ap", false, 10)
+	expected := []string{"apple", "apricot"}
+	var titles []string
+	for _, item := range results {
+		titles = append(titles, item.Title)
+	}
+	assert.Equal(t, expected, titles)
+}
+
+func TestFuzzySearchBrute(t *testing.T) {
+	type testCase struct {
+		name          string
+		items         []string
+		query         string
+		preserveOrder bool
+		limit         int
+		expectedItems []string
+	}
+
+	testCases := []testCase{
+		{
+			name: "Query 'atsa' should prioritize 'whatsapp'",
+			items: []string{
+				"whatsapp",
+				"whaxtsapp",
+				"whats app",
+			},
+			query:         "atsa",
+			preserveOrder: false,
+			limit:         10,
+			expectedItems: []string{
+				"whatsapp",
+				"whats app",
+				"whaxtsapp",
+			},
+		},
+		{
+			name: "Query 'ats ap' should prioritize 'whats app'",
+			items: []string{
+				"whatsapp",
+				"whaxtsapp",
+				"whats app",
+			},
+			query:         "ats ap",
+			preserveOrder: false,
+			limit:         10,
+			expectedItems: []string{
+				"whats app",
+				"whatsapp",
+				"whaxtsapp",
+			},
+		},
+		{
+			name: "Query 'atsap' should match all variants",
+			items: []string{
+				"whaxtsapp",
+				"whats app",
+				"whatsapp",
+			},
+			query:         "atsap",
+			preserveOrder: false,
+			limit:         10,
+			expectedItems: []string{
+				"whatsapp",
+				"whaxtsapp",
+				"whats app",
+			},
+		},
+		{
+			name: "Query 'nonexistent' should return empty",
+			items: []string{
+				"whatsapp",
+				"whaxtsapp",
+				"whats app",
+			},
+			query:         "nonexistent",
+			preserveOrder: false,
+			limit:         10,
+			expectedItems: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			items := strToItems(&tc.items)
+			results := FuzzySearchBrute(items, tc.query, tc.preserveOrder, tc.limit)
+			resultTitles := itemsToStr(results)
+			assert.Equal(t, tc.expectedItems, resultTitles)
+		})
 	}
 }
