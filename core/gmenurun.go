@@ -8,11 +8,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+
+// MakeSelection makes a selection.
+func (g *GMenu) MakeSelection(idx int) {
+	// g.ResultChan <- RunResult{ExitCode: 0}
+	g.Quit(0)
+}
+
 // Quit exits the application.
 func (g *GMenu) Quit(code int) {
-	if g.ExitCode != constant.UnsetInt {
-		panic("Quit called multiple times")
-	}
+	// if g.ExitCode != constant.UnsetInt {
+	// 	panic("Quit called multiple times")
+	// }
+	g.ResultChan <- RunResult{ExitCode: code}
 	g.ExitCode = code
 	g.app.Quit()
 }
@@ -23,12 +31,17 @@ func (g *GMenu) Reset() {
 	logrus.Info("resetting gmenu state")
 	g.menuCancel()
 	g.ExitCode = constant.UnsetInt
+	g.ResultChan = make(chan RunResult, 1)
 	g.menu.Selected = 0
-	g.SetupMenu([]string{"Loading..."}, "init query")
+	g.SetupMenu([]string{"Loading..."}, "init_query")
 }
 
 // Run starts the application.
 func (g *GMenu) Run() error {
+	if g.isRunning {
+		panic("Run called multiple times")
+	}
+	g.isRunning = true
 	pidFile, err := createPidFile(g.menuID)
 	defer func() { // clean up the pid file.
 		if pidFile != "" {

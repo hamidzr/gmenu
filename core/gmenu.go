@@ -46,6 +46,8 @@ type GMenu struct {
 	searchMethod  SearchMethod
 	preserveOrder bool
 	ui            *GUI
+	isRunning bool
+	ResultChan chan RunResult
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -73,6 +75,7 @@ func NewGMenu(
 			MinWidth:  600,
 			MinHeight: 300,
 		},
+		ResultChan:		 make(chan RunResult, 1),
 	}
 	g.initUI()
 	return g, nil
@@ -146,9 +149,13 @@ func (g *GMenu) cacheState(value string) error {
 	return nil
 }
 
+func (g *GMenu) isUIInitialized() bool {
+	return g.ui != nil
+}
+
 // one time init for ui elements.
 func (g *GMenu) initUI() {
-	if g.ui != nil {
+	if g.isUIInitialized() {
 		panic("ui is already initialized")
 	}
 	g.app = app.New()
@@ -203,7 +210,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 		size.Height = resultsSize.Height
 		g.mainWindow.Resize(size)
 	}
-	go func() {
+	go func() { // handle new characters in the search bar and new items loaded.
 		for {
 			select {
 			case query := <-queryChan:
@@ -249,7 +256,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 			}
 		case fyne.KeyReturn:
 			g.ui.SearchEntry.Disable()
-			g.Quit(0)
+			g.MakeSelection(g.menu.Selected)
 		case fyne.KeyEscape:
 			g.Quit(1)
 		default:
