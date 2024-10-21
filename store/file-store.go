@@ -2,22 +2,45 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 )
 
+// TODO: we shoudn't need to differentiate between these two or special case them
+
 // FileStore is a store that saves data to files in the cache and config directories.
-type FileStore[C any, Cfg any] struct {
+type FileStore[Cache any, Cfg any] struct {
 	cacheDir  string
 	configDir string
+	format    string
+}
+
+func (fs FileStore[Cache, Cfg]) Marshal(data any) ([]byte, error) {
+	if fs.format == "json" {
+		return json.Marshal(data)
+	}
+	return yaml.Marshal(data)
+}
+
+func (fs FileStore[Cache, Cfg]) Unmarshal(data []byte, v any) error {
+	if fs.format == "json" {
+		return json.Unmarshal(data, v)
+	}
+	return yaml.Unmarshal(data, v)
 }
 
 // TODO cache and cofnig logic are the same.
 
 // NewFileStore initializes a new FileStore with directories for cache and config.
-func NewFileStore[C any, Cfg any](namespace []string) (*FileStore[C, Cfg], error) {
+func NewFileStore[Cache any, Cfg any](namespace []string, format string) (*FileStore[Cache, Cfg], error) {
 	cacheDir := CacheDir("")
 	configDir := ConfigDir("")
+	if format != "json" && format != "yaml" {
+		return nil, fmt.Errorf("unsupported format: %s", format)
+	}
 	for _, dir := range namespace {
 		cacheDir = filepath.Join(cacheDir, dir)
 		configDir = filepath.Join(configDir, dir)
@@ -28,56 +51,29 @@ func NewFileStore[C any, Cfg any](namespace []string) (*FileStore[C, Cfg], error
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return nil, err
 	}
-	return &FileStore[C, Cfg]{
+	return &FileStore[Cache, Cfg]{
 		cacheDir:  cacheDir,
 		configDir: configDir,
+		format:    format,
 	}, nil
 }
 
-// SaveCache serializes and saves the cache data to a file.
-func (fs *FileStore[C, Cfg]) SaveCache(data C) error {
-	serialized, err := json.Marshal(data)
-	if err != nil {
+func (fs FileStore[C, Cfg]) Load() (C, Cfg, error) {
+	cache, cacheErr := fs.LoadCache()
+	config, configErr := fs.LoadConfig()
+	var err error
+	if cacheErr != nil {
+		err = cacheErr
+	}
+	if configErr != nil {
+		err = configErr
+	}
+	return cache, config, err
+}
+
+func (fs FileStore[C, Cfg]) Save(data C, config Cfg) error {
+	if err := fs.SaveCache(data); err != nil {
 		return err
 	}
-	filePath := fs.cacheDir + "/cache.json"
-	// fmt.Println("Saving cache to", filePath)
-	return os.WriteFile(filePath, serialized, 0o644)
-}
-
-// LoadCache reads and deserializes the cache data from a file.
-func (fs *FileStore[C, Cfg]) LoadCache() (C, error) {
-	var data C
-	filePath := fs.cacheDir + "/cache.json"
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return data, nil
-	}
-	serialized, err := os.ReadFile(filePath)
-	if err != nil {
-		return data, err
-	}
-	err = json.Unmarshal(serialized, &data)
-	return data, err
-}
-
-// SaveConfig serializes and saves the config data to a file.
-func (fs *FileStore[C, Cfg]) SaveConfig(config Cfg) error {
-	serialized, err := json.Marshal(config)
-	if err != nil {
-		return err
-	}
-	filePath := fs.configDir + "/config.json"
-	return os.WriteFile(filePath, serialized, 0o644)
-}
-
-// LoadConfig reads and deserializes the config data from a file.
-func (fs *FileStore[C, Cfg]) LoadConfig() (Cfg, error) {
-	var config Cfg
-	filePath := fs.configDir + "/config.json"
-	serialized, err := os.ReadFile(filePath)
-	if err != nil {
-		return config, err
-	}
-	err = json.Unmarshal(serialized, &config)
-	return config, err
+	return fs.SaveConfig(config)
 }

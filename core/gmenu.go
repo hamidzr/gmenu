@@ -27,34 +27,50 @@ type Dimensions struct {
 // GMenu is the main application struct for GoMenu.
 type GMenu struct {
 	AppTitle string
-	prompt   string
-	menuID   string
-	menu     *menu
-	app      fyne.App
-	store    store.Store
-	ExitCode int
-	dims     Dimensions
+	// prompt that shows up in the search bar.
+	prompt     string
+	menuID     string
+	menu       *menu
+	app        fyne.App
+	store      store.Store
+	ExitCode   int
+	dims       Dimensions
+	mainWindow fyne.Window
 }
 
 // NewGMenu creates a new GMenu instance.
 func NewGMenu(
-	initialItems []string,
 	title string,
 	prompt string,
+	menu *menu,
 	menuID string,
-	searchMethod SearchMethod,
-	preserveOrder bool,
-	initialQuery string,
 ) (*GMenu, error) {
-	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", menuID})
+	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", menuID}, "yaml")
 	if err != nil {
 		return nil, err
 	}
+	g := &GMenu{
+		prompt:   prompt,
+		AppTitle: title,
+		menuID:   menuID,
+		menu:     menu,
+		ExitCode: constant.UnsetInt,
+		store:    store,
+		dims: Dimensions{
+			MinWidth:  600,
+			MinHeight: 300,
+		},
+	}
+	return g, nil
+}
+
+// initValues computes the initial value
+func (g *GMenu) initValue(initialQuery string) string {
 	lastInput := ""
-	if menuID != "" && initialQuery == "" {
-		cache, err := store.LoadCache()
+	if g.menuID != "" && initialQuery == "" {
+		cache, err := g.store.LoadCache()
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		if canBeHighlighted(cache.LastInput) {
 			lastInput = cache.LastInput
@@ -64,24 +80,20 @@ func NewGMenu(
 	if initialQuery != "" {
 		initValue = initialQuery
 	}
-	menu, err := newMenu(initialItems, initValue, searchMethod, preserveOrder)
+	return initValue
+}
+
+// SetupMenu sets up the backing menu.
+func (g *GMenu) SetupMenu(
+	initialItems []string, initialQuery string, searchMethod SearchMethod, preserveOrder bool,
+) {
+	submenu, err := newMenu(initialItems, g.initValue(initialQuery), searchMethod, preserveOrder)
 	if err != nil {
-		return nil, err
+		fmt.Println("Failed to setup menu:", err)
+		logrus.Error(err)
+		panic(err)
 	}
-	g := &GMenu{
-		prompt:   prompt,
-		AppTitle: title,
-		menuID:   menuID,
-		ExitCode: constant.UnsetInt,
-		menu:     menu,
-		store:    store,
-		dims: Dimensions{
-			MinWidth:  600,
-			MinHeight: 300,
-		},
-	}
-	g.setupUI()
-	return g, nil
+	g.menu = submenu
 }
 
 // Run starts the application.
@@ -201,14 +213,11 @@ func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	return &model.MenuItem{Title: g.menu.query}, nil
 }
 
-// Quit exits the application.
-func (g *GMenu) Quit(code int) {
-	g.ExitCode = code
-	g.app.Quit()
-}
-
-// setupUI creates the UI elements.
-func (g *GMenu) setupUI() {
+// SetupUI creates the UI elements.
+func (g *GMenu) SetupUI() {
+	if g.menu == nil {
+		panic("menu not set")
+	}
 	queryChan := make(chan string)
 
 	g.app = app.New()
@@ -220,13 +229,12 @@ func (g *GMenu) setupUI() {
 		}
 	})
 
-	var myWindow fyne.Window
 	if deskDriver, ok := g.app.Driver().(desktop.Driver); ok {
-		myWindow = deskDriver.CreateSplashWindow()
+		g.mainWindow = deskDriver.CreateSplashWindow()
 	} else {
-		myWindow = g.app.NewWindow(g.AppTitle)
+		g.mainWindow = g.app.NewWindow(g.AppTitle)
 	}
-	myWindow.SetTitle(g.AppTitle)
+	g.mainWindow.SetTitle(g.AppTitle)
 	entryDisabledKeys := map[fyne.KeyName]bool{
 		fyne.KeyUp:   true,
 		fyne.KeyDown: true,
@@ -249,7 +257,7 @@ func (g *GMenu) setupUI() {
 
 	inputBox := render.NewInputArea(searchEntry, menuLabel)
 	mainContainer := container.NewVBox(inputBox)
-	myWindow.SetContent(mainContainer)
+	g.mainWindow.SetContent(mainContainer)
 
 	searchEntry.OnChanged = func(text string) {
 		queryChan <- text
@@ -260,7 +268,7 @@ func (g *GMenu) setupUI() {
 		resultsSize := itemsCanvas.Container.Size()
 		size.Width = max(g.dims.MinWidth, resultsSize.Width)
 		size.Height = resultsSize.Height
-		myWindow.Resize(size)
+		g.mainWindow.Resize(size)
 	}
 
 	go func() {
@@ -320,10 +328,34 @@ func (g *GMenu) setupUI() {
 	}
 
 	searchEntry.OnKeyDown = keyHandler
-	myWindow.Canvas().SetOnTypedKey(keyHandler)
+	g.mainWindow.Canvas().SetOnTypedKey(keyHandler)
 
-	myWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
+	g.mainWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
 	mainContainer.Add(itemsCanvas.Container)
-	myWindow.Canvas().Focus(searchEntry)
-	myWindow.Show()
+	g.mainWindow.Canvas().Focus(searchEntry)
+	g.mainWindow.Show()
+}
+
+// ToggleVisibility toggles the visibility of the gmenu window.
+func (g *GMenu) ToggleVisibility() {
+	if g.mainWindow.Content().Visible() {
+		g.mainWindow.Hide()
+	} else {
+		g.mainWindow.Show()
+	}
+}
+
+// Quit exits the application.
+func (g *GMenu) Quit(code int) {
+	if g.ExitCode != constant.UnsetInt {
+		panic("Quit called multiple times")
+	}
+	g.ExitCode = code
+	g.app.Quit()
+}
+
+// Reset resets the gmenu state without exiting.
+// Exiting and restarting is expensive.
+func (g *GMenu) Reset() {
+	g.ExitCode = constant.UnsetInt
 }

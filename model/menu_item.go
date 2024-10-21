@@ -4,7 +4,7 @@ package model
 type GmenuSerializable interface {
 	// Serialize returns a string representation of the item that can be shown in gmenu.
 	// implemented by value type.
-	Serialize() string
+	Serialize() string // rename String?
 }
 
 // MenuItem represents an item in the menu.
