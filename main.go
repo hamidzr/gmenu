@@ -97,7 +97,33 @@ func run() {
 		}
 		gmenu.SetItems(items, nil)
 	}()
-	if err := gmenu.Run(); err != nil {
+
+	gmenu.ShowUI()
+	go func() {
+		// if selection is made without an exit, stop the app.
+		gmenu.SelectionWg.Wait()
+		if gmenu.ExitCode == constant.UnsetInt {
+			gmenu.Quit(0)
+		} else {
+			gmenu.Quit(gmenu.ExitCode)
+		}
+	}()
+
+	// go func() {
+	// 	for {
+	// 		gmenu.ShowUI()
+	// 		time.Sleep(2 * time.Second)
+	// 		go gmenu.CacheSelectedValue()
+	// 		item, err := gmenu.SelectedValue()
+	// 		if	err == nil {
+	// 			fmt.Println(item.ComputedTitle())
+	// 		}
+	// 		gmenu.ToggleVisibility()
+	// 		gmenu.Reset()
+	// 	}
+	// }()
+
+	if err := gmenu.RunAppForever(); err != nil {
 		logrus.WithError(err).Error("run() err")
 	}
 	if gmenu.ExitCode != 0 {

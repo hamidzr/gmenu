@@ -3,25 +3,31 @@ package core
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/hamidzr/gmenu/constant"
 	"github.com/sirupsen/logrus"
 )
 
+// // HideOnSelection hides the application when a selection is made.
+// func (g *GMenu) HideAndResetOnSelection() {
+// 	g.SelectionWg.Wait()
+// 	g.mainWindow.Hide()
+// }
+//
 
-// MakeSelection makes a selection.
-func (g *GMenu) MakeSelection(idx int) {
-	// g.ResultChan <- RunResult{ExitCode: 0}
-	g.Quit(0)
+// setExitCode sets the exit code for the application.
+func (g *GMenu) SetExitCode(code int) {
+	logrus.Debug("setting exit code to: ", code)
+	if g.ExitCode != constant.UnsetInt && g.ExitCode != code {
+		panic("Exit code set multiple times to different values")
+	}
+	g.ExitCode = code
 }
 
 // Quit exits the application.
 func (g *GMenu) Quit(code int) {
-	// if g.ExitCode != constant.UnsetInt {
-	// 	panic("Quit called multiple times")
-	// }
-	g.ResultChan <- RunResult{ExitCode: code}
-	g.ExitCode = code
+	g.SetExitCode(code)
 	g.app.Quit()
 }
 
@@ -30,14 +36,14 @@ func (g *GMenu) Quit(code int) {
 func (g *GMenu) Reset() {
 	logrus.Info("resetting gmenu state")
 	g.menuCancel()
+	g.ui.SearchEntry.Enable()
 	g.ExitCode = constant.UnsetInt
-	g.ResultChan = make(chan RunResult, 1)
+	g.SelectionWg = sync.WaitGroup{}
 	g.menu.Selected = 0
 	g.SetupMenu([]string{"Loading..."}, "init_query")
 }
 
-// Run starts the application.
-func (g *GMenu) Run() error {
+func (g *GMenu) RunAppForever() error {
 	if g.isRunning {
 		panic("Run called multiple times")
 	}
@@ -56,6 +62,16 @@ func (g *GMenu) Run() error {
 		return err
 	}
 	g.app.Run()
+	return nil
+}
+
+func (g *GMenu) ShowUI() {
+	g.SelectionWg.Add(1)
+	g.mainWindow.Show()
+}
+
+// Run starts the application.
+func (g *GMenu) CacheSelectedValue() error {
 	selectedVal, err := g.SelectedValue()
 	if err != nil {
 		if cacheErr := g.clearCache(); cacheErr != nil {

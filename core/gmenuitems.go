@@ -47,14 +47,13 @@ func (g *GMenu) AppendItems(items []string) {
 
 // SelectedValue returns the selected item.
 func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
-	// TODO: check if the app is running. using the doneChan?
+	g.SelectionWg.Wait()
 	if g.ExitCode == constant.UnsetInt {
-		return nil, fmt.Errorf("gmenu has not exited yet")
-	}
-	// TODO: cli option for allowing query.
-	if g.ExitCode != 0 {
+		// this is a valid case in daemon mode.
+	} else if g.ExitCode != 0 {
 		return nil, fmt.Errorf("gmenu exited with code %d", g.ExitCode)
 	}
+	// TODO: cli option for allowing query.
 	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
 		selected := g.menu.Filtered[g.menu.Selected]
 		return &selected, nil

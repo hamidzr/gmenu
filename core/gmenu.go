@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -46,8 +47,9 @@ type GMenu struct {
 	searchMethod  SearchMethod
 	preserveOrder bool
 	ui            *GUI
-	isRunning bool
-	ResultChan chan RunResult
+	isRunning     bool
+	// SelectionWg is a wait group that lets listeners wait for user being donw with input.
+	SelectionWg sync.WaitGroup
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -75,7 +77,7 @@ func NewGMenu(
 			MinWidth:  600,
 			MinHeight: 300,
 		},
-		ResultChan:		 make(chan RunResult, 1),
+		SelectionWg: sync.WaitGroup{},
 	}
 	g.initUI()
 	return g, nil
@@ -161,11 +163,11 @@ func (g *GMenu) initUI() {
 	g.app = app.New()
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
 
-	g.app.Lifecycle().SetOnExitedForeground(func() {
-		if g.ExitCode == constant.UnsetInt {
-			g.Quit(1)
-		}
-	})
+	// g.app.Lifecycle().SetOnExitedForeground(func() {
+	// 	if g.ExitCode == constant.UnsetInt {
+	// 		g.Quit(1)
+	// 	}
+	// })
 
 	if deskDriver, ok := g.app.Driver().(desktop.Driver); ok {
 		g.mainWindow = deskDriver.CreateSplashWindow()
@@ -256,9 +258,10 @@ func (g *GMenu) startListenDynamicUpdates() {
 			}
 		case fyne.KeyReturn:
 			g.ui.SearchEntry.Disable()
-			g.MakeSelection(g.menu.Selected)
+			g.SelectionWg.Done()
 		case fyne.KeyEscape:
-			g.Quit(1)
+			g.ExitCode = 1
+			g.SelectionWg.Done()
 		default:
 			return
 		}
