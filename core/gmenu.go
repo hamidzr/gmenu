@@ -24,6 +24,13 @@ type Dimensions struct {
 	MinHeight float32
 }
 
+// GUI aka GMenuUI holds ui pieces.
+type GUI struct {
+	SearchEntry *render.SearchEntry
+	ItemsCanvas *render.ItemsCanvas
+	MenuLabel   *widget.Label
+}
+
 // GMenu is the main application struct for GoMenu.
 type GMenu struct {
 	AppTitle string
@@ -38,6 +45,7 @@ type GMenu struct {
 	mainWindow    fyne.Window
 	searchMethod  SearchMethod
 	preserveOrder bool
+	ui            *GUI
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -217,13 +225,11 @@ func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	return &model.MenuItem{Title: g.menu.query}, nil
 }
 
-// SetupUI creates the UI elements.
-func (g *GMenu) SetupUI() {
-	if g.menu == nil {
-		panic("menu not set")
+// one time init for ui elements.
+func (g *GMenu) initUI() {
+	if g.ui != nil {
+		panic("ui is already initialized")
 	}
-	queryChan := make(chan string)
-
 	g.app = app.New()
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
 
@@ -247,41 +253,55 @@ func (g *GMenu) SetupUI() {
 	searchEntry := &render.SearchEntry{PropagationBlacklist: entryDisabledKeys}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
-	searchEntry.SetText(g.menu.query)
-	if g.menu.query != "" {
-		searchEntry.SelectAll()
-	}
 	itemsCanvas := render.NewItemsCanvas()
-	itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+	menuLabel := widget.NewLabel("menulabel")
+	inputBox := render.NewInputArea(searchEntry, menuLabel)
+	mainContainer := container.NewVBox(inputBox)
+	g.mainWindow.SetContent(mainContainer)
+	g.mainWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
+	mainContainer.Add(itemsCanvas.Container)
+	g.mainWindow.Canvas().Focus(searchEntry)
+	g.mainWindow.Show()
+
+	g.ui = &GUI{
+		SearchEntry: searchEntry,
+		ItemsCanvas: itemsCanvas,
+		MenuLabel:   menuLabel,
+	}
+}
+
+func (g *GMenu) uiBasedOnMenu() {
+	queryChan := make(chan string)
+	if g.menu == nil || g.ui == nil {
+		panic("not initialized")
+	}
+	g.ui.SearchEntry.OnChanged = func(text string) {
+		queryChan <- text
+	}
+	g.ui.SearchEntry.SetText(g.menu.query)
+	if g.menu.query != "" {
+		g.ui.SearchEntry.SelectAll()
+	}
+	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 	// show match items out of total item count.
 	matchCounterLabel := func() string {
 		return fmt.Sprintf("[%d/%d]", g.menu.MatchCount, len(g.menu.items))
 	}
-	menuLabel := widget.NewLabel(matchCounterLabel())
-
-	inputBox := render.NewInputArea(searchEntry, menuLabel)
-	mainContainer := container.NewVBox(inputBox)
-	g.mainWindow.SetContent(mainContainer)
-
-	searchEntry.OnChanged = func(text string) {
-		queryChan <- text
-	}
-
+	g.ui.MenuLabel.SetText(matchCounterLabel())
 	resizeBasedOnResults := func() {
 		size := fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight)
-		resultsSize := itemsCanvas.Container.Size()
+		resultsSize := g.ui.ItemsCanvas.Container.Size()
 		size.Width = max(g.dims.MinWidth, resultsSize.Width)
 		size.Height = resultsSize.Height
 		g.mainWindow.Resize(size)
 	}
-
 	go func() {
 		for {
 			select {
 			case query := <-queryChan:
 				g.menu.Search(query)
-				menuLabel.SetText(matchCounterLabel())
-				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+				g.ui.MenuLabel.SetText(matchCounterLabel())
+				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 				resizeBasedOnResults()
 			case items := <-g.menu.ItemsChan:
 				g.menu.itemsMutex.Lock()
@@ -296,8 +316,8 @@ func (g *GMenu) SetupUI() {
 				g.menu.items = deduplicated
 				g.menu.itemsMutex.Unlock()
 				g.menu.Search(g.menu.query)
-				menuLabel.SetText(matchCounterLabel())
-				itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+				g.ui.MenuLabel.SetText(matchCounterLabel())
+				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 			default:
 				// CHECK: should we?
 				time.Sleep(10 * time.Millisecond)
@@ -321,23 +341,24 @@ func (g *GMenu) SetupUI() {
 				g.menu.Selected = len(g.menu.Filtered) - 1
 			}
 		case fyne.KeyReturn:
-			searchEntry.Disable()
+			g.ui.SearchEntry.Disable()
 			g.Quit(0)
 		case fyne.KeyEscape:
 			g.Quit(1)
 		default:
 			return
 		}
-		itemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 	}
 
-	searchEntry.OnKeyDown = keyHandler
+	g.ui.SearchEntry.OnKeyDown = keyHandler
 	g.mainWindow.Canvas().SetOnTypedKey(keyHandler)
+}
 
-	g.mainWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
-	mainContainer.Add(itemsCanvas.Container)
-	g.mainWindow.Canvas().Focus(searchEntry)
-	g.mainWindow.Show()
+// SetupUI creates the UI elements.
+func (g *GMenu) SetupUI() {
+	g.initUI()
+	g.uiBasedOnMenu()
 }
 
 // ToggleVisibility toggles the visibility of the gmenu window.
