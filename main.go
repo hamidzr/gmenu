@@ -82,12 +82,12 @@ func run() {
 		logrus.Error("Invalid search method")
 		os.Exit(1)
 	}
-	gmenu, err := core.NewGMenu(cliArgs.title, cliArgs.prompt, nil, cliArgs.menuID)
+	gmenu, err := core.NewGMenu(cliArgs.title, cliArgs.prompt, nil, cliArgs.menuID, searchMethod, cliArgs.preserveOrder)
 	if err != nil {
 		logrus.Error(err, "failed to create gmenu")
 		os.Exit(1)
 	}
-	gmenu.SetupMenu([]string{"Loading"}, cliArgs.initialQuery, searchMethod, cliArgs.preserveOrder)
+	gmenu.SetupMenu([]string{"Loading"}, cliArgs.initialQuery)
 	gmenu.SetupUI()
 	go func() {
 		items := readItems()

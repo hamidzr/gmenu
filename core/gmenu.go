@@ -28,14 +28,16 @@ type Dimensions struct {
 type GMenu struct {
 	AppTitle string
 	// prompt that shows up in the search bar.
-	prompt     string
-	menuID     string
-	menu       *menu
-	app        fyne.App
-	store      store.Store
-	ExitCode   int
-	dims       Dimensions
-	mainWindow fyne.Window
+	prompt        string
+	menuID        string
+	menu          *menu
+	app           fyne.App
+	store         store.Store
+	ExitCode      int
+	dims          Dimensions
+	mainWindow    fyne.Window
+	searchMethod  SearchMethod
+	preserveOrder bool
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -44,18 +46,22 @@ func NewGMenu(
 	prompt string,
 	menu *menu,
 	menuID string,
+	searchMethod SearchMethod,
+	preserveOrder bool,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", menuID}, "yaml")
 	if err != nil {
 		return nil, err
 	}
 	g := &GMenu{
-		prompt:   prompt,
-		AppTitle: title,
-		menuID:   menuID,
-		menu:     menu,
-		ExitCode: constant.UnsetInt,
-		store:    store,
+		prompt:        prompt,
+		AppTitle:      title,
+		menuID:        menuID,
+		menu:          menu,
+		ExitCode:      constant.UnsetInt,
+		searchMethod:  searchMethod,
+		preserveOrder: preserveOrder,
+		store:         store,
 		dims: Dimensions{
 			MinWidth:  600,
 			MinHeight: 300,
@@ -84,10 +90,8 @@ func (g *GMenu) initValue(initialQuery string) string {
 }
 
 // SetupMenu sets up the backing menu.
-func (g *GMenu) SetupMenu(
-	initialItems []string, initialQuery string, searchMethod SearchMethod, preserveOrder bool,
-) {
-	submenu, err := newMenu(initialItems, g.initValue(initialQuery), searchMethod, preserveOrder)
+func (g *GMenu) SetupMenu(initialItems []string, initialQuery string) {
+	submenu, err := newMenu(initialItems, g.initValue(initialQuery), g.searchMethod, g.preserveOrder)
 	if err != nil {
 		fmt.Println("Failed to setup menu:", err)
 		logrus.Error(err)
@@ -358,4 +362,7 @@ func (g *GMenu) Quit(code int) {
 // Exiting and restarting is expensive.
 func (g *GMenu) Reset() {
 	g.ExitCode = constant.UnsetInt
+	g.menu.Selected = 0
+	g.SetupMenu([]string{"Loading..."}, "init query")
+	g.SetupUI()
 }

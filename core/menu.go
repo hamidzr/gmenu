@@ -22,8 +22,8 @@ type menu struct {
 	// MatchCount is the number of items that matched the search query.
 	MatchCount    int
 	SearchMethod  SearchMethod
-	resultLimit   int
 	preserveOrder bool
+	resultLimit   int
 }
 
 func newMenu(
