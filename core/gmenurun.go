@@ -9,13 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// // HideOnSelection hides the application when a selection is made.
-// func (g *GMenu) HideAndResetOnSelection() {
-// 	g.SelectionWg.Wait()
-// 	g.mainWindow.Hide()
-// }
-//
-
 // setExitCode sets the exit code for the application.
 func (g *GMenu) SetExitCode(code int) {
 	logrus.Debug("setting exit code to: ", code)
@@ -40,7 +33,7 @@ func (g *GMenu) Reset() {
 	g.ExitCode = constant.UnsetInt
 	g.SelectionWg = sync.WaitGroup{}
 	g.menu.Selected = 0
-	g.SetupMenu([]string{"Loading..."}, "init_query")
+	g.SetupMenu([]string{"Loading..."}, "")
 }
 
 func (g *GMenu) RunAppForever() error {
@@ -65,9 +58,15 @@ func (g *GMenu) RunAppForever() error {
 	return nil
 }
 
+// ShowUI and wait for user input.
 func (g *GMenu) ShowUI() {
 	g.SelectionWg.Add(1)
 	g.mainWindow.Show()
+}
+
+// HideUI hides the UI.
+func (g *GMenu) HideUI() {
+	g.mainWindow.Hide()
 }
 
 // Run starts the application.

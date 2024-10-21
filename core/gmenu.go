@@ -191,7 +191,6 @@ func (g *GMenu) initUI() {
 	g.mainWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
 	mainContainer.Add(itemsCanvas.Container)
 	g.mainWindow.Canvas().Focus(searchEntry)
-	g.mainWindow.Show()
 
 	g.ui = &GUI{
 		SearchEntry: searchEntry,
