@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -12,6 +13,7 @@ type menu struct {
 	items      []model.MenuItem
 	query      string
 	itemsMutex sync.Mutex
+	ctx        context.Context
 	queryMutex sync.Mutex
 	ItemsChan  chan []model.MenuItem
 
@@ -27,12 +29,14 @@ type menu struct {
 }
 
 func newMenu(
+	ctx context.Context,
 	itemTitles []string,
 	initValue string,
 	searchMethod SearchMethod,
 	preserveOrder bool,
 ) (*menu, error) {
 	m := menu{
+		ctx:           ctx,
 		Selected:      0,
 		SearchMethod:  searchMethod,
 		resultLimit:   10,

@@ -1,9 +1,8 @@
 package core
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -38,6 +37,7 @@ type GMenu struct {
 	prompt        string
 	menuID        string
 	menu          *menu
+	menuCancel    context.CancelFunc
 	app           fyne.App
 	store         store.Store
 	ExitCode      int
@@ -65,7 +65,6 @@ func NewGMenu(
 		prompt:        prompt,
 		AppTitle:      title,
 		menuID:        menuID,
-		menu:          menu,
 		ExitCode:      constant.UnsetInt,
 		searchMethod:  searchMethod,
 		preserveOrder: preserveOrder,
@@ -75,6 +74,7 @@ func NewGMenu(
 			MinHeight: 300,
 		},
 	}
+	g.initUI()
 	return g, nil
 }
 
@@ -99,78 +99,16 @@ func (g *GMenu) initValue(initialQuery string) string {
 
 // SetupMenu sets up the backing menu.
 func (g *GMenu) SetupMenu(initialItems []string, initialQuery string) {
-	submenu, err := newMenu(initialItems, g.initValue(initialQuery), g.searchMethod, g.preserveOrder)
+	ctx, cancel := context.WithCancel(context.Background())
+	submenu, err := newMenu(ctx, initialItems, g.initValue(initialQuery), g.searchMethod, g.preserveOrder)
 	if err != nil {
 		fmt.Println("Failed to setup menu:", err)
 		logrus.Error(err)
 		panic(err)
 	}
 	g.menu = submenu
-}
-
-// Run starts the application.
-func (g *GMenu) Run() error {
-	pidFile, err := createPidFile(g.menuID)
-	defer func() { // clean up the pid file.
-		if pidFile != "" {
-			if err := os.Remove(pidFile); err != nil {
-				fmt.Println("Failed to remove pid file:", pidFile)
-				logrus.Error(err)
-			}
-		}
-	}()
-	if err != nil {
-		g.Quit(1)
-		return err
-	}
-	g.app.Run()
-	selectedVal, err := g.SelectedValue()
-	if err != nil {
-		if cacheErr := g.clearCache(); cacheErr != nil {
-			fmt.Println("Failed to clear cache:", cacheErr)
-		}
-		return err
-	}
-	err = g.cacheState(selectedVal.ComputedTitle())
-	return err
-}
-
-// SetItems sets the items to be displayed in the menu.
-func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable) {
-	menuItems := g.menu.titlesToMenuItem(items)
-	for _, item := range serializables {
-		myItem := item
-		menuItems = append(menuItems, model.MenuItem{AType: &myItem})
-	}
-	g.menu.itemsMutex.Lock()
-	g.menu.ItemsChan <- menuItems
-	g.menu.itemsMutex.Unlock()
-}
-
-// addItems adds items to the menu.
-func (g *GMenu) addItems(items []string, tail bool) {
-	newMenuItems := g.menu.titlesToMenuItem(items)
-	g.menu.itemsMutex.Lock()
-	var newItems []model.MenuItem
-	if tail {
-		newItems = append(g.menu.items, newMenuItems...)
-	} else {
-		newItems = append(newMenuItems, g.menu.items...)
-	}
-	g.menu.itemsMutex.Unlock()
-	g.menu.ItemsChan <- newItems
-	// TODO: add using SetItems?
-}
-
-// PrependItems adds items to the beginning of the menu.
-func (g *GMenu) PrependItems(items []string) {
-	g.addItems(items, false)
-}
-
-// AppendItems adds items to the end of the menu.
-func (g *GMenu) AppendItems(items []string) {
-	// fmt.Println("appending len items", len(items))
-	g.addItems(items, true)
+	g.menuCancel = cancel
+	g.setMenuBasedUI()
 }
 
 func (g *GMenu) clearCache() error {
@@ -206,23 +144,6 @@ func (g *GMenu) cacheState(value string) error {
 		return err
 	}
 	return nil
-}
-
-// SelectedValue returns the selected item.
-func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
-	// TODO: check if the app is running. using the doneChan?
-	if g.ExitCode == constant.UnsetInt {
-		return nil, fmt.Errorf("gmenu has not exited yet")
-	}
-	// TODO: cli option for allowing query.
-	if g.ExitCode != 0 {
-		return nil, fmt.Errorf("gmenu exited with code %d", g.ExitCode)
-	}
-	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
-		selected := g.menu.Filtered[g.menu.Selected]
-		return &selected, nil
-	}
-	return &model.MenuItem{Title: g.menu.query}, nil
 }
 
 // one time init for ui elements.
@@ -270,24 +191,11 @@ func (g *GMenu) initUI() {
 	}
 }
 
-func (g *GMenu) uiBasedOnMenu() {
+func (g *GMenu) startListenDynamicUpdates() {
 	queryChan := make(chan string)
-	if g.menu == nil || g.ui == nil {
-		panic("not initialized")
-	}
 	g.ui.SearchEntry.OnChanged = func(text string) {
 		queryChan <- text
 	}
-	g.ui.SearchEntry.SetText(g.menu.query)
-	if g.menu.query != "" {
-		g.ui.SearchEntry.SelectAll()
-	}
-	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
-	// show match items out of total item count.
-	matchCounterLabel := func() string {
-		return fmt.Sprintf("[%d/%d]", g.menu.MatchCount, len(g.menu.items))
-	}
-	g.ui.MenuLabel.SetText(matchCounterLabel())
 	resizeBasedOnResults := func() {
 		size := fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight)
 		resultsSize := g.ui.ItemsCanvas.Container.Size()
@@ -300,7 +208,7 @@ func (g *GMenu) uiBasedOnMenu() {
 			select {
 			case query := <-queryChan:
 				g.menu.Search(query)
-				g.ui.MenuLabel.SetText(matchCounterLabel())
+				g.ui.MenuLabel.SetText(g.matchCounterLabel())
 				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 				resizeBasedOnResults()
 			case items := <-g.menu.ItemsChan:
@@ -316,11 +224,10 @@ func (g *GMenu) uiBasedOnMenu() {
 				g.menu.items = deduplicated
 				g.menu.itemsMutex.Unlock()
 				g.menu.Search(g.menu.query)
-				g.ui.MenuLabel.SetText(matchCounterLabel())
+				g.ui.MenuLabel.SetText(g.matchCounterLabel())
 				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
-			default:
-				// CHECK: should we?
-				time.Sleep(10 * time.Millisecond)
+			case <-g.menu.ctx.Done():
+				return
 			}
 		}
 	}()
@@ -350,15 +257,23 @@ func (g *GMenu) uiBasedOnMenu() {
 		}
 		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 	}
-
 	g.ui.SearchEntry.OnKeyDown = keyHandler
 	g.mainWindow.Canvas().SetOnTypedKey(keyHandler)
 }
 
-// SetupUI creates the UI elements.
-func (g *GMenu) SetupUI() {
-	g.initUI()
-	g.uiBasedOnMenu()
+// ResetUI based on g.menu with minimal rerendering.
+func (g *GMenu) setMenuBasedUI() {
+	if g.menu == nil || g.ui == nil {
+		panic("not initialized")
+	}
+	g.startListenDynamicUpdates()
+	g.ui.SearchEntry.SetText(g.menu.query)
+	if g.menu.query != "" {
+		g.ui.SearchEntry.SelectAll()
+	}
+	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+	// show match items out of total item count.
+	g.ui.MenuLabel.SetText(g.matchCounterLabel())
 }
 
 // ToggleVisibility toggles the visibility of the gmenu window.
@@ -368,22 +283,4 @@ func (g *GMenu) ToggleVisibility() {
 	} else {
 		g.mainWindow.Show()
 	}
-}
-
-// Quit exits the application.
-func (g *GMenu) Quit(code int) {
-	if g.ExitCode != constant.UnsetInt {
-		panic("Quit called multiple times")
-	}
-	g.ExitCode = code
-	g.app.Quit()
-}
-
-// Reset resets the gmenu state without exiting.
-// Exiting and restarting is expensive.
-func (g *GMenu) Reset() {
-	g.ExitCode = constant.UnsetInt
-	g.menu.Selected = 0
-	g.SetupMenu([]string{"Loading..."}, "init query")
-	g.SetupUI()
 }

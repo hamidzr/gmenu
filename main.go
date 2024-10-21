@@ -88,7 +88,6 @@ func run() {
 		os.Exit(1)
 	}
 	gmenu.SetupMenu([]string{"Loading"}, cliArgs.initialQuery)
-	gmenu.SetupUI()
 	go func() {
 		items := readItems()
 		if len(items) == 0 {
