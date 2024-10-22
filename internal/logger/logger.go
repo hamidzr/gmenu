@@ -18,7 +18,7 @@ func (h *StderrHook) Fire(entry *logrus.Entry) error {
 }
 
 func SetupLogger() {
-	logrus.SetOutput(os.Stdout)
+	logrus.SetOutput(os.Stderr)
 	logrus.SetLevel(logrus.TraceLevel)
 	hook := &StderrHook{}
 	logrus.AddHook(hook)
