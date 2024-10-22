@@ -288,8 +288,8 @@ func (g *GMenu) setMenuBasedUI() {
 // ToggleVisibility toggles the visibility of the gmenu window.
 func (g *GMenu) ToggleVisibility() {
 	if g.mainWindow.Content().Visible() {
-		g.mainWindow.Hide()
+		g.HideUI()
 	} else {
-		g.mainWindow.Show()
+		g.ShowUI()
 	}
 }
