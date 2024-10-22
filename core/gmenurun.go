@@ -56,8 +56,10 @@ func (g *GMenu) RunAppForever() error {
 
 // ShowUI and wait for user input.
 func (g *GMenu) ShowUI() {
+	// TODO: also set focus to search entry
+	g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
 	g.SelectionWg.Add(1)
-	g.mainWindow.Show()
+	g.ui.MainWindow.Show()
 	_, err := createPidFile(g.menuID)
 	if err != nil {
 		g.QuitWithCode(1)
@@ -66,7 +68,7 @@ func (g *GMenu) ShowUI() {
 
 // HideUI hides the UI.
 func (g *GMenu) HideUI() {
-	g.mainWindow.Hide()
+	g.ui.MainWindow.Hide()
 	removePidFile(g.menuID)
 }
 

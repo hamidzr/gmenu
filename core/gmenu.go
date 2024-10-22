@@ -26,6 +26,7 @@ type Dimensions struct {
 
 // GUI aka GMenuUI holds ui pieces.
 type GUI struct {
+	MainWindow  fyne.Window
 	SearchEntry *render.SearchEntry
 	ItemsCanvas *render.ItemsCanvas
 	MenuLabel   *widget.Label
@@ -43,7 +44,6 @@ type GMenu struct {
 	store         store.Store
 	ExitCode      int
 	dims          Dimensions
-	mainWindow    fyne.Window
 	searchMethod  SearchMethod
 	preserveOrder bool
 	ui            *GUI
@@ -168,13 +168,14 @@ func (g *GMenu) initUI() {
 	// 		g.Quit(1)
 	// 	}
 	// })
+	var mainWindow fyne.Window
 
 	if deskDriver, ok := g.app.Driver().(desktop.Driver); ok {
-		g.mainWindow = deskDriver.CreateSplashWindow()
+		mainWindow = deskDriver.CreateSplashWindow()
 	} else {
-		g.mainWindow = g.app.NewWindow(g.AppTitle)
+		mainWindow = g.app.NewWindow(g.AppTitle)
 	}
-	g.mainWindow.SetTitle(g.AppTitle)
+	mainWindow.SetTitle(g.AppTitle)
 	entryDisabledKeys := map[fyne.KeyName]bool{
 		fyne.KeyUp:   true,
 		fyne.KeyDown: true,
@@ -187,15 +188,16 @@ func (g *GMenu) initUI() {
 	menuLabel := widget.NewLabel("menulabel")
 	inputBox := render.NewInputArea(searchEntry, menuLabel)
 	mainContainer := container.NewVBox(inputBox)
-	g.mainWindow.SetContent(mainContainer)
-	g.mainWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
+	mainWindow.SetContent(mainContainer)
+	mainWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
 	mainContainer.Add(itemsCanvas.Container)
-	g.mainWindow.Canvas().Focus(searchEntry)
+	mainWindow.Canvas().Focus(searchEntry)
 
 	g.ui = &GUI{
 		SearchEntry: searchEntry,
 		ItemsCanvas: itemsCanvas,
 		MenuLabel:   menuLabel,
+		MainWindow:  mainWindow,
 	}
 }
 
@@ -209,7 +211,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 		resultsSize := g.ui.ItemsCanvas.Container.Size()
 		size.Width = max(g.dims.MinWidth, resultsSize.Width)
 		size.Height = resultsSize.Height
-		g.mainWindow.Resize(size)
+		g.ui.MainWindow.Resize(size)
 	}
 	go func() { // handle new characters in the search bar and new items loaded.
 		for {
@@ -267,7 +269,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
 	}
 	g.ui.SearchEntry.OnKeyDown = keyHandler
-	g.mainWindow.Canvas().SetOnTypedKey(keyHandler)
+	g.ui.MainWindow.Canvas().SetOnTypedKey(keyHandler)
 }
 
 // ResetUI based on g.menu with minimal rerendering.
@@ -287,7 +289,7 @@ func (g *GMenu) setMenuBasedUI() {
 
 // ToggleVisibility toggles the visibility of the gmenu window.
 func (g *GMenu) ToggleVisibility() {
-	if g.mainWindow.Content().Visible() {
+	if g.ui.MainWindow.Content().Visible() {
 		g.HideUI()
 	} else {
 		g.ShowUI()
