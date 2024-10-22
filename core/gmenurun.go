@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/hamidzr/gmenu/constant"
@@ -22,6 +21,7 @@ func (g *GMenu) SetExitCode(code int) {
 func (g *GMenu) Quit(code int) {
 	g.SetExitCode(code)
 	g.app.Quit()
+	_ = removePidFile(g.menuID)
 }
 
 // Reset resets the gmenu state without exiting.
@@ -33,6 +33,7 @@ func (g *GMenu) Reset() {
 	g.ExitCode = constant.UnsetInt
 	g.SelectionWg = sync.WaitGroup{}
 	g.menu.Selected = 0
+	removePidFile(g.menuID)
 	g.SetupMenu([]string{"Loading..."}, "")
 }
 
@@ -41,19 +42,6 @@ func (g *GMenu) RunAppForever() error {
 		panic("Run called multiple times")
 	}
 	g.isRunning = true
-	pidFile, err := createPidFile(g.menuID)
-	defer func() { // clean up the pid file.
-		if pidFile != "" {
-			if err := os.Remove(pidFile); err != nil {
-				fmt.Println("Failed to remove pid file:", pidFile)
-				logrus.Error(err)
-			}
-		}
-	}()
-	if err != nil {
-		g.Quit(1)
-		return err
-	}
 	g.app.Run()
 	return nil
 }
@@ -62,11 +50,16 @@ func (g *GMenu) RunAppForever() error {
 func (g *GMenu) ShowUI() {
 	g.SelectionWg.Add(1)
 	g.mainWindow.Show()
+	_, err := createPidFile(g.menuID)
+	if err != nil {
+		g.Quit(1)
+	}
 }
 
 // HideUI hides the UI.
 func (g *GMenu) HideUI() {
 	g.mainWindow.Hide()
+	removePidFile(g.menuID)
 }
 
 // Run starts the application.

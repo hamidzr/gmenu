@@ -7,6 +7,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func removePidFile(name string) error {
+	dir := os.TempDir()
+	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
+	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
+		logrus.Warn("Pid file does not exist:", pidFile)
+		return fmt.Errorf("pid file does not exist")
+	}
+	err := os.Remove(pidFile)
+	if err != nil {
+		logrus.Error("Failed to remove pid file:", err)
+		return err
+	}
+	logrus.Info("Pid file removed successfully:", pidFile)
+	return nil
+}
+
 func createPidFile(name string) (string, error) {
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
