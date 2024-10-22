@@ -17,9 +17,17 @@ func (g *GMenu) SetExitCode(code int) {
 	g.ExitCode = code
 }
 
-// Quit exits the application.
-func (g *GMenu) Quit(code int) {
+// QuitWithCode exits the application.
+func (g *GMenu) QuitWithCode(code int) {
 	g.SetExitCode(code)
+	g.Quit()
+}
+
+// Quit exits the application with the preset exit code.
+func (g *GMenu) Quit() {
+	if g.ExitCode == constant.UnsetInt {
+		panic("Exit code not set")
+	}
 	g.app.Quit()
 	_ = removePidFile(g.menuID)
 }
@@ -52,7 +60,7 @@ func (g *GMenu) ShowUI() {
 	g.mainWindow.Show()
 	_, err := createPidFile(g.menuID)
 	if err != nil {
-		g.Quit(1)
+		g.QuitWithCode(1)
 	}
 }
 

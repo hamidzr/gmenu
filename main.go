@@ -88,24 +88,24 @@ func run() {
 		os.Exit(1)
 	}
 	gmenu.SetupMenu([]string{"Loading"}, cliArgs.initialQuery)
+	gmenu.ShowUI()
 	go func() {
 		items := readItems()
 		if len(items) == 0 {
 			logrus.Error("No items provided through standard input")
-			gmenu.Quit(1)
+			gmenu.QuitWithCode(1)
+			gmenu.SelectionWg.Done()
 			return
 		}
 		gmenu.SetItems(items, nil)
 	}()
-
-	gmenu.ShowUI()
 	go func() {
 		// if selection is made without an exit, stop the app.
 		gmenu.SelectionWg.Wait()
 		if gmenu.ExitCode == constant.UnsetInt {
-			gmenu.Quit(0)
+			gmenu.QuitWithCode(0)
 		} else {
-			gmenu.Quit(gmenu.ExitCode)
+			gmenu.QuitWithCode(gmenu.ExitCode)
 		}
 	}()
 

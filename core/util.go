@@ -11,7 +11,6 @@ func removePidFile(name string) error {
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
-		logrus.Warn("Pid file does not exist:", pidFile)
 		return fmt.Errorf("pid file does not exist")
 	}
 	err := os.Remove(pidFile)
