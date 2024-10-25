@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/hamidzr/gmenu/render"
 	"github.com/hamidzr/gmenu/store"
@@ -42,7 +41,7 @@ type GMenu struct {
 	menuCancel    context.CancelFunc
 	app           fyne.App
 	store         store.Store
-	ExitCode      int
+	ExitCode      model.ExitCode
 	dims          Dimensions
 	searchMethod  SearchMethod
 	preserveOrder bool
@@ -69,7 +68,7 @@ func NewGMenu(
 		prompt:        prompt,
 		AppTitle:      title,
 		menuID:        menuID,
-		ExitCode:      constant.UnsetInt,
+		ExitCode:      model.Unset,
 		searchMethod:  searchMethod,
 		preserveOrder: preserveOrder,
 		store:         store,
@@ -261,7 +260,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 			g.ui.SearchEntry.Disable()
 			g.SelectionWg.Done()
 		case fyne.KeyEscape:
-			g.ExitCode = 1
+			g.ExitCode = model.UserCanceled
 			g.SelectionWg.Done()
 		default:
 			return

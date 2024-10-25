@@ -8,6 +8,7 @@ import (
 	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/core"
 	"github.com/hamidzr/gmenu/internal/logger"
+	"github.com/hamidzr/gmenu/model"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -102,7 +103,7 @@ func run() {
 	go func() {
 		// if selection is made without an exit, stop the app.
 		gmenu.SelectionWg.Wait()
-		if gmenu.ExitCode == constant.UnsetInt {
+		if gmenu.ExitCode == model.Unset {
 			gmenu.QuitWithCode(0)
 		} else {
 			gmenu.QuitWithCode(gmenu.ExitCode)
@@ -126,9 +127,9 @@ func run() {
 	if err := gmenu.RunAppForever(); err != nil {
 		logrus.WithError(err).Error("run() err")
 	}
-	if gmenu.ExitCode != 0 {
+	if gmenu.ExitCode != model.NoError {
 		logrus.Trace("Quitting gmenu with code: ", gmenu.ExitCode)
-		os.Exit(gmenu.ExitCode)
+		os.Exit(int(gmenu.ExitCode))
 	}
 	val, err := gmenu.SelectedValue()
 	if err != nil {

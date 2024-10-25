@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 
-	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/model"
 )
 
@@ -48,9 +47,9 @@ func (g *GMenu) AppendItems(items []string) {
 // SelectedValue returns the selected item.
 func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	g.SelectionWg.Wait()
-	if g.ExitCode == constant.UnsetInt {
+	if g.ExitCode == model.Unset {
 		// this is a valid case in daemon mode.
-	} else if g.ExitCode != 0 {
+	} else if g.ExitCode != model.NoError {
 		return nil, fmt.Errorf("gmenu exited with code %d", g.ExitCode)
 	}
 	// TODO: cli option for allowing query.

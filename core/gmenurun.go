@@ -4,28 +4,28 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/hamidzr/gmenu/constant"
+	"github.com/hamidzr/gmenu/model"
 	"github.com/sirupsen/logrus"
 )
 
 // setExitCode sets the exit code for the application.
-func (g *GMenu) SetExitCode(code int) {
+func (g *GMenu) SetExitCode(code model.ExitCode) {
 	logrus.Debug("setting exit code to: ", code)
-	if g.ExitCode != constant.UnsetInt && g.ExitCode != code {
+	if g.ExitCode != model.Unset && g.ExitCode != code {
 		panic("Exit code set multiple times to different values")
 	}
 	g.ExitCode = code
 }
 
 // QuitWithCode exits the application.
-func (g *GMenu) QuitWithCode(code int) {
+func (g *GMenu) QuitWithCode(code model.ExitCode) {
 	g.SetExitCode(code)
 	g.Quit()
 }
 
 // Quit exits the application with the preset exit code.
 func (g *GMenu) Quit() {
-	if g.ExitCode == constant.UnsetInt {
+	if g.ExitCode == model.Unset {
 		panic("Exit code not set")
 	}
 	g.app.Quit()
@@ -38,7 +38,7 @@ func (g *GMenu) Reset() {
 	logrus.Info("resetting gmenu state")
 	g.menuCancel()
 	g.ui.SearchEntry.Enable()
-	g.ExitCode = constant.UnsetInt
+	g.ExitCode = model.Unset
 	g.SelectionWg = sync.WaitGroup{}
 	g.menu.Selected = 0
 	removePidFile(g.menuID)
