@@ -1,7 +1,7 @@
 package core
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/hamidzr/gmenu/model"
 )
@@ -50,7 +50,7 @@ func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	if g.ExitCode == model.Unset {
 		// this is a valid case in daemon mode.
 	} else if g.ExitCode != model.NoError {
-		return nil, fmt.Errorf("gmenu exited with code %d", g.ExitCode)
+		return nil, errors.Wrap(g.ExitCode, "an error code is set")
 	}
 	// TODO: cli option for allowing query.
 	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
