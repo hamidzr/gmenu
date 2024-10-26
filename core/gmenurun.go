@@ -69,6 +69,11 @@ func (g *GMenu) ShowUI() {
 // HideUI hides the UI.
 func (g *GMenu) HideUI() {
 	g.ui.MainWindow.Hide()
+	// if err := util.MinimizeWindow(context.TODO(), g.ui.MainWindow.Title()); err != nil {
+	// 	logrus.Error("Failed to minimize window:", err)
+	// } else {
+	// 	logrus.Debug("Minimized window", g.ui.MainWindow.Title())
+	// }
 	removePidFile(g.menuID)
 }
 
