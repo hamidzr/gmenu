@@ -54,6 +54,7 @@ func (g *GMenu) selectedItem() *model.MenuItem {
 }
 
 // SelectedValue returns the selected item.
+// TODO: support for context cancellations.
 func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	g.SelectionWg.Wait()
 	if g.ExitCode == model.Unset {

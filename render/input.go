@@ -3,6 +3,7 @@ package render
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -35,6 +36,18 @@ func (e *SearchEntry) TypedKey(key *fyne.KeyEvent) {
 		}
 	}
 	e.Entry.TypedKey(key)
+}
+
+// TypedShortcut implements the fyne.TypedShortcutReceiver interface.
+func (e *SearchEntry) TypedShortcut(shortcut fyne.Shortcut) {
+	s, ok := shortcut.(*desktop.CustomShortcut)
+	if !ok {
+		e.Entry.TypedShortcut(shortcut)
+		return
+	}
+	if s.Mod() == fyne.KeyModifierControl && s.Key() == fyne.KeyL {
+		e.SetText("")
+	}
 }
 
 // NewInputArea returns a horizontal container with input widgets.
