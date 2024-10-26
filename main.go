@@ -83,7 +83,9 @@ func run() {
 		logrus.Error("Invalid search method")
 		os.Exit(1)
 	}
-	gmenu, err := core.NewGMenu(cliArgs.title, cliArgs.prompt, nil, cliArgs.menuID, searchMethod, cliArgs.preserveOrder)
+	gmenu, err := core.NewGMenu(
+		cliArgs.title, cliArgs.prompt, nil, cliArgs.menuID, searchMethod, cliArgs.preserveOrder, model.DefaultConfig(),
+	)
 	if err != nil {
 		logrus.Error(err, "failed to create gmenu")
 		os.Exit(1)

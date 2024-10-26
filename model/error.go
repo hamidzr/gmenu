@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type ExitCode int
 
@@ -19,4 +22,10 @@ const (
 	NoError ExitCode = iota
 	UnknownError
 	UserCanceled
+)
+
+var (
+	// CustomUserEntry is when the user inputs and pushes an entry through that doesn't exist
+	// and gmenu is not set to accept it.
+	CustomUserEntry = errors.New("unmatched user entry")
 )

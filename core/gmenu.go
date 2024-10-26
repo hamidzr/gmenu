@@ -38,6 +38,7 @@ type GMenu struct {
 	prompt        string
 	menuID        string
 	menu          *menu
+	config        *model.Config
 	menuCancel    context.CancelFunc
 	app           fyne.App
 	store         store.Store
@@ -59,6 +60,7 @@ func NewGMenu(
 	menuID string,
 	searchMethod SearchMethod,
 	preserveOrder bool,
+	config *model.Config,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", menuID}, "yaml")
 	if err != nil {
@@ -71,6 +73,7 @@ func NewGMenu(
 		ExitCode:      model.Unset,
 		searchMethod:  searchMethod,
 		preserveOrder: preserveOrder,
+		config:        config,
 		store:         store,
 		dims: Dimensions{
 			MinWidth:  600,

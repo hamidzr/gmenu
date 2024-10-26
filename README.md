@@ -2,6 +2,7 @@
 
 ## TODO
 
+- [ ] report created window's id and pid?
 - [ ] multiple selection: select two inputs for guillm.
 - [ ] ctrl+c to work like esc
 - [ ] no focus border color for input

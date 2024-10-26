@@ -57,5 +57,8 @@ func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 		selected := g.menu.Filtered[g.menu.Selected]
 		return &selected, nil
 	}
-	return &model.MenuItem{Title: g.menu.query}, nil
+	if g.config.AcceptCustomSelection {
+		return &model.MenuItem{Title: g.menu.query}, nil
+	}
+	return nil, model.CustomUserEntry
 }
