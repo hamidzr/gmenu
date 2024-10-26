@@ -16,8 +16,8 @@ type Config struct {
 // 	return activeConfig
 // }
 
-func DefaultConfig() *Config {
-	return &Config{
+func DefaultConfig() Config {
+	return Config{
 		AcceptCustomSelection: true,
 	}
 }

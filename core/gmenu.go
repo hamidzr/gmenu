@@ -38,7 +38,7 @@ type GMenu struct {
 	prompt        string
 	menuID        string
 	menu          *menu
-	config        *model.Config
+	config        model.Config
 	menuCancel    context.CancelFunc
 	app           fyne.App
 	store         store.Store
@@ -60,7 +60,7 @@ func NewGMenu(
 	menuID string,
 	searchMethod SearchMethod,
 	preserveOrder bool,
-	config *model.Config,
+	config model.Config,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", menuID}, "yaml")
 	if err != nil {
@@ -260,6 +260,10 @@ func (g *GMenu) startListenDynamicUpdates() {
 				g.menu.Selected = len(g.menu.Filtered) - 1
 			}
 		case fyne.KeyReturn:
+			// con't accept enter key if no items are present and custom selection is disabled.'
+			if !g.config.AcceptCustomSelection && len(g.menu.Filtered) == 0 {
+				return
+			}
 			g.ui.SearchEntry.Disable()
 			g.SelectionWg.Done()
 		case fyne.KeyEscape:

@@ -44,6 +44,15 @@ func (g *GMenu) AppendItems(items []string) {
 	g.addItems(items, true)
 }
 
+// selectedItem returns the selected item if in bound or nil.
+func (g *GMenu) selectedItem() *model.MenuItem {
+	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered) {
+		selected := g.menu.Filtered[g.menu.Selected]
+		return &selected
+	}
+	return nil
+}
+
 // SelectedValue returns the selected item.
 func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	g.SelectionWg.Wait()
@@ -53,9 +62,8 @@ func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 		return nil, errors.Wrap(g.ExitCode, "an error code is set")
 	}
 	// TODO: cli option for allowing query.
-	if g.menu.Selected >= 0 && g.menu.Selected < len(g.menu.Filtered)+1 {
-		selected := g.menu.Filtered[g.menu.Selected]
-		return &selected, nil
+	if selected := g.selectedItem(); selected != nil {
+		return selected, nil
 	}
 	if g.config.AcceptCustomSelection {
 		return &model.MenuItem{Title: g.menu.query}, nil
