@@ -6,7 +6,7 @@ toolchain go1.22.8
 
 require (
 	fyne.io/fyne/v2 v2.5.2
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
