@@ -54,26 +54,21 @@ type GMenu struct {
 
 // NewGMenu creates a new GMenu instance.
 func NewGMenu(
-	title string,
-	prompt string,
-	menu *menu,
-	menuID string,
 	searchMethod SearchMethod,
-	preserveOrder bool,
-	config model.Config,
+	conf model.Config,
 ) (*GMenu, error) {
-	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", menuID}, "yaml")
+	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", conf.MenuID}, "yaml")
 	if err != nil {
 		return nil, err
 	}
 	g := &GMenu{
-		prompt:        prompt,
-		AppTitle:      title,
-		menuID:        menuID,
+		prompt:        conf.Prompt,
+		AppTitle:      conf.Title,
+		menuID:        conf.MenuID,
 		ExitCode:      model.Unset,
 		searchMethod:  searchMethod,
-		preserveOrder: preserveOrder,
-		config:        config,
+		preserveOrder: conf.PreserveOrder,
+		config:        conf,
 		store:         store,
 		dims: Dimensions{
 			MinWidth:  600,
