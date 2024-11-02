@@ -33,6 +33,19 @@ func (g *GMenu) addItems(items []string, tail bool) {
 	// TODO: add using SetItems?
 }
 
+// // AttemptAutoSelect attempts to auto select if conditions are met.
+// func (g *GMenu) AttemptAutoSelect() {
+// 	if g.config.InitialQuery == "" {
+// 		return
+// 	}
+// 	// items might not be loaded needs to lock menu.items access.?
+// 	// g.menu.Search(g.config.InitialQuery)
+// 	// fmt.Println(g.menu.items)
+// 	if g.config.AutoAccept && len(g.menu.Filtered) == 1 {
+// 		g.selectionMade()
+// 	}
+// }
+
 // PrependItems adds items to the beginning of the menu.
 func (g *GMenu) PrependItems(items []string) {
 	g.addItems(items, false)

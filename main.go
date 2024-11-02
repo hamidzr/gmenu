@@ -52,6 +52,7 @@ func run() {
 			return
 		}
 		gmenu.SetItems(items, nil)
+		// gmenu.AttemptAutoSelect()
 	}()
 	go func() {
 		// if selection is made without an exit, stop the app.

@@ -259,8 +259,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 			if !g.config.AcceptCustomSelection && len(g.menu.Filtered) == 0 {
 				return
 			}
-			g.ui.SearchEntry.Disable()
-			g.SelectionWg.Done()
+			g.selectionMade()
 		case fyne.KeyEscape:
 			g.ExitCode = model.UserCanceled
 			g.SelectionWg.Done()
@@ -271,6 +270,11 @@ func (g *GMenu) startListenDynamicUpdates() {
 	}
 	g.ui.SearchEntry.OnKeyDown = keyHandler
 	g.ui.MainWindow.Canvas().SetOnTypedKey(keyHandler)
+}
+
+func (g *GMenu) selectionMade() {
+	g.ui.SearchEntry.Disable()
+	g.SelectionWg.Done()
 }
 
 // ResetUI based on g.menu with minimal rerendering.
