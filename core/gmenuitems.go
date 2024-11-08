@@ -14,8 +14,8 @@ func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable
 		menuItems = append(menuItems, model.MenuItem{AType: &myItem})
 	}
 	g.menu.itemsMutex.Lock()
+	defer g.menu.itemsMutex.Unlock()
 	g.menu.ItemsChan <- menuItems
-	g.menu.itemsMutex.Unlock()
 }
 
 // addItems adds items to the menu.
