@@ -1,14 +1,15 @@
-package main
+package cli
 
 import (
 	"bufio"
 	"fmt"
 	"os"
 
+	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/core"
-	"github.com/hamidzr/gmenu/internal/logger"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 func readItems() []string {
@@ -28,7 +29,37 @@ func readItems() []string {
 	return items
 }
 
-func run() {
+func InitCLI() *cobra.Command {
+	var cliArgs = model.CliArgs{
+		Title:         constant.ProjectName,
+		Prompt:        "Search",
+		MenuID:        "",
+		SearchMethod:  "fuzzy",
+		PreserveOrder: false,
+		InitialQuery:  "",
+		AutoAccept:    false,
+	}
+
+	RootCmd := &cobra.Command{
+		Use:   "gmenu",
+		Short: "gmenu is a fuzzy menu selector",
+		Run: func(cmd *cobra.Command, args []string) {
+			run(cliArgs)
+		},
+	}
+
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.Title, "title", "t", cliArgs.Title, "Title of the menu window")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.InitialQuery, "initial-query", "q", cliArgs.InitialQuery, "Initial query to search for")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.Prompt, "prompt", "p", cliArgs.Prompt, "Prompt of the menu window")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.MenuID, "menu-id", "m", cliArgs.MenuID, "Menu ID")
+	RootCmd.PersistentFlags().StringVarP(&cliArgs.SearchMethod, "search-method", "s", cliArgs.SearchMethod, "Search method")
+	RootCmd.PersistentFlags().BoolVarP(&cliArgs.PreserveOrder, "preserve-order", "o", cliArgs.PreserveOrder, "Preserve the order of the input items")
+	RootCmd.PersistentFlags().BoolVarP(&cliArgs.AutoAccept, "auto-accept", "", cliArgs.AutoAccept, "Auto accept if there's only a single match.")
+
+	return RootCmd
+}
+
+func run(cliArgs model.CliArgs) {
 	searchMethod, ok := core.SearchMethods[cliArgs.SearchMethod]
 	if !ok {
 		logrus.Error("Invalid search method")
@@ -91,13 +122,4 @@ func run() {
 		os.Exit(1)
 	}
 	fmt.Println(val.ComputedTitle())
-}
-
-func main() {
-	cmd := initCLI()
-	logger.SetupLogger()
-	if err := cmd.Execute(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
 }
