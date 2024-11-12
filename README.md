@@ -2,6 +2,7 @@
 
 ## TODO
 
+- [ ] fuzzy search avoid matching single chars alone unless near separator?
 - [ ] report created window's id and pid?
 - [ ] multiple selection: select two inputs for guillm.
 - [ ] ctrl+c to work like esc
