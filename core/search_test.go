@@ -116,7 +116,7 @@ func TestFuzzy(t *testing.T) {
 		for _, tc := range testCases {
 			fmt.Println("test case", tc)
 			itemStrs := strToItems(tc.items)
-			res := FuzzySearchBrute(itemStrs, tc.query, false, 3)
+			res := FuzzySearchBrute1(itemStrs, tc.query, false, 3)
 			resStrs := itemsToStr(res)
 
 			if tc.expectedItems != nil {
@@ -174,6 +174,29 @@ func TestFuzzySearchBrute(t *testing.T) {
 	}
 
 	testCases := []testCase{
+		// { // TODO
+		// 	name: "space should be exception for min consecutive chars",
+		// 	items: []string{
+		// 		"wha tsapp",
+		// 	},
+		// 	query: "atsa",
+		// 	limit: 10,
+		// 	expectedItems: []string{
+		// 		"wha tsapp",
+		// 	},
+		// },
+		{
+			name: "min consecutive match of 2 chars should hold",
+			items: []string{
+				"whaxtsapp",
+				"whatxsapp",
+			},
+			query: "atsa",
+			limit: 10,
+			expectedItems: []string{
+				"whatxsapp",
+			},
+		},
 		{
 			name: "Query 'atsa' should prioritize 'whatsapp'",
 			items: []string{
@@ -185,25 +208,9 @@ func TestFuzzySearchBrute(t *testing.T) {
 			limit: 10,
 			expectedItems: []string{
 				"whatsapp",
-				"whaxtsapp",
 				"whats app",
 			},
 		},
-		// {
-		// 	name: "Query 'ats ap' should prioritize 'whats app'",
-		// 	items: []string{
-		// 		"whatsapp",
-		// 		"whaxtsapp",
-		// 		"whats app",
-		// 	},
-		// 	query: "ats ap",
-		// 	limit: 10,
-		// 	expectedItems: []string{
-		// 		"whats app",
-		// 		"whatsapp",
-		// 		"whaxtsapp",
-		// 	},
-		// },
 		{
 			name: "Query 'atsap' should match all variants",
 			items: []string{
@@ -215,7 +222,6 @@ func TestFuzzySearchBrute(t *testing.T) {
 			limit: 10,
 			expectedItems: []string{
 				"whatsapp",
-				"whaxtsapp",
 				"whats app",
 			},
 		},
@@ -230,12 +236,26 @@ func TestFuzzySearchBrute(t *testing.T) {
 			limit:         10,
 			expectedItems: []string{},
 		},
+		{
+			name: "single chars should not match. min 2",
+			items: []string{
+				"tg oday",
+				"to---day",
+				"xxtodayxx",
+			},
+			query: "today",
+			limit: 10,
+			expectedItems: []string{
+				"xxtodayxx",
+				"to---day",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			items := strToItems(&tc.items)
-			results := FuzzySearchBrute(items, tc.query, false, tc.limit)
+			results := fuzzySearchBruteConsec(items, tc.query, tc.limit, 2)
 			resultTitles := itemsToStr(results)
 			assert.Equal(t, tc.expectedItems, resultTitles)
 		})

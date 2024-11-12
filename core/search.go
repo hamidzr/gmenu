@@ -54,22 +54,38 @@ func calculateInsertions(str1, str2 string) int {
 	return insertions
 }
 
-// fuzzyContains checks if all characters in the query exist in the string in order.
-// TODO: compute how many chars/ratio violate this?
-func fuzzyContains(s, query string, ignoreCase bool) bool {
+func fuzzyContainsConsec(s, query string, ignoreCase bool, minConsecutive int) bool {
 	if ignoreCase {
 		s, query = strings.ToLower(s), strings.ToLower(query)
 	}
-	queryIndex := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == query[queryIndex] {
-			queryIndex++
+
+	if len(query) < minConsecutive {
+		return false
+	}
+
+	// Iterate through 's' to find at least 'minConsecutive' consecutive matching characters
+	for i := 0; i <= len(s)-minConsecutive; i++ {
+		if s[i:i+minConsecutive] == query[0:minConsecutive] {
+			// Found the starting point with 'minConsecutive' matching characters
+			queryIndex := minConsecutive
+			// Continue matching the rest of the query (non-consecutively)
+			for j := i + minConsecutive; j < len(s) && queryIndex < len(query); j++ {
+				if s[j] == query[queryIndex] {
+					queryIndex++
+				}
+			}
 			if queryIndex == len(query) {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+// fuzzyContains checks if all characters in the query exist in the string in order.
+// TODO: compute how many chars/ratio violate this?
+func fuzzyContains(s, query string, ignoreCase bool) bool {
+	return fuzzyContainsConsec(s, query, ignoreCase, 1)
 }
 
 // calculates the ratio of the query chars that exists in s in anyorder.
@@ -116,9 +132,7 @@ func DirectSearch(items []model.MenuItem, keyword string, _ bool, limit int) []m
 	return applyLimit(matches, limit)
 }
 
-// FuzzySearchBrute is a brute force fuzzy search.
-// Direct matches are prioritized over fuzzy matches.
-func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
+func fuzzySearchBruteConsec(items []model.MenuItem, keyword string, limit int, consecutive int) []model.MenuItem {
 	if keyword == "" {
 		return items
 	}
@@ -127,11 +141,24 @@ func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int)
 	for _, item := range items {
 		if IsDirectMatch(item.ComputedTitle(), keyword, true) {
 			direcMatches = append(direcMatches, item)
-		} else if fuzzyContains(item.ComputedTitle(), keyword, true) {
+		} else if fuzzyContainsConsec(item.ComputedTitle(), keyword, true, consecutive) {
 			fuzzyMatches = append(fuzzyMatches, item)
 		}
 	}
 	return applyLimit(append(direcMatches, fuzzyMatches...), limit)
+}
+
+// FuzzySearchBrute is a brute force fuzzy search.
+// Direct matches are prioritized over fuzzy matches.
+func FuzzySearchBrute1(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
+	return fuzzySearchBruteConsec(items, keyword, limit, 1)
+}
+
+// FuzzySearchBrute is a brute force fuzzy search.
+// Direct matches are prioritized over fuzzy matches.
+// A minimum of 2 consecutive characters are required for a fuzzy match.
+func FuzzySearchBrute(items []model.MenuItem, keyword string, _ bool, limit int) []model.MenuItem {
+	return fuzzySearchBruteConsec(items, keyword, limit, 2)
 }
 
 // SearchWithSeparator breaks down the keyword into subqueries.
