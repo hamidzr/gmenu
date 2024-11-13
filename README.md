@@ -7,20 +7,20 @@
 - [ ] multiple selection: select two inputs for guillm.
 - [ ] ctrl+c to work like esc
 - [ ] no focus border color for input
+- [ ] search: fuzzy with char presence check and relative count
+- [ ] add cli support for same behavior but in the terminal
+- [ ] survey dmenu option to provide better compatibility
+  - add prompt option
+- [ ] preserve original input order on startup (and resets?)
+- [x] auto pick single list of options. preapply a query as well
 - [x] remember last entry and have it auto selected on start.
   - or put it as the first option..
 - [x] close on focus loss
-- [ ] instance lock only based on menu name. pid
+- [x] instance lock only based on menu name. pid
 - app should have a name for activity monitor and ps faux
 - [x] a single instance with the same title
 - [x] the current fuzzy search is not great
-- add cli support for same behavior but in the terminal
-- survey dmenu option to provide compatibility
-  - add prompt option
-- preserve original input order on startup (and resets?)
 - [x] simple fuzzy to ignore some letters eg space - \_
-- [ ] search: fuzzy with char presence check and relative count
-- [ ] auto pick single list of options. preapply a query as well
 
 ```
 choose:

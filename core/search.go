@@ -59,9 +59,8 @@ func fuzzyContainsConsec(s, query string, ignoreCase bool, minConsecutive int) b
 		s, query = strings.ToLower(s), strings.ToLower(query)
 	}
 
-	if len(query) < minConsecutive {
-		return false
-	}
+	minConsecutive = min(max(minConsecutive, 1), len(query))
+	// CHECK: or do we skip if len is shorter that minConsecutive?
 
 	// Iterate through 's' to find at least 'minConsecutive' consecutive matching characters
 	for i := 0; i <= len(s)-minConsecutive; i++ {
