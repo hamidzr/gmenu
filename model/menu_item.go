@@ -25,6 +25,12 @@ func (m *MenuItem) ComputedTitle() string {
 	return ""
 }
 
+// Serialize implements GmenuSerializable for MenuItem.
+// CHECK: is it accurate? why do we have the separation here.
+// func (m MenuItem) Serialize() string {
+// 	return m.ComputedTitle()
+// }
+
 // TestSerializable is a test type that implements GmenuSerializable.
 type TestSerializable struct{}
 

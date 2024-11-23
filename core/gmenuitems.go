@@ -13,8 +13,9 @@ func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable
 		myItem := item
 		menuItems = append(menuItems, model.MenuItem{AType: &myItem})
 	}
-	g.menu.itemsMutex.Lock()
-	defer g.menu.itemsMutex.Unlock()
+	// we don't need this lock do we?
+	// g.menu.itemsMutex.Lock()
+	// defer g.menu.itemsMutex.Unlock()
 	g.menu.ItemsChan <- menuItems
 }
 
@@ -29,8 +30,8 @@ func (g *GMenu) addItems(items []string, tail bool) {
 		newItems = append(newMenuItems, g.menu.items...)
 	}
 	g.menu.itemsMutex.Unlock()
-	g.menu.ItemsChan <- newItems
 	// TODO: add using SetItems?
+	g.menu.ItemsChan <- newItems
 }
 
 // // AttemptAutoSelect attempts to auto select if conditions are met.
