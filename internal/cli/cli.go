@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/core"
@@ -74,6 +75,12 @@ func run(cliArgs model.CliArgs) {
 		logrus.Error(err, "failed to create gmenu")
 		os.Exit(1)
 	}
+
+	if cliArgs.TerminalMode {
+		runTerminalMode(gmenu, cliArgs)
+		return
+	}
+
 	gmenu.SetupMenu([]string{"Loading"}, cliArgs.InitialQuery)
 	gmenu.ShowUI()
 	go func() {
@@ -85,10 +92,8 @@ func run(cliArgs model.CliArgs) {
 			return
 		}
 		gmenu.SetItems(items, nil)
-		// gmenu.AttemptAutoSelect()
 	}()
 	go func() {
-		// if selection is made without an exit, stop the app.
 		gmenu.SelectionWg.Wait()
 		if gmenu.ExitCode == model.Unset {
 			gmenu.QuitWithCode(0)
@@ -96,20 +101,6 @@ func run(cliArgs model.CliArgs) {
 			gmenu.QuitWithCode(gmenu.ExitCode)
 		}
 	}()
-
-	// go func() {
-	// 	for {
-	// 		gmenu.ShowUI()
-	// 		time.Sleep(2 * time.Second)
-	// 		go gmenu.CacheSelectedValue()
-	// 		item, err := gmenu.SelectedValue()
-	// 		if	err == nil {
-	// 			fmt.Println(item.ComputedTitle())
-	// 		}
-	// 		gmenu.ToggleVisibility()
-	// 		gmenu.Reset()
-	// 	}
-	// }()
 
 	if err := gmenu.RunAppForever(); err != nil {
 		logrus.WithError(err).Error("run() err")
@@ -124,4 +115,63 @@ func run(cliArgs model.CliArgs) {
 		os.Exit(1)
 	}
 	fmt.Println(val.ComputedTitle())
+}
+
+func runTerminalMode(gmenu *core.GMenu, cliArgs model.CliArgs) {
+	fmt.Println("Running in terminal mode")
+	items := readItems()
+	if len(items) == 0 {
+		logrus.Error("No items provided through standard input")
+		return
+	}
+	// reset stdin from non-interactive to interactive.
+	os.Stdin.Close()
+	os.Stdin, _ = os.Open("/dev/tty")
+
+	matcher := func(items []string, query string) []string {
+		var matches []string
+		for _, item := range items {
+			if strings.Contains(strings.ToLower(item), strings.ToLower(query)) {
+				matches = append(matches, item)
+			}
+		}
+		return matches
+	}
+
+	queryChan := make(chan string, 1)
+	go func() {
+		// ReadUserInputLive() will close the queryChan when the user is done.
+		for query := range queryChan {
+			// Clear screen and reset cursor
+			fmt.Print("\033[2J\033[H")
+
+			// Print header
+			fmt.Printf("%s: %s\n", cliArgs.Prompt, query)
+			fmt.Printf("\r--------------------------------\n")
+
+			// Filter and display matching items
+			matchCount := 0
+			for idx, match := range matcher(items, query) {
+				fmt.Printf("\r%d. %s\n", idx+1, match)
+				matchCount++
+			}
+
+			if matchCount == 0 {
+				fmt.Printf("\r(no matches)\n")
+			}
+			fmt.Printf("\r--------------------------------\n")
+		}
+	}()
+	finalQuery := core.ReadUserInputLive(cliArgs, queryChan)
+	matches := matcher(items, finalQuery)
+	if len(matches) == 0 {
+		fmt.Println("No matches found")
+		return
+	}
+	if len(matches) > 1 {
+		fmt.Println("Multiple matches found. Picking the first one.")
+	}
+	// clear the screen
+	fmt.Print("\033[2J\033[H")
+	fmt.Printf("\r%s\n", matches[0])
 }

@@ -300,3 +300,12 @@ func (g *GMenu) ToggleVisibility() {
 		g.ShowUI()
 	}
 }
+
+// Search performs a search on the menu items using the configured search method.
+func (g *GMenu) Search(query string) []model.MenuItem {
+	if g.menu == nil {
+		return nil
+	}
+	g.menu.Search(query)
+	return g.menu.Filtered
+}
