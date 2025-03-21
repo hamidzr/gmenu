@@ -23,6 +23,8 @@ type CliArgs struct {
 	// allowCustomOutput bool
 	// AutoAccept indicates whether to auto accept the only item if there's only one match
 	AutoAccept bool
+	// TerminalMode indicates whether to run in terminal-only mode without GUI
+	TerminalMode bool
 }
 
 // var (

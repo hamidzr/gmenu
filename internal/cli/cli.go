@@ -38,6 +38,7 @@ func InitCLI() *cobra.Command {
 		PreserveOrder: false,
 		InitialQuery:  "",
 		AutoAccept:    false,
+		TerminalMode:  false,
 	}
 
 	RootCmd := &cobra.Command{
@@ -55,6 +56,7 @@ func InitCLI() *cobra.Command {
 	RootCmd.PersistentFlags().StringVarP(&cliArgs.SearchMethod, "search-method", "s", cliArgs.SearchMethod, "Search method")
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.PreserveOrder, "preserve-order", "o", cliArgs.PreserveOrder, "Preserve the order of the input items")
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.AutoAccept, "auto-accept", "", cliArgs.AutoAccept, "Auto accept if there's only a single match.")
+	RootCmd.PersistentFlags().BoolVarP(&cliArgs.TerminalMode, "terminal", "", cliArgs.TerminalMode, "Run in terminal-only mode without GUI")
 
 	return RootCmd
 }
