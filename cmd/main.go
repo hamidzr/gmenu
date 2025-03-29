@@ -9,6 +9,11 @@ import (
 )
 
 func main() {
+	// Suppress system debug output
+	os.Setenv("OS_ACTIVITY_MODE", "debug")
+	os.Stderr.Close()
+	os.Stderr, _ = os.Open(os.DevNull)
+
 	cmd := cli.InitCLI()
 	logger.SetupLogger()
 	if err := cmd.Execute(); err != nil {

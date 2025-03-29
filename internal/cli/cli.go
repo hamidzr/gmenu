@@ -114,11 +114,12 @@ func run(cliArgs model.CliArgs) {
 		logrus.Error(err)
 		os.Exit(1)
 	}
+	// Output the selected value directly to stdout without any logging
 	fmt.Println(val.ComputedTitle())
 }
 
 func runTerminalMode(gmenu *core.GMenu, cliArgs model.CliArgs) {
-	fmt.Println("Running in terminal mode")
+	logrus.Info("Running in terminal mode")
 	items := readItems()
 	if len(items) == 0 {
 		logrus.Error("No items provided through standard input")
@@ -146,32 +147,33 @@ func runTerminalMode(gmenu *core.GMenu, cliArgs model.CliArgs) {
 			fmt.Print("\033[2J\033[H")
 
 			// Print header
-			fmt.Printf("%s: %s\n", cliArgs.Prompt, query)
-			fmt.Printf("\r--------------------------------\n")
+			logrus.Infof("%s: %s", cliArgs.Prompt, query)
+			logrus.Info("--------------------------------")
 
 			// Filter and display matching items
 			matchCount := 0
 			for idx, match := range matcher(items, query) {
-				fmt.Printf("\r%d. %s\n", idx+1, match)
+				logrus.Infof("%d. %s", idx+1, match)
 				matchCount++
 			}
 
 			if matchCount == 0 {
-				fmt.Printf("\r(no matches)\n")
+				logrus.Info("(no matches)")
 			}
-			fmt.Printf("\r--------------------------------\n")
+			logrus.Info("--------------------------------")
 		}
 	}()
 	finalQuery := core.ReadUserInputLive(cliArgs, queryChan)
 	matches := matcher(items, finalQuery)
 	if len(matches) == 0 {
-		fmt.Println("No matches found")
+		logrus.Info("No matches found")
 		return
 	}
 	if len(matches) > 1 {
-		fmt.Println("Multiple matches found. Picking the first one.")
+		logrus.Info("Multiple matches found. Picking the first one.")
 	}
-	// clear the screen
+	// clear the screen and show result
 	fmt.Print("\033[2J\033[H")
-	fmt.Printf("\r%s\n", matches[0])
+	// Output the selected value directly to stdout without any logging
+	fmt.Println(matches[0])
 }
