@@ -12,6 +12,7 @@ type SearchEntry struct {
 	widget.Entry
 	OnKeyDown            func(key *fyne.KeyEvent)
 	PropagationBlacklist map[fyne.KeyName]bool
+	OnFocusLost          func()
 }
 
 // SelectAll selects all text in the entry.
@@ -48,6 +49,14 @@ func (e *SearchEntry) TypedShortcut(shortcut fyne.Shortcut) {
 	if s.Mod() == fyne.KeyModifierControl && s.Key() == fyne.KeyL {
 		e.SetText("")
 	}
+}
+
+// FocusLost implements the fyne.Focusable interface.
+func (e *SearchEntry) FocusLost() {
+	if e.OnFocusLost != nil {
+		e.OnFocusLost()
+	}
+	e.Entry.FocusLost()
 }
 
 // NewInputArea returns a horizontal container with input widgets.

@@ -50,6 +50,10 @@ type GMenu struct {
 	isRunning     bool
 	// SelectionWg is a wait group that lets listeners wait for user being donw with input.
 	SelectionWg sync.WaitGroup
+	// hasSelection is a flag to prevent multiple Done() calls
+	hasSelection bool
+	// selectionMutex protects hasSelection
+	selectionMutex sync.Mutex
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -181,6 +185,12 @@ func (g *GMenu) initUI() {
 	searchEntry := &render.SearchEntry{PropagationBlacklist: entryDisabledKeys}
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
+	searchEntry.OnFocusLost = func() {
+		if g.ExitCode == model.Unset {
+			g.ExitCode = model.UserCanceled
+			g.markSelectionMade()
+		}
+	}
 	itemsCanvas := render.NewItemsCanvas()
 	menuLabel := widget.NewLabel("menulabel")
 	inputBox := render.NewInputArea(searchEntry, menuLabel)
@@ -189,6 +199,14 @@ func (g *GMenu) initUI() {
 	mainWindow.Resize(fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight))
 	mainContainer.Add(itemsCanvas.Container)
 	mainWindow.Canvas().Focus(searchEntry)
+
+	// Add focus loss detection using OnClose
+	mainWindow.SetOnClosed(func() {
+		if g.ExitCode == model.Unset {
+			g.ExitCode = model.UserCanceled
+			g.markSelectionMade()
+		}
+	})
 
 	g.ui = &GUI{
 		SearchEntry: searchEntry,
@@ -259,10 +277,10 @@ func (g *GMenu) startListenDynamicUpdates() {
 			if !g.config.AcceptCustomSelection && len(g.menu.Filtered) == 0 {
 				return
 			}
-			g.selectionMade()
+			g.markSelectionMade()
 		case fyne.KeyEscape:
 			g.ExitCode = model.UserCanceled
-			g.SelectionWg.Done()
+			g.markSelectionMade()
 		default:
 			return
 		}
@@ -272,9 +290,15 @@ func (g *GMenu) startListenDynamicUpdates() {
 	g.ui.MainWindow.Canvas().SetOnTypedKey(keyHandler)
 }
 
-func (g *GMenu) selectionMade() {
-	g.ui.SearchEntry.Disable()
-	g.SelectionWg.Done()
+// markSelectionMade marks that a selection has been made and signals the wait group.
+func (g *GMenu) markSelectionMade() {
+	g.selectionMutex.Lock()
+	defer g.selectionMutex.Unlock()
+	if !g.hasSelection {
+		g.hasSelection = true
+		g.ui.SearchEntry.Disable()
+		g.SelectionWg.Done()
+	}
 }
 
 // ResetUI based on g.menu with minimal rerendering.
@@ -308,4 +332,23 @@ func (g *GMenu) Search(query string) []model.MenuItem {
 	}
 	g.menu.Search(query)
 	return g.menu.Filtered
+}
+
+// ShowUI and wait for user input.
+func (g *GMenu) ShowUI() {
+	// Reset only the state, not the menu
+	g.hasSelection = false
+	g.SelectionWg = sync.WaitGroup{}
+	g.SelectionWg.Add(1)
+	g.ExitCode = model.Unset
+
+	// Show window and set focus
+	g.ui.MainWindow.Show()
+	g.ui.SearchEntry.Enable()
+	g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
+
+	_, err := createPidFile(g.menuID)
+	if err != nil {
+		g.QuitWithCode(1)
+	}
 }
