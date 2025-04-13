@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/hamidzr/gmenu/constant"
@@ -45,11 +44,11 @@ func newMenu(
 		preserveOrder: preserveOrder,
 	}
 	items := m.titlesToMenuItem(itemTitles)
-	m.items = items
 
 	if len(items) == 0 {
-		return nil, errors.New("Menu must have at least one item")
+		items = []model.MenuItem{model.LoadingItem}
 	}
+	m.items = items
 
 	m.Search(initValue)
 	return &m, nil

@@ -38,3 +38,10 @@ type TestSerializable struct{}
 func (t TestSerializable) Serialize() string {
 	return "TestSerializable"
 }
+
+// LoadingItem is a menu item that is used to indicate that the menu is loading.
+var LoadingItem = MenuItem{
+	Title: "Loading",
+	AType: nil,
+	Score: 0,
+}

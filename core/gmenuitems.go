@@ -1,6 +1,9 @@
 package core
 
 import (
+	"context"
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/hamidzr/gmenu/model"
@@ -13,10 +16,8 @@ func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable
 		myItem := item
 		menuItems = append(menuItems, model.MenuItem{AType: &myItem})
 	}
-	// we don't need this lock do we?
-	// g.menu.itemsMutex.Lock()
-	// defer g.menu.itemsMutex.Unlock()
 	g.menu.ItemsChan <- menuItems
+	go g.AttemptAutoSelect()
 }
 
 // addItems adds items to the menu.
@@ -34,18 +35,36 @@ func (g *GMenu) addItems(items []string, tail bool) {
 	g.menu.ItemsChan <- newItems
 }
 
-// // AttemptAutoSelect attempts to auto select if conditions are met.
-// func (g *GMenu) AttemptAutoSelect() {
-// 	if g.config.InitialQuery == "" {
-// 		return
-// 	}
-// 	// items might not be loaded needs to lock menu.items access.?
-// 	// g.menu.Search(g.config.InitialQuery)
-// 	// fmt.Println(g.menu.items)
-// 	if g.config.AutoAccept && len(g.menu.Filtered) == 1 {
-// 		g.selectionMade()
-// 	}
-// }
+// AttemptAutoSelect attempts to auto select if conditions are met.
+func (g *GMenu) AttemptAutoSelect() {
+	if !g.config.AutoAccept {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(g.menu.ctx, 200*time.Millisecond)
+	defer cancel()
+
+	ticker := time.NewTicker(20 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			g.menu.itemsMutex.Lock()
+			if len(g.menu.Filtered) == 1 && g.menu.Filtered[0].Title == model.LoadingItem.Title {
+				g.menu.itemsMutex.Unlock()
+				continue
+			}
+			if len(g.menu.Filtered) == 1 {
+				g.markSelectionMade()
+			}
+			g.menu.itemsMutex.Unlock()
+			return
+		case <-ctx.Done():
+			return
+		}
+	}
+}
 
 // PrependItems adds items to the beginning of the menu.
 func (g *GMenu) PrependItems(items []string) {
