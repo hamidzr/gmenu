@@ -81,7 +81,7 @@ func run(cliArgs model.CliArgs) {
 		return
 	}
 
-	gmenu.SetupMenu([]string{"Loading"}, cliArgs.InitialQuery)
+	gmenu.SetupMenu([]string{}, cliArgs.InitialQuery)
 	gmenu.ShowUI()
 	go func() {
 		items := readItems()

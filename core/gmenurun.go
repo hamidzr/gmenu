@@ -42,7 +42,7 @@ func (g *GMenu) Reset() {
 	g.SelectionWg = sync.WaitGroup{}
 	g.menu.Selected = 0
 	removePidFile(g.menuID)
-	g.SetupMenu([]string{"Loading..."}, "")
+	g.SetupMenu([]string{model.LoadingItem.Title}, "")
 }
 
 func (g *GMenu) RunAppForever() error {
