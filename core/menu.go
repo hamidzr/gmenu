@@ -64,7 +64,7 @@ func (m *menu) Search(keyword string) {
 		m.Filtered = m.items
 	} else {
 		// start := time.Now()
-		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder, m.resultLimit)
+		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder, 0)
 		// elapsed := time.Since(start)
 		// fmt.Println("Search took", elapsed)
 	}

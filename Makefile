@@ -16,3 +16,6 @@ lint:
 
 fmt:
 	go fmt ./...
+
+dev:
+	tree -L 5 | go run ./cmd/main.go

@@ -171,7 +171,7 @@ func SearchWithSeparator(separator string, searchMethod SearchMethod) SearchMeth
 			// logrus.Trace("Subquery: ", subQ, "subset", matchedSubset)
 			matchedSubset = searchMethod(matchedSubset, subQ, false, 0)
 		}
-		return matchedSubset[:min(limit, len(matchedSubset))]
+		return applyLimit(matchedSubset, limit)
 	}
 	return search
 }
