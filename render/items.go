@@ -44,14 +44,22 @@ func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
 	}
 
 	var textContent *fyne.Container
-	if !conf.NoNumericSelection {
-		// create number hint on the right
+	if !conf.NoNumericSelection && idx < 9 {
+		// create number hint on the right with fixed width to prevent overlap
 		numberHint := widget.NewLabel(fmt.Sprintf("%d", idx+1))
 		numberHint.Alignment = fyne.TextAlignTrailing
 		numberHint.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
 		numberHint.Importance = widget.MediumImportance
 
-		textContent = container.NewBorder(nil, nil, nil, numberHint, optionText)
+		// create a container for the number with fixed width
+		numberContainer := container.NewStack(numberHint)
+		numberContainer.Resize(fyne.NewSize(20, numberContainer.MinSize().Height)) // fixed width for numbers
+
+		// add some spacing between text and number
+		spacer := layout.NewSpacer()
+		spacer.Resize(fyne.NewSize(8, 1)) // small spacer
+
+		textContent = container.NewBorder(nil, nil, nil, container.NewHBox(spacer, numberContainer), optionText)
 	} else {
 		textContent = container.NewStack(optionText)
 	}

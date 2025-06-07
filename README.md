@@ -2,10 +2,11 @@
 
 ## TODO
 
+- [ ] ctrl+c to work like esc
+
 - [ ] fuzzy search avoid matching single chars alone unless near separator?
 - [ ] report created window's id and pid?
 - [ ] multiple selection: select two inputs for guillm.
-- [ ] ctrl+c to work like esc
 - [ ] no focus border color for input
 - [ ] search: fuzzy with char presence check and relative count
 - [ ] add cli support for same behavior but in the terminal
