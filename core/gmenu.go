@@ -61,6 +61,7 @@ func NewGMenu(
 	searchMethod SearchMethod,
 	conf model.Config,
 ) (*GMenu, error) {
+	model.SetGlobalConfig(conf)
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", conf.MenuID}, "yaml")
 	if err != nil {
 		return nil, err

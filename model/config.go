@@ -1,5 +1,10 @@
 package model
 
+import "sync"
+
+var oneConfig *Config
+var onceConfig sync.Once
+
 type Config struct {
 	AcceptCustomSelection bool
 	CliArgs
@@ -45,4 +50,17 @@ func DefaultConfig() Config {
 	return Config{
 		AcceptCustomSelection: true,
 	}
+}
+
+func SetGlobalConfig(config Config) {
+	onceConfig.Do(func() {
+		oneConfig = &config
+	})
+}
+
+func GetGlobalConfig() Config {
+	if oneConfig == nil {
+		panic("config is not set")
+	}
+	return *oneConfig
 }
