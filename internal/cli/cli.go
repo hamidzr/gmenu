@@ -32,15 +32,15 @@ func readItems() []string {
 
 func InitCLI() *cobra.Command {
 	var cliArgs = model.CliArgs{
-		Title:                   constant.ProjectName,
-		Prompt:                  "Search",
-		MenuID:                  "",
-		SearchMethod:            "fuzzy",
-		PreserveOrder:           false,
-		InitialQuery:            "",
-		AutoAccept:              false,
-		TerminalMode:            false,
-		DisableNumericSelection: true,
+		Title:              constant.ProjectName,
+		Prompt:             "Search",
+		MenuID:             "",
+		SearchMethod:       "fuzzy",
+		PreserveOrder:      false,
+		InitialQuery:       "",
+		AutoAccept:         false,
+		TerminalMode:       false,
+		NoNumericSelection: false,
 	}
 
 	RootCmd := &cobra.Command{
@@ -59,7 +59,7 @@ func InitCLI() *cobra.Command {
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.PreserveOrder, "preserve-order", "o", cliArgs.PreserveOrder, "Preserve the order of the input items")
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.AutoAccept, "auto-accept", "", cliArgs.AutoAccept, "Auto accept if there's only a single match.")
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.TerminalMode, "terminal", "", cliArgs.TerminalMode, "Run in terminal-only mode without GUI")
-	RootCmd.PersistentFlags().BoolVarP(&cliArgs.DisableNumericSelection, "numeric-selection", "", cliArgs.DisableNumericSelection, "Enable numeric selection")
+	RootCmd.PersistentFlags().BoolVarP(&cliArgs.NoNumericSelection, "no-numeric-selection", "", cliArgs.NoNumericSelection, "Disable numeric selection")
 
 	return RootCmd
 }

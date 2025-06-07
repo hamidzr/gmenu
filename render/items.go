@@ -33,9 +33,16 @@ func NewItemsCanvas() *ItemsCanvas {
 	}
 }
 
-func RenderItem(item model.MenuItem, selected bool) *fyne.Container {
-	// Create a optionText for the item
-	optionText := widget.NewLabel(item.ComputedTitle())
+func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
+	conf := model.GetGlobalConfig()
+
+	var textLabel string
+	if !conf.NoNumericSelection {
+		textLabel = fmt.Sprintf("%d: %s", idx+1, item.ComputedTitle())
+	} else {
+		textLabel = item.ComputedTitle()
+	}
+	optionText := widget.NewLabel(textLabel)
 	optionText.Truncation = fyne.TextTruncateEllipsis
 
 	var metadata *widget.Label
@@ -71,7 +78,7 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 	c.Container.Objects = nil // Clear current items
 
 	for i, item := range items {
-		c.Container.Add(RenderItem(item, i == selected))
+		c.Container.Add(RenderItem(item, i, i == selected))
 	}
 
 	c.Container.Add(layout.NewSpacer()) // Add a final spacer for consistent look

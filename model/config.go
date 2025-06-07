@@ -30,8 +30,8 @@ type CliArgs struct {
 	AutoAccept bool
 	// TerminalMode indicates whether to run in terminal-only mode without GUI
 	TerminalMode bool
-	// DisableNumericSelection allows the user to select an item by its 1-based index.
-	DisableNumericSelection bool
+	// NoNumericSelection allows the user to select an item by its 1-based index.
+	NoNumericSelection bool
 }
 
 // var (
