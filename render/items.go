@@ -36,15 +36,27 @@ func NewItemsCanvas() *ItemsCanvas {
 func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
 	conf := model.GetGlobalConfig()
 
-	var textLabel string
-	if !conf.NoNumericSelection {
-		textLabel = fmt.Sprintf("%d: %s", idx+1, item.ComputedTitle())
-	} else {
-		textLabel = item.ComputedTitle()
-	}
-	optionText := widget.NewLabel(textLabel)
+	// create the main text content
+	optionText := widget.NewLabel(item.ComputedTitle())
 	optionText.Truncation = fyne.TextTruncateEllipsis
+	if selected {
+		optionText.TextStyle = fyne.TextStyle{Bold: true}
+	}
 
+	var textContent *fyne.Container
+	if !conf.NoNumericSelection {
+		// create number hint on the right
+		numberHint := widget.NewLabel(fmt.Sprintf("%d", idx+1))
+		numberHint.Alignment = fyne.TextAlignTrailing
+		numberHint.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
+		numberHint.Importance = widget.LowImportance
+
+		textContent = container.NewBorder(nil, nil, nil, numberHint, optionText)
+	} else {
+		textContent = container.NewStack(optionText)
+	}
+
+	// create score metadata if needed
 	var metadata *widget.Label
 	if item.Score != 0 {
 		metadata = widget.NewLabel(fmt.Sprintf("%d", item.Score))
@@ -52,23 +64,23 @@ func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
 		metadata.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
 	}
 
+	// create background
 	background := canvas.NewRectangle(theme.BackgroundColor())
-	if selected { // Highlight the selected item
-		if metadata != nil {
-			optionText.TextStyle = fyne.TextStyle{Bold: true}
-		}
+	if selected {
 		background.FillColor = theme.PrimaryColor()
 	} else {
 		background.StrokeColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
 		background.StrokeWidth = 1
 	}
 
+	// compose final container
 	var itemContainer *fyne.Container
 	if metadata != nil {
-		itemContainer = container.NewStack(background, container.NewBorder(nil, nil, nil, metadata, optionText))
+		itemContainer = container.NewStack(background, container.NewBorder(nil, nil, nil, metadata, textContent))
 	} else {
-		itemContainer = container.NewStack(background, optionText)
+		itemContainer = container.NewStack(background, textContent)
 	}
+
 	itemContainer.Layout = layout.NewStackLayout()
 	return itemContainer
 }
