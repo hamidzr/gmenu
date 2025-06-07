@@ -49,7 +49,7 @@ func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
 		numberHint := widget.NewLabel(fmt.Sprintf("%d", idx+1))
 		numberHint.Alignment = fyne.TextAlignTrailing
 		numberHint.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
-		numberHint.Importance = widget.LowImportance
+		numberHint.Importance = widget.MediumImportance
 
 		textContent = container.NewBorder(nil, nil, nil, numberHint, optionText)
 	} else {
