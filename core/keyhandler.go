@@ -64,7 +64,7 @@ func (g *GMenu) setKeyHandlers() {
 			} else { // wrap
 				g.menu.Selected = len(g.menu.Filtered) - 1
 			}
-		case fyne.KeyReturn:
+		case fyne.KeyReturn, fyne.KeyEnter:
 			// con't accept enter key if no items are present and custom selection is disabled.'
 			if !g.config.AcceptCustomSelection && len(g.menu.Filtered) == 0 {
 				return
@@ -73,6 +73,37 @@ func (g *GMenu) setKeyHandlers() {
 		case fyne.KeyEscape:
 			g.ExitCode = model.UserCanceled
 			g.markSelectionMade()
+		case fyne.Key1, fyne.Key2, fyne.Key3, fyne.Key4, fyne.Key5, fyne.Key6, fyne.Key7, fyne.Key8, fyne.Key9:
+			// handle numeric selection if enabled
+			if !g.config.NoNumericSelection {
+				var selectedIndex int
+				switch key.Name {
+				case fyne.Key1:
+					selectedIndex = 0
+				case fyne.Key2:
+					selectedIndex = 1
+				case fyne.Key3:
+					selectedIndex = 2
+				case fyne.Key4:
+					selectedIndex = 3
+				case fyne.Key5:
+					selectedIndex = 4
+				case fyne.Key6:
+					selectedIndex = 5
+				case fyne.Key7:
+					selectedIndex = 6
+				case fyne.Key8:
+					selectedIndex = 7
+				case fyne.Key9:
+					selectedIndex = 8
+				}
+				// only select if the index is within bounds
+				if selectedIndex < len(g.menu.Filtered) {
+					g.menu.Selected = selectedIndex
+					g.markSelectionMade()
+					return
+				}
+			}
 		default:
 			return
 		}
