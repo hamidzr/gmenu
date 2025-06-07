@@ -32,6 +32,14 @@ type CliArgs struct {
 	TerminalMode bool
 	// NoNumericSelection allows the user to select an item by its 1-based index.
 	NoNumericSelection bool
+	// MinWidth sets the minimum window width
+	MinWidth float32
+	// MinHeight sets the minimum window height
+	MinHeight float32
+	// MaxWidth sets the maximum window width (0 for auto-calculated)
+	MaxWidth float32
+	// MaxHeight sets the maximum window height (0 for auto-calculated)
+	MaxHeight float32
 }
 
 // var (

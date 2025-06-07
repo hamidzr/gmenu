@@ -41,6 +41,10 @@ func InitCLI() *cobra.Command {
 		AutoAccept:         false,
 		TerminalMode:       false,
 		NoNumericSelection: false,
+		MinWidth:           600,
+		MinHeight:          300,
+		MaxWidth:           0, // auto-calculated
+		MaxHeight:          0, // auto-calculated
 	}
 
 	RootCmd := &cobra.Command{
@@ -60,6 +64,10 @@ func InitCLI() *cobra.Command {
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.AutoAccept, "auto-accept", "", cliArgs.AutoAccept, "Auto accept if there's only a single match.")
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.TerminalMode, "terminal", "", cliArgs.TerminalMode, "Run in terminal-only mode without GUI")
 	RootCmd.PersistentFlags().BoolVarP(&cliArgs.NoNumericSelection, "no-numeric-selection", "", cliArgs.NoNumericSelection, "Disable numeric selection")
+	RootCmd.PersistentFlags().Float32Var(&cliArgs.MinWidth, "min-width", cliArgs.MinWidth, "Minimum window width")
+	RootCmd.PersistentFlags().Float32Var(&cliArgs.MinHeight, "min-height", cliArgs.MinHeight, "Minimum window height")
+	RootCmd.PersistentFlags().Float32Var(&cliArgs.MaxWidth, "max-width", cliArgs.MaxWidth, "Maximum window width (0 for auto-calculated)")
+	RootCmd.PersistentFlags().Float32Var(&cliArgs.MaxHeight, "max-height", cliArgs.MaxHeight, "Maximum window height (0 for auto-calculated)")
 
 	return RootCmd
 }

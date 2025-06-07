@@ -21,6 +21,8 @@ import (
 type Dimensions struct {
 	MinWidth  float32
 	MinHeight float32
+	MaxWidth  float32
+	MaxHeight float32
 }
 
 // GUI aka GMenuUI holds ui pieces.
@@ -76,8 +78,11 @@ func NewGMenu(
 		config:        conf,
 		store:         store,
 		dims: Dimensions{
-			MinWidth:  600,
-			MinHeight: 300,
+			MinWidth:  conf.MinWidth,
+			MinHeight: conf.MinHeight,
+			// max dimensions will be set after UI initialization or from config
+			MaxWidth:  conf.MaxWidth,
+			MaxHeight: conf.MaxHeight,
 		},
 		SelectionWg: sync.WaitGroup{},
 	}
@@ -215,6 +220,59 @@ func (g *GMenu) initUI() {
 		MenuLabel:   menuLabel,
 		MainWindow:  mainWindow,
 	}
+
+	// calculate maximum dimensions based on available space
+	g.calculateMaxDimensions()
+}
+
+// calculateMaxDimensions sets the maximum window dimensions based on available desktop space
+// Only calculates if max dimensions are not already set via configuration
+func (g *GMenu) calculateMaxDimensions() {
+	if g.ui == nil || g.ui.MainWindow == nil {
+		return
+	}
+
+	// use a percentage of estimated screen space as maximum
+	// this ensures the menu doesn't take up the entire screen
+	const maxWidthPercent = 0.8  // 80% of screen width
+	const maxHeightPercent = 0.7 // 70% of screen height
+
+	// get actual screen dimensions, using the largest screen in multi-monitor setups
+	screenWidth, screenHeight := getLargestScreenSize()
+	estimatedScreenWidth := float32(screenWidth)
+	estimatedScreenHeight := float32(screenHeight)
+
+	logrus.Debugf("Detected screen size: %dx%d", screenWidth, screenHeight)
+
+	// only calculate max dimensions if they weren't provided via configuration
+	if g.dims.MaxWidth > 0 && g.dims.MaxHeight > 0 {
+		logrus.Debugf("Using configured max dimensions: %.0fx%.0f (min: %.0fx%.0f)",
+			g.dims.MaxWidth, g.dims.MaxHeight, g.dims.MinWidth, g.dims.MinHeight)
+		return
+	}
+
+	// calculate maximum dimensions only if not set via config
+	if g.dims.MaxWidth <= 0 {
+		g.dims.MaxWidth = estimatedScreenWidth * maxWidthPercent
+	}
+	if g.dims.MaxHeight <= 0 {
+		g.dims.MaxHeight = estimatedScreenHeight * maxHeightPercent
+	}
+
+	// ensure max dimensions are at least twice the min dimensions
+	// this provides reasonable growth room
+	minMaxWidth := g.dims.MinWidth * 2
+	minMaxHeight := g.dims.MinHeight * 2
+
+	if g.dims.MaxWidth < minMaxWidth {
+		g.dims.MaxWidth = minMaxWidth
+	}
+	if g.dims.MaxHeight < minMaxHeight {
+		g.dims.MaxHeight = minMaxHeight
+	}
+
+	logrus.Debugf("Calculated max dimensions: %.0fx%.0f (min: %.0fx%.0f)",
+		g.dims.MaxWidth, g.dims.MaxHeight, g.dims.MinWidth, g.dims.MinHeight)
 }
 
 // markSelectionMade marks that a selection has been made and signals the wait group.

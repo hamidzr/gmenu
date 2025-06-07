@@ -11,10 +11,21 @@ func (g *GMenu) startListenDynamicUpdates() {
 		queryChan <- text
 	}
 	resizeBasedOnResults := func() {
-		size := fyne.NewSize(g.dims.MinWidth, g.dims.MinHeight)
 		resultsSize := g.ui.ItemsCanvas.Container.Size()
-		size.Width = max(g.dims.MinWidth, resultsSize.Width)
-		size.Height = resultsSize.Height
+
+		// calculate desired width: between min and max, based on content
+		desiredWidth := max(g.dims.MinWidth, resultsSize.Width)
+		if g.dims.MaxWidth > 0 {
+			desiredWidth = min(desiredWidth, g.dims.MaxWidth)
+		}
+
+		// calculate desired height: between min and max, based on content
+		desiredHeight := max(g.dims.MinHeight, resultsSize.Height)
+		if g.dims.MaxHeight > 0 {
+			desiredHeight = min(desiredHeight, g.dims.MaxHeight)
+		}
+
+		size := fyne.NewSize(desiredWidth, desiredHeight)
 		g.ui.MainWindow.Resize(size)
 	}
 	go func() { // handle new characters in the search bar and new items loaded.
@@ -40,6 +51,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 				g.menu.Search(g.menu.query)
 				g.ui.MenuLabel.SetText(g.matchCounterLabel())
 				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+				resizeBasedOnResults()
 			case <-g.menu.ctx.Done():
 				return
 			}
