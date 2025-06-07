@@ -10,7 +10,7 @@ type GmenuSerializable interface {
 // MenuItem represents an item in the menu.
 type MenuItem struct {
 	Title string
-	AType *GmenuSerializable
+	AType *GmenuSerializable // why a ptr
 	Score int
 }
 

@@ -33,42 +33,45 @@ func NewItemsCanvas() *ItemsCanvas {
 	}
 }
 
+func RenderItem(item model.MenuItem, selected bool) *fyne.Container {
+	// Create a optionText for the item
+	optionText := widget.NewLabel(item.ComputedTitle())
+	optionText.Truncation = fyne.TextTruncateEllipsis
+
+	var metadata *widget.Label
+	if item.Score != 0 {
+		metadata = widget.NewLabel(fmt.Sprintf("%d", item.Score))
+		metadata.Alignment = fyne.TextAlignTrailing
+		metadata.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
+	}
+
+	background := canvas.NewRectangle(theme.BackgroundColor())
+	if selected { // Highlight the selected item
+		if metadata != nil {
+			optionText.TextStyle = fyne.TextStyle{Bold: true}
+		}
+		background.FillColor = theme.PrimaryColor()
+	} else {
+		background.StrokeColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
+		background.StrokeWidth = 1
+	}
+
+	var itemContainer *fyne.Container
+	if metadata != nil {
+		itemContainer = container.NewStack(background, container.NewBorder(nil, nil, nil, metadata, optionText))
+	} else {
+		itemContainer = container.NewStack(background, optionText)
+	}
+	itemContainer.Layout = layout.NewStackLayout()
+	return itemContainer
+}
+
 // Render updates the container with items, highlighting the selected one.
 func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
 	c.Container.Objects = nil // Clear current items
 
 	for i, item := range items {
-		// Create a optionText for the item
-		optionText := widget.NewLabel(item.ComputedTitle())
-		optionText.Truncation = fyne.TextTruncateEllipsis
-
-		var metadata *widget.Label
-		if item.Score != 0 {
-			metadata = widget.NewLabel(fmt.Sprintf("%d", item.Score))
-			metadata.Alignment = fyne.TextAlignTrailing
-			metadata.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
-		}
-
-		background := canvas.NewRectangle(theme.BackgroundColor())
-		if i == selected { // Highlight the selected item
-			if metadata != nil {
-				optionText.TextStyle = fyne.TextStyle{Bold: true}
-			}
-			background.FillColor = theme.PrimaryColor()
-		} else {
-			background.StrokeColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
-			background.StrokeWidth = 1
-		}
-
-		var itemContainer *fyne.Container
-		if metadata != nil {
-			itemContainer = container.NewStack(background, container.NewBorder(nil, nil, nil, metadata, optionText))
-		} else {
-			itemContainer = container.NewStack(background, optionText)
-		}
-		itemContainer.Layout = layout.NewStackLayout()
-
-		c.Container.Add(itemContainer)
+		c.Container.Add(RenderItem(item, i == selected))
 	}
 
 	c.Container.Add(layout.NewSpacer()) // Add a final spacer for consistent look

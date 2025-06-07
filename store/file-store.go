@@ -6,10 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
 // TODO: we shoudn't need to differentiate between these two or special case them
+var logger = logrus.New()
 
 // FileStore is a store that saves data to files in the cache and config directories.
 type FileStore[Cache any, Cfg any] struct {
@@ -60,6 +62,7 @@ func NewFileStore[Cache any, Cfg any](namespace []string, format string) (*FileS
 
 func (fs FileStore[C, Cfg]) Load() (C, Cfg, error) {
 	cache, cacheErr := fs.LoadCache()
+	logger.Info("loaded cache", "cache", cache)
 	config, configErr := fs.LoadConfig()
 	var err error
 	if cacheErr != nil {
