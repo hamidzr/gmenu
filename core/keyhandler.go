@@ -34,7 +34,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 			case query := <-queryChan:
 				g.menu.Search(query)
 				g.ui.MenuLabel.SetText(g.matchCounterLabel())
-				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 				resizeBasedOnResults()
 			case items := <-g.menu.ItemsChan:
 				g.menu.itemsMutex.Lock()
@@ -50,7 +50,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 				g.menu.itemsMutex.Unlock()
 				g.menu.Search(g.menu.query)
 				g.ui.MenuLabel.SetText(g.matchCounterLabel())
-				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 				resizeBasedOnResults()
 			case <-g.menu.ctx.Done():
 				return
@@ -119,7 +119,7 @@ func (g *GMenu) setKeyHandlers() {
 		default:
 			return
 		}
-		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 	}
 	g.ui.SearchEntry.OnKeyDown = keyHandler
 	g.ui.MainWindow.Canvas().SetOnTypedKey(keyHandler)

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/hamidzr/gmenu/internal/config"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/hamidzr/gmenu/render"
 	"github.com/hamidzr/gmenu/store"
@@ -40,7 +41,7 @@ type GMenu struct {
 	prompt        string
 	menuID        string
 	menu          *menu
-	config        model.Config
+	config        *config.Config
 	menuCancel    context.CancelFunc
 	app           fyne.App
 	store         store.Store
@@ -61,9 +62,8 @@ type GMenu struct {
 // NewGMenu creates a new GMenu instance.
 func NewGMenu(
 	searchMethod SearchMethod,
-	conf model.Config,
+	conf *config.Config,
 ) (*GMenu, error) {
-	model.SetGlobalConfig(conf)
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", conf.MenuID}, "yaml")
 	if err != nil {
 		return nil, err
@@ -296,7 +296,7 @@ func (g *GMenu) setMenuBasedUI() {
 	if g.menu.query != "" {
 		g.ui.SearchEntry.SelectAll()
 	}
-	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected)
+	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 	// show match items out of total item count.
 	g.ui.MenuLabel.SetText(g.matchCounterLabel())
 }

@@ -1,0 +1,24 @@
+# gmenu configuration file
+# Place this file in one of these locations:
+# - ~/.config/gmenu/gmenu.yaml
+# - ~/.gmenu/gmenu.yaml  
+# - ./gmenu.yaml (current directory)
+
+# Application settings
+title: "My Custom Menu"
+prompt: "Choose an option"
+menu_id: "main-menu"
+search_method: "fuzzy"  # options: fuzzy, exact, regex
+preserve_order: false
+auto_accept: false
+terminal_mode: false
+no_numeric_selection: false
+
+# Window dimensions
+min_width: 800
+min_height: 400
+max_width: 1200  # 0 for auto-calculated
+max_height: 800  # 0 for auto-calculated
+
+# Internal settings
+accept_custom_selection: true 

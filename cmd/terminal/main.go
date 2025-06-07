@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/hamidzr/gmenu/core"
-	"github.com/hamidzr/gmenu/model"
+	"github.com/hamidzr/gmenu/internal/config"
 )
 
 func main() {
-	args := model.CliArgs{
+	cfg := &config.Config{
 		Prompt:       "Enter text: ",
 		InitialQuery: "Hello world",
 	}
@@ -29,11 +29,11 @@ func main() {
 				fmt.Printf("\n\rQuery length is odd: %d", len(query))
 			}
 			// Move cursor back up to input line
-			fmt.Printf("\033[1A\r%s%s", args.Prompt, query)
+			fmt.Printf("\033[1A\r%s%s", cfg.Prompt, query)
 		}
 	}()
 
-	result := core.ReadUserInputLive(args, queryChan)
+	result := core.ReadUserInputLive(cfg, queryChan)
 	close(queryChan)
 	if result != "" {
 		fmt.Printf("\nFinal input: %s\n", result)

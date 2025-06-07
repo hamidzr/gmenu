@@ -7,15 +7,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/hamidzr/gmenu/model"
-
+	"github.com/hamidzr/gmenu/internal/config"
 	"golang.org/x/term"
 )
 
 // ReadUserInputLive reads user input live from the terminal
 // keeps a local repr of the text user put in and maintaint a line of output
 // that shows the user's input so far
-func ReadUserInputLive(args model.CliArgs, queryChan chan<- string) string {
+func ReadUserInputLive(cfg *config.Config, queryChan chan<- string) string {
 	// Set up raw terminal mode
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -26,10 +25,10 @@ func ReadUserInputLive(args model.CliArgs, queryChan chan<- string) string {
 
 	// Create a new reader from stdin
 	reader := bufio.NewReader(os.Stdin)
-	input := []byte(args.InitialQuery)
+	input := []byte(cfg.InitialQuery)
 
 	// Display initial prompt with initial query
-	fmt.Printf("\r%s%s", args.Prompt, string(input))
+	fmt.Printf("\r%s%s", cfg.Prompt, string(input))
 	// Send initial query
 	queryChan <- string(input)
 
@@ -64,7 +63,7 @@ func ReadUserInputLive(args model.CliArgs, queryChan chan<- string) string {
 				}
 			} else if char == 3 {
 				// Ctrl+C pressed
-				fmt.Printf("\n%sInput cancelled\n", args.Prompt)
+				fmt.Printf("\n%sInput cancelled\n", cfg.Prompt)
 				inputCh <- ""
 				enterPressed <- true
 				return
@@ -79,7 +78,7 @@ func ReadUserInputLive(args model.CliArgs, queryChan chan<- string) string {
 	// Wait for either a signal or enter press
 	select {
 	case <-sigCh:
-		fmt.Printf("\n%sInput cancelled\n", args.Prompt)
+		fmt.Printf("\n%sInput cancelled\n", cfg.Prompt)
 		term.Restore(int(os.Stdin.Fd()), oldState) // Restore terminal before exit
 		os.Exit(0)                                 // Exit immediately on signal
 	case <-enterPressed:

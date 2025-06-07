@@ -33,9 +33,7 @@ func NewItemsCanvas() *ItemsCanvas {
 	}
 }
 
-func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
-	conf := model.GetGlobalConfig()
-
+func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection bool) *fyne.Container {
 	// create the main text content
 	optionText := widget.NewLabel(item.ComputedTitle())
 	optionText.Truncation = fyne.TextTruncateEllipsis
@@ -44,7 +42,7 @@ func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
 	}
 
 	var textContent *fyne.Container
-	if !conf.NoNumericSelection && idx < 9 {
+	if !noNumericSelection && idx < 9 {
 		// create number hint on the right with fixed width to prevent overlap
 		numberHint := widget.NewLabel(fmt.Sprintf("%d", idx+1))
 		numberHint.Alignment = fyne.TextAlignTrailing
@@ -94,11 +92,11 @@ func RenderItem(item model.MenuItem, idx int, selected bool) *fyne.Container {
 }
 
 // Render updates the container with items, highlighting the selected one.
-func (c *ItemsCanvas) Render(items []model.MenuItem, selected int) {
+func (c *ItemsCanvas) Render(items []model.MenuItem, selected int, noNumericSelection bool) {
 	c.Container.Objects = nil // Clear current items
 
 	for i, item := range items {
-		c.Container.Add(RenderItem(item, i, i == selected))
+		c.Container.Add(RenderItem(item, i, i == selected, noNumericSelection))
 	}
 
 	c.Container.Add(layout.NewSpacer()) // Add a final spacer for consistent look

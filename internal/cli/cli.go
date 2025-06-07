@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hamidzr/gmenu/constant"
 	"github.com/hamidzr/gmenu/core"
+	"github.com/hamidzr/gmenu/internal/config"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -31,67 +31,61 @@ func readItems() []string {
 }
 
 func InitCLI() *cobra.Command {
-	var cliArgs = model.CliArgs{
-		Title:              constant.ProjectName,
-		Prompt:             "Search",
-		MenuID:             "",
-		SearchMethod:       "fuzzy",
-		PreserveOrder:      false,
-		InitialQuery:       "",
-		AutoAccept:         false,
-		TerminalMode:       false,
-		NoNumericSelection: false,
-		MinWidth:           600,
-		MinHeight:          300,
-		MaxWidth:           0, // auto-calculated
-		MaxHeight:          0, // auto-calculated
-	}
-
 	RootCmd := &cobra.Command{
 		Use:   "gmenu",
 		Short: "gmenu is a fuzzy menu selector",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(cliArgs)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// check if user wants to initialize config
+			initConfig, _ := cmd.Flags().GetBool("init-config")
+			if initConfig {
+				menuID, _ := cmd.Flags().GetString("menu-id")
+				configPath, err := config.InitConfigFile(menuID)
+				if err != nil {
+					return fmt.Errorf("failed to initialize config: %w", err)
+				}
+				fmt.Printf("✅ Config file created successfully at: %s\n", configPath)
+				if menuID != "" {
+					fmt.Printf("📁 Menu ID: %s\n", menuID)
+					fmt.Printf("💡 Use with: gmenu --menu-id %s\n", menuID)
+				} else {
+					fmt.Printf("💡 This is the default config file\n")
+				}
+				fmt.Printf("📝 Edit the file to customize your settings\n")
+				return nil
+			}
+
+			// initialize configuration with proper priority handling
+			cfg, err := config.InitConfig(cmd)
+			if err != nil {
+				return fmt.Errorf("failed to initialize config: %w", err)
+			}
+
+			return run(cfg)
 		},
 	}
 
-	RootCmd.PersistentFlags().StringVarP(&cliArgs.Title, "title", "t", cliArgs.Title, "Title of the menu window")
-	RootCmd.PersistentFlags().StringVarP(&cliArgs.InitialQuery, "initial-query", "q", cliArgs.InitialQuery, "Initial query to search for")
-	RootCmd.PersistentFlags().StringVarP(&cliArgs.Prompt, "prompt", "p", cliArgs.Prompt, "Prompt of the menu window")
-	RootCmd.PersistentFlags().StringVarP(&cliArgs.MenuID, "menu-id", "m", cliArgs.MenuID, "Menu ID")
-	RootCmd.PersistentFlags().StringVarP(&cliArgs.SearchMethod, "search-method", "s", cliArgs.SearchMethod, "Search method")
-	RootCmd.PersistentFlags().BoolVarP(&cliArgs.PreserveOrder, "preserve-order", "o", cliArgs.PreserveOrder, "Preserve the order of the input items")
-	RootCmd.PersistentFlags().BoolVarP(&cliArgs.AutoAccept, "auto-accept", "", cliArgs.AutoAccept, "Auto accept if there's only a single match.")
-	RootCmd.PersistentFlags().BoolVarP(&cliArgs.TerminalMode, "terminal", "", cliArgs.TerminalMode, "Run in terminal-only mode without GUI")
-	RootCmd.PersistentFlags().BoolVarP(&cliArgs.NoNumericSelection, "no-numeric-selection", "", cliArgs.NoNumericSelection, "Disable numeric selection")
-	RootCmd.PersistentFlags().Float32Var(&cliArgs.MinWidth, "min-width", cliArgs.MinWidth, "Minimum window width")
-	RootCmd.PersistentFlags().Float32Var(&cliArgs.MinHeight, "min-height", cliArgs.MinHeight, "Minimum window height")
-	RootCmd.PersistentFlags().Float32Var(&cliArgs.MaxWidth, "max-width", cliArgs.MaxWidth, "Maximum window width (0 for auto-calculated)")
-	RootCmd.PersistentFlags().Float32Var(&cliArgs.MaxHeight, "max-height", cliArgs.MaxHeight, "Maximum window height (0 for auto-calculated)")
+	// bind all flags using the new config system
+	config.BindFlags(RootCmd)
 
 	return RootCmd
 }
 
-func run(cliArgs model.CliArgs) {
-	searchMethod, ok := core.SearchMethods[cliArgs.SearchMethod]
+func run(cfg *config.Config) error {
+	searchMethod, ok := core.SearchMethods[cfg.SearchMethod]
 	if !ok {
-		logrus.Error("Invalid search method")
-		os.Exit(1)
+		return fmt.Errorf("invalid search method: %s", cfg.SearchMethod)
 	}
-	conf := model.DefaultConfig()
-	conf.CliArgs = cliArgs
-	gmenu, err := core.NewGMenu(searchMethod, conf)
+
+	gmenu, err := core.NewGMenu(searchMethod, cfg)
 	if err != nil {
-		logrus.Error(err, "failed to create gmenu")
-		os.Exit(1)
+		return fmt.Errorf("failed to create gmenu: %w", err)
 	}
 
-	if cliArgs.TerminalMode {
-		runTerminalMode(gmenu, cliArgs)
-		return
+	if cfg.TerminalMode {
+		return runTerminalMode(gmenu, cfg)
 	}
 
-	gmenu.SetupMenu([]string{}, cliArgs.InitialQuery)
+	gmenu.SetupMenu([]string{}, cfg.InitialQuery)
 	gmenu.ShowUI()
 	go func() {
 		items := readItems()
@@ -126,14 +120,15 @@ func run(cliArgs model.CliArgs) {
 	}
 	// Output the selected value directly to stdout without any logging
 	fmt.Println(val.ComputedTitle())
+	return nil
 }
 
-func runTerminalMode(gmenu *core.GMenu, cliArgs model.CliArgs) {
+func runTerminalMode(gmenu *core.GMenu, cfg *config.Config) error {
 	logrus.Info("Running in terminal mode")
 	items := readItems()
 	if len(items) == 0 {
 		logrus.Error("No items provided through standard input")
-		return
+		return fmt.Errorf("no items provided through standard input")
 	}
 	// reset stdin from non-interactive to interactive.
 	os.Stdin.Close()
@@ -157,7 +152,7 @@ func runTerminalMode(gmenu *core.GMenu, cliArgs model.CliArgs) {
 			fmt.Print("\033[2J\033[H")
 
 			// Print header
-			logrus.Infof("%s: %s", cliArgs.Prompt, query)
+			logrus.Infof("%s: %s", cfg.Prompt, query)
 			logrus.Info("--------------------------------")
 
 			// Filter and display matching items
@@ -173,11 +168,12 @@ func runTerminalMode(gmenu *core.GMenu, cliArgs model.CliArgs) {
 			logrus.Info("--------------------------------")
 		}
 	}()
-	finalQuery := core.ReadUserInputLive(cliArgs, queryChan)
+
+	finalQuery := core.ReadUserInputLive(cfg, queryChan)
 	matches := matcher(items, finalQuery)
 	if len(matches) == 0 {
 		logrus.Info("No matches found")
-		return
+		return nil
 	}
 	if len(matches) > 1 {
 		logrus.Info("Multiple matches found. Picking the first one.")
@@ -186,4 +182,5 @@ func runTerminalMode(gmenu *core.GMenu, cliArgs model.CliArgs) {
 	fmt.Print("\033[2J\033[H")
 	// Output the selected value directly to stdout without any logging
 	fmt.Println(matches[0])
+	return nil
 }
