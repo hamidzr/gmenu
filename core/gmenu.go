@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/hamidzr/gmenu/internal/config"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/hamidzr/gmenu/render"
 	"github.com/hamidzr/gmenu/store"
@@ -41,7 +40,7 @@ type GMenu struct {
 	prompt        string
 	menuID        string
 	menu          *menu
-	config        *config.Config
+	config        *model.Config
 	menuCancel    context.CancelFunc
 	app           fyne.App
 	store         store.Store
@@ -62,7 +61,7 @@ type GMenu struct {
 // NewGMenu creates a new GMenu instance.
 func NewGMenu(
 	searchMethod SearchMethod,
-	conf *config.Config,
+	conf *model.Config,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", conf.MenuID}, "yaml")
 	if err != nil {

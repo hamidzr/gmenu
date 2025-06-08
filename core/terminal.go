@@ -7,14 +7,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/hamidzr/gmenu/internal/config"
+	"github.com/hamidzr/gmenu/model"
 	"golang.org/x/term"
 )
 
 // ReadUserInputLive reads user input live from the terminal
 // keeps a local repr of the text user put in and maintaint a line of output
 // that shows the user's input so far
-func ReadUserInputLive(cfg *config.Config, queryChan chan<- string) string {
+func ReadUserInputLive(cfg *model.Config, queryChan chan<- string) string {
 	// Set up raw terminal mode
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {

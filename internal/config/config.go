@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hamidzr/gmenu/model"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -12,7 +13,7 @@ import (
 
 // ConfigWithComments represents the config structure with YAML comments for file generation
 type ConfigWithComments struct {
-	Config `yaml:",inline"`
+	model.Config `yaml:",inline"`
 }
 
 // getConfigPaths returns the config directory paths in priority order
@@ -66,7 +67,7 @@ func getPreferredConfigDir(menuID string) (string, error) {
 // 1. CLI flags (highest priority)
 // 2. Environment variables
 // 3. Config file (lowest priority)
-func InitConfig(cmd *cobra.Command) (*Config, error) {
+func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 	v := viper.New()
 
 	// set config file settings - look for config.yaml to avoid conflicts with cache files
@@ -101,7 +102,7 @@ func InitConfig(cmd *cobra.Command) (*Config, error) {
 	}
 
 	// unmarshal into config struct
-	var config Config
+	var config model.Config
 	if err := v.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
 	}
@@ -130,7 +131,7 @@ func InitConfigFile(menuID string) (string, error) {
 	}
 
 	// create default config with the provided menu ID
-	defaults := DefaultConfig()
+	defaults := model.DefaultConfig()
 	defaults.MenuID = menuID // set the menu ID in the config
 
 	// marshal to YAML

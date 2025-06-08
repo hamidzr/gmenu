@@ -3,55 +3,14 @@ package config
 import (
 	"strings"
 
-	"github.com/hamidzr/gmenu/constant"
+	"github.com/hamidzr/gmenu/model"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// Config holds all configuration for the application
-type Config struct {
-	// app settings
-	Title              string  `mapstructure:"title" yaml:"title"`
-	Prompt             string  `mapstructure:"prompt" yaml:"prompt"`
-	MenuID             string  `mapstructure:"menu_id" yaml:"menu_id"`
-	SearchMethod       string  `mapstructure:"search_method" yaml:"search_method"`
-	PreserveOrder      bool    `mapstructure:"preserve_order" yaml:"preserve_order"`
-	InitialQuery       string  `mapstructure:"initial_query" yaml:"initial_query"`
-	AutoAccept         bool    `mapstructure:"auto_accept" yaml:"auto_accept"`
-	TerminalMode       bool    `mapstructure:"terminal_mode" yaml:"terminal_mode"`
-	NoNumericSelection bool    `mapstructure:"no_numeric_selection" yaml:"no_numeric_selection"`
-	MinWidth           float32 `mapstructure:"min_width" yaml:"min_width"`
-	MinHeight          float32 `mapstructure:"min_height" yaml:"min_height"`
-	MaxWidth           float32 `mapstructure:"max_width" yaml:"max_width"`
-	MaxHeight          float32 `mapstructure:"max_height" yaml:"max_height"`
-
-	// internal settings
-	AcceptCustomSelection bool `mapstructure:"accept_custom_selection" yaml:"accept_custom_selection"`
-}
-
-// DefaultConfig returns a config with default values
-func DefaultConfig() *Config {
-	return &Config{
-		Title:                 constant.ProjectName,
-		Prompt:                "Search",
-		MenuID:                "",
-		SearchMethod:          "fuzzy",
-		PreserveOrder:         false,
-		InitialQuery:          "",
-		AutoAccept:            false,
-		TerminalMode:          false,
-		NoNumericSelection:    false,
-		MinWidth:              600,
-		MinHeight:             300,
-		MaxWidth:              0, // auto-calculated
-		MaxHeight:             0, // auto-calculated
-		AcceptCustomSelection: true,
-	}
-}
-
 // BindFlags binds CLI flags to the cobra command
 func BindFlags(cmd *cobra.Command) {
-	defaults := DefaultConfig()
+	defaults := model.DefaultConfig()
 
 	cmd.PersistentFlags().StringP("title", "t", defaults.Title, "Title of the menu window")
 	cmd.PersistentFlags().StringP("initial-query", "q", defaults.InitialQuery, "Initial query to search for")
@@ -71,7 +30,7 @@ func BindFlags(cmd *cobra.Command) {
 
 // SetViperDefaults sets default values in viper configuration
 func SetViperDefaults(v *viper.Viper) {
-	defaults := DefaultConfig()
+	defaults := model.DefaultConfig()
 	v.SetDefault("title", defaults.Title)
 	v.SetDefault("prompt", defaults.Prompt)
 	v.SetDefault("menu_id", defaults.MenuID)

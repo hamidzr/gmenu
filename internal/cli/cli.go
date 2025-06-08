@@ -70,7 +70,7 @@ func InitCLI() *cobra.Command {
 	return RootCmd
 }
 
-func run(cfg *config.Config) error {
+func run(cfg *model.Config) error {
 	searchMethod, ok := core.SearchMethods[cfg.SearchMethod]
 	if !ok {
 		return fmt.Errorf("invalid search method: %s", cfg.SearchMethod)
@@ -123,7 +123,7 @@ func run(cfg *config.Config) error {
 	return nil
 }
 
-func runTerminalMode(gmenu *core.GMenu, cfg *config.Config) error {
+func runTerminalMode(gmenu *core.GMenu, cfg *model.Config) error {
 	logrus.Info("Running in terminal mode")
 	items := readItems()
 	if len(items) == 0 {

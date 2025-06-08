@@ -40,6 +40,7 @@ func (g *GMenu) Reset() {
 	g.ui.SearchEntry.Enable()
 	g.ExitCode = model.Unset
 	g.SelectionWg = sync.WaitGroup{}
+	// g.ui.SearchEntry.SetText("")
 	g.menu.Selected = 0
 	removePidFile(g.menuID)
 	g.SetupMenu([]string{model.LoadingItem.Title}, "")
