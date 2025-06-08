@@ -83,7 +83,7 @@ func (g *GMenu) setKeyHandlers() {
 			}
 			g.markSelectionMade()
 		case fyne.KeyEscape:
-			g.ExitCode = model.UserCanceled
+			g.exitCode = model.UserCanceled
 			g.markSelectionMade()
 		case fyne.Key1, fyne.Key2, fyne.Key3, fyne.Key4, fyne.Key5, fyne.Key6, fyne.Key7, fyne.Key8, fyne.Key9:
 			// handle numeric selection if enabled

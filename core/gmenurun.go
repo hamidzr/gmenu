@@ -11,11 +11,11 @@ import (
 // setExitCode sets the exit code for the application.
 func (g *GMenu) SetExitCode(code model.ExitCode) error {
 	logrus.Debug("setting exit code to: ", code)
-	if g.ExitCode != model.Unset && g.ExitCode != code {
-		msg := fmt.Sprintf("Exit code set multiple times to different values: %v -> %v", g.ExitCode, code)
+	if g.exitCode != model.Unset && g.exitCode != code {
+		msg := fmt.Sprintf("Exit code set multiple times to different values: %v -> %v", g.exitCode, code)
 		return fmt.Errorf(msg)
 	}
-	g.ExitCode = code
+	g.exitCode = code
 	return nil
 }
 
@@ -30,7 +30,7 @@ func (g *GMenu) QuitWithCode(code model.ExitCode) {
 
 // Quit exits the application with the preset exit code.
 func (g *GMenu) Quit() {
-	if g.ExitCode == model.Unset {
+	if g.exitCode == model.Unset {
 		panic("Exit code not set")
 	}
 	// Set visibility state to false when quitting
@@ -45,7 +45,7 @@ func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
 	g.menuCancel()
 	g.ui.SearchEntry.Enable()
-	g.ExitCode = model.Unset
+	g.exitCode = model.Unset
 	g.SelectionWg = sync.WaitGroup{}
 	if resetInput {
 		g.ui.SearchEntry.SetText("")

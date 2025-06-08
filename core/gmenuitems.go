@@ -90,10 +90,10 @@ func (g *GMenu) selectedItem() *model.MenuItem {
 // TODO: support for context cancellations.
 func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	g.SelectionWg.Wait()
-	if g.ExitCode == model.Unset {
+	if g.exitCode == model.Unset {
 		// this is a valid case in daemon mode.
-	} else if g.ExitCode != model.NoError {
-		return nil, errors.Wrap(g.ExitCode, "an error code is set")
+	} else if g.exitCode != model.NoError {
+		return nil, errors.Wrap(g.exitCode, "an error code is set")
 	}
 	// TODO: cli option for allowing query.
 	if selected := g.selectedItem(); selected != nil {

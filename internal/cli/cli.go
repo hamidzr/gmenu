@@ -100,10 +100,10 @@ func run(cfg *model.Config) error {
 	}()
 	go func() {
 		gmenu.SelectionWg.Wait()
-		if gmenu.ExitCode == model.Unset {
+		if gmenu.GetExitCode() == model.Unset {
 			gmenu.QuitWithCode(0)
 		} else {
-			gmenu.QuitWithCode(gmenu.ExitCode)
+			gmenu.Quit()
 		}
 	}()
 
@@ -111,9 +111,9 @@ func run(cfg *model.Config) error {
 		logrus.WithError(err).Error("run() err")
 		return err
 	}
-	if gmenu.ExitCode != model.NoError {
-		logrus.Trace("Quitting gmenu with code: ", gmenu.ExitCode)
-		os.Exit(int(gmenu.ExitCode))
+	if gmenu.GetExitCode() != model.NoError {
+		logrus.Trace("Quitting gmenu with code: ", gmenu.GetExitCode())
+		os.Exit(int(gmenu.GetExitCode()))
 	}
 	val, err := gmenu.SelectedValue()
 	if err != nil {

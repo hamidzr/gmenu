@@ -44,7 +44,7 @@ type GMenu struct {
 	menuCancel    context.CancelFunc
 	app           fyne.App
 	store         store.Store
-	ExitCode      model.ExitCode
+	exitCode      model.ExitCode
 	dims          Dimensions
 	searchMethod  SearchMethod
 	preserveOrder bool
@@ -75,7 +75,7 @@ func NewGMenu(
 		prompt:        conf.Prompt,
 		AppTitle:      conf.Title,
 		menuID:        conf.MenuID,
-		ExitCode:      model.Unset,
+		exitCode:      model.Unset,
 		searchMethod:  searchMethod,
 		preserveOrder: conf.PreserveOrder,
 		config:        conf,
@@ -92,6 +92,10 @@ func NewGMenu(
 	}
 	g.initUI()
 	return g, nil
+}
+
+func (g *GMenu) GetExitCode() model.ExitCode {
+	return g.exitCode
 }
 
 // initValues computes the initial value
@@ -196,8 +200,8 @@ func (g *GMenu) initUI() {
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.OnFocusLost = func() {
-		if g.ExitCode == model.Unset {
-			g.ExitCode = model.UserCanceled
+		if g.exitCode == model.Unset {
+			g.exitCode = model.UserCanceled
 			g.markSelectionMade()
 		}
 	}
@@ -212,8 +216,8 @@ func (g *GMenu) initUI() {
 
 	// Add focus loss detection using OnClose
 	mainWindow.SetOnClosed(func() {
-		if g.ExitCode == model.Unset {
-			g.ExitCode = model.UserCanceled
+		if g.exitCode == model.Unset {
+			g.exitCode = model.UserCanceled
 			g.markSelectionMade()
 		}
 	})
@@ -291,7 +295,7 @@ func (g *GMenu) ShowUI() {
 	g.hasSelection = false
 	g.SelectionWg = sync.WaitGroup{}
 	g.SelectionWg.Add(1)
-	g.ExitCode = model.Unset
+	g.exitCode = model.Unset
 
 	// Show window and set focus
 	g.ui.MainWindow.Show()
