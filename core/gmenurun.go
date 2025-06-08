@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 
+	"github.com/frostbyte73/core"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/sirupsen/logrus"
 )
@@ -43,11 +44,6 @@ func (g *GMenu) Quit() {
 // Exiting and restarting is expensive.
 func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
-
-	// Use the same mutex as markSelectionMade to prevent race conditions
-	g.selectionMutex.Lock()
-	defer g.selectionMutex.Unlock()
-
 	if resetInput {
 		g.menu.query = ""
 		g.ui.SearchEntry.SetText("")
@@ -55,11 +51,13 @@ func (g *GMenu) Reset(resetInput bool) {
 	}
 	g.ui.SearchEntry.Enable()
 	g.exitCode = model.Unset
-	// Reset the selection state - this prevents multiple Done() calls
-	g.hasSelection = false
+	// Reset the fuse for a new selection cycle
+	g.selectionFuse.Break()
+	g.selectionFuse = core.Fuse{}
 	g.menu.Selected = 0
 	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 	g.ui.MenuLabel.SetText(g.matchCounterLabel())
+	logrus.Info("done resetting gmenu state")
 }
 
 func (g *GMenu) RunAppForever() error {

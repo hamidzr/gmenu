@@ -93,13 +93,13 @@ func run(cfg *model.Config) error {
 		if len(items) == 0 {
 			logrus.Error("No items provided through standard input")
 			gmenu.QuitWithCode(1)
-			gmenu.SelectionWg.Done()
+			// signal selection is done by calling markSelectionMade instead of direct Done()
 			return
 		}
 		gmenu.SetItems(items, nil)
 	}()
 	go func() {
-		gmenu.SelectionWg.Wait()
+		gmenu.WaitForSelection()
 		if gmenu.GetExitCode() == model.Unset {
 			gmenu.QuitWithCode(0)
 		} else {

@@ -89,7 +89,7 @@ func (g *GMenu) selectedItem() *model.MenuItem {
 // SelectedValue returns the selected item.
 // TODO: support for context cancellations.
 func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
-	g.SelectionWg.Wait()
+	g.WaitForSelection()
 	if g.exitCode == model.Unset {
 		// this is a valid case in daemon mode.
 	} else if g.exitCode != model.NoError {

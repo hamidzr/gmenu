@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/hamidzr/gmenu/core"
-	"github.com/hamidzr/gmenu/internal/config"
+	"github.com/hamidzr/gmenu/model"
 )
 
 func main() {
-	cfg := &config.Config{
+	cfg := &model.Config{
 		Prompt:       "Enter text: ",
 		InitialQuery: "Hello world",
 	}

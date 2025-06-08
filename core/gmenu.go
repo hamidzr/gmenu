@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -11,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/frostbyte73/core"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/hamidzr/gmenu/render"
 	"github.com/hamidzr/gmenu/store"
@@ -50,12 +50,8 @@ type GMenu struct {
 	preserveOrder bool
 	ui            *GUI
 	isRunning     bool
-	// SelectionWg is a wait group that lets listeners wait for user being donw with input.
-	SelectionWg sync.WaitGroup
-	// hasSelection is a flag to prevent multiple Done() calls
-	hasSelection bool
-	// selectionMutex protects hasSelection
-	selectionMutex sync.Mutex
+	// selectionFuse is a one-way switch that can only be broken once
+	selectionFuse core.Fuse
 	// isShown tracks whether the UI is currently visible
 	isShown bool
 }
@@ -85,8 +81,8 @@ func NewGMenu(
 			MaxWidth:  conf.MaxWidth,
 			MaxHeight: conf.MaxHeight,
 		},
-		SelectionWg: sync.WaitGroup{},
-		isShown:     false, // initially not shown
+		// selectionFuse is initialized as zero value (ready to be broken)
+		isShown: false, // initially not shown
 	}
 	g.initUI()
 	return g, nil
@@ -198,9 +194,9 @@ func (g *GMenu) initUI() {
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.OnFocusLost = func() {
+		g.markSelectionMade()
 		if g.exitCode == model.Unset {
 			g.exitCode = model.UserCanceled
-			g.markSelectionMade()
 		}
 	}
 	itemsCanvas := render.NewItemsCanvas()
@@ -229,15 +225,18 @@ func (g *GMenu) initUI() {
 
 }
 
-// markSelectionMade marks that a selection has been made and signals the wait group.
+// markSelectionMade marks that a selection has been made by breaking the fuse.
 func (g *GMenu) markSelectionMade() {
-	g.selectionMutex.Lock()
-	defer g.selectionMutex.Unlock()
-	if !g.hasSelection {
-		g.hasSelection = true
+	// break the fuse - this can only happen once and is thread-safe
+	if g.selectionFuse.Break() {
+		// only disable the search entry if we were the one to break the fuse
 		g.ui.SearchEntry.Disable()
-		g.SelectionWg.Done()
 	}
+}
+
+// WaitForSelection waits for the user to make a selection
+func (g *GMenu) WaitForSelection() {
+	<-g.selectionFuse.Watch()
 }
 
 // ResetUI based on g.menu with minimal rerendering.
@@ -286,14 +285,6 @@ func (g *GMenu) setShown(shown bool) {
 
 // ShowUI and wait for user input.
 func (g *GMenu) ShowUI() {
-	// Use the same mutex as markSelectionMade to prevent race conditions
-	g.selectionMutex.Lock()
-	// Reset only the state, not the menu
-	g.hasSelection = false
-	g.SelectionWg = sync.WaitGroup{}
-	g.SelectionWg.Add(1)
-	g.exitCode = model.Unset
-	g.selectionMutex.Unlock()
 
 	// Show window and set focus
 	g.ui.MainWindow.Show()
