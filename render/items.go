@@ -43,9 +43,9 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 
 	var textContent *fyne.Container
 	if !noNumericSelection && idx < 9 {
-		// create number hint on the right with fixed width to prevent overlap
+		// create number hint on the left with fixed width to prevent overlap
 		numberHint := widget.NewLabel(fmt.Sprintf("%d", idx+1))
-		numberHint.Alignment = fyne.TextAlignTrailing
+		numberHint.Alignment = fyne.TextAlignLeading
 		numberHint.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
 		numberHint.Importance = widget.MediumImportance
 
@@ -53,11 +53,11 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 		numberContainer := container.NewStack(numberHint)
 		numberContainer.Resize(fyne.NewSize(20, numberContainer.MinSize().Height)) // fixed width for numbers
 
-		// add some spacing between text and number
+		// add some spacing between number and text
 		spacer := layout.NewSpacer()
-		spacer.Resize(fyne.NewSize(8, 1)) // small spacer
+		spacer.Resize(fyne.NewSize(4, 1)) // small spacer
 
-		textContent = container.NewBorder(nil, nil, nil, container.NewHBox(spacer, numberContainer), optionText)
+		textContent = container.NewBorder(nil, nil, container.NewHBox(numberContainer, spacer), nil, optionText)
 	} else {
 		textContent = container.NewStack(optionText)
 	}
