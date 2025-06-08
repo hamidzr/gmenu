@@ -37,8 +37,8 @@ func DefaultConfig() *Config {
 		NoNumericSelection:    false,
 		MinWidth:              600,
 		MinHeight:             300,
-		MaxWidth:              0, // auto-calculated
-		MaxHeight:             0, // auto-calculated
+		MaxWidth:              1920,
+		MaxHeight:             1080,
 		AcceptCustomSelection: true,
 	}
 }
