@@ -57,6 +57,7 @@ func InitCLI() *cobra.Command {
 			// initialize configuration with proper priority handling
 			cfg, err := config.InitConfig(cmd)
 			if err != nil {
+				fmt.Println("err", err)
 				return fmt.Errorf("failed to initialize config: %w", err)
 			}
 

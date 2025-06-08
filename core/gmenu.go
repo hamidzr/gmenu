@@ -235,6 +235,11 @@ func (g *GMenu) calculateMaxDimensions() {
 	if g.ui == nil || g.ui.MainWindow == nil {
 		return
 	}
+	if g.config.MaxWidth > 0 && g.config.MaxHeight > 0 {
+		logrus.Debugf("Using configured max dimensions: %.0fx%.0f (min: %.0fx%.0f)",
+			g.config.MaxWidth, g.config.MaxHeight, g.dims.MinWidth, g.dims.MinHeight)
+		return
+	}
 
 	// use a percentage of estimated screen space as maximum
 	// this ensures the menu doesn't take up the entire screen

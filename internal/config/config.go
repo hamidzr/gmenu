@@ -88,12 +88,36 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 	// set defaults
 	SetViperDefaults(v)
 
-	// read config file if it exists
+	// read config file if it exists and validate it strictly
+	configFileFound := false
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("error reading config file: %w", err)
 		}
 		// config file not found is ok, we'll use defaults + env vars + flags
+	} else {
+		configFileFound = true
+	}
+
+	// if config file was found, validate it strictly for unexpected keys
+	if configFileFound {
+		// create a separate viper instance just for config file validation
+		configValidator := viper.New()
+		configValidator.SetConfigName("config")
+		configValidator.SetConfigType("yaml")
+		for _, path := range getConfigPaths(menuID) {
+			configValidator.AddConfigPath(path)
+		}
+
+		if err := configValidator.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("error re-reading config file for validation: %w", err)
+		}
+
+		// validate config file contents strictly - this will fail on unexpected keys
+		var configFileValidation model.Config
+		if err := configValidator.UnmarshalExact(&configFileValidation); err != nil {
+			return nil, fmt.Errorf("config file contains invalid keys: %w", err)
+		}
 	}
 
 	// bind CLI flags to viper (highest priority)
@@ -101,7 +125,7 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 		return nil, fmt.Errorf("error binding flags: %w", err)
 	}
 
-	// unmarshal into config struct
+	// unmarshal into config struct (using regular Unmarshal since we already validated the config file)
 	var config model.Config
 	if err := v.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
