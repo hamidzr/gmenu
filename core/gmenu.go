@@ -56,6 +56,10 @@ type GMenu struct {
 	hasSelection bool
 	// selectionMutex protects hasSelection
 	selectionMutex sync.Mutex
+	// isShown tracks whether the UI is currently visible
+	isShown bool
+	// visibilityMutex protects isShown
+	visibilityMutex sync.RWMutex
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -84,6 +88,7 @@ func NewGMenu(
 			MaxHeight: conf.MaxHeight,
 		},
 		SelectionWg: sync.WaitGroup{},
+		isShown:     false, // initially not shown
 	}
 	g.initUI()
 	return g, nil
@@ -302,7 +307,7 @@ func (g *GMenu) setMenuBasedUI() {
 
 // ToggleVisibility toggles the visibility of the gmenu window.
 func (g *GMenu) ToggleVisibility() {
-	if g.ui.MainWindow.Content().Visible() {
+	if g.IsShown() {
 		g.HideUI()
 	} else {
 		g.ShowUI()
@@ -318,6 +323,20 @@ func (g *GMenu) Search(query string) []model.MenuItem {
 	return g.menu.Filtered
 }
 
+// IsShown returns whether the UI is currently visible
+func (g *GMenu) IsShown() bool {
+	g.visibilityMutex.RLock()
+	defer g.visibilityMutex.RUnlock()
+	return g.isShown
+}
+
+// setShown sets the visibility state with proper locking
+func (g *GMenu) setShown(shown bool) {
+	g.visibilityMutex.Lock()
+	defer g.visibilityMutex.Unlock()
+	g.isShown = shown
+}
+
 // ShowUI and wait for user input.
 func (g *GMenu) ShowUI() {
 	// Reset only the state, not the menu
@@ -330,6 +349,9 @@ func (g *GMenu) ShowUI() {
 	g.ui.MainWindow.Show()
 	g.ui.SearchEntry.Enable()
 	g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
+
+	// Set visibility state
+	g.setShown(true)
 
 	_, err := createPidFile(g.menuID)
 	if err != nil {

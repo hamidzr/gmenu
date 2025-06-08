@@ -28,6 +28,8 @@ func (g *GMenu) Quit() {
 	if g.ExitCode == model.Unset {
 		panic("Exit code not set")
 	}
+	// Set visibility state to false when quitting
+	g.setShown(false)
 	g.app.Quit()
 	_ = removePidFile(g.menuID)
 }
@@ -44,6 +46,8 @@ func (g *GMenu) Reset(resetInput bool) {
 		g.ui.SearchEntry.SetText("")
 	}
 	g.menu.Selected = 0
+	// Note: we don't reset isShown here as Reset doesn't change visibility
+	// The visibility state should be preserved during reset
 	removePidFile(g.menuID)
 	g.SetupMenu([]string{model.LoadingItem.Title}, "")
 }
@@ -60,6 +64,8 @@ func (g *GMenu) RunAppForever() error {
 // HideUI hides the UI.
 func (g *GMenu) HideUI() {
 	g.ui.MainWindow.Hide()
+	// Set visibility state
+	g.setShown(false)
 	// if err := util.MinimizeWindow(context.TODO(), g.ui.MainWindow.Title()); err != nil {
 	// 	logrus.Error("Failed to minimize window:", err)
 	// } else {
