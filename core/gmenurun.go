@@ -67,6 +67,7 @@ func (g *GMenu) RunAppForever() error {
 	if err != nil {
 		return fmt.Errorf("failed to create PID file: %w", err)
 	}
+	defer removePidFile(g.menuID)
 
 	g.app.Run()
 	return nil

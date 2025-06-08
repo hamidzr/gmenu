@@ -38,12 +38,12 @@ func createPidFile(name string) (string, error) {
 	if _, err := os.Stat(pidFile); err == nil {
 		logrus.Warn("Another instance of gmenu is already running. Exiting.")
 		logrus.Warn("If this is not the case, please delete the pid file:", pidFile)
-		return "", fmt.Errorf("pid file already exists")
+		return "", fmt.Errorf("gmenu-%s pid file already exists", name)
 
 	}
 	f, err := os.Create(pidFile)
 	if err != nil {
-		logrus.Error("Failed to create pid file")
+		logrus.Error("Failed to create gmenu pid file")
 		if ferr := f.Close(); ferr != nil {
 			logrus.Error("Failed to close pid file:", ferr)
 		}
