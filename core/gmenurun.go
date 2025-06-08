@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/hamidzr/gmenu/model"
 	"github.com/sirupsen/logrus"
@@ -44,6 +43,11 @@ func (g *GMenu) Quit() {
 // Exiting and restarting is expensive.
 func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
+
+	// Use the same mutex as markSelectionMade to prevent race conditions
+	g.selectionMutex.Lock()
+	defer g.selectionMutex.Unlock()
+
 	if resetInput {
 		g.menu.query = ""
 		g.ui.SearchEntry.SetText("")
@@ -51,7 +55,7 @@ func (g *GMenu) Reset(resetInput bool) {
 	}
 	g.ui.SearchEntry.Enable()
 	g.exitCode = model.Unset
-	g.SelectionWg = sync.WaitGroup{}
+	// Reset the selection state - this prevents multiple Done() calls
 	g.hasSelection = false
 	g.menu.Selected = 0
 	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)

@@ -286,11 +286,14 @@ func (g *GMenu) setShown(shown bool) {
 
 // ShowUI and wait for user input.
 func (g *GMenu) ShowUI() {
+	// Use the same mutex as markSelectionMade to prevent race conditions
+	g.selectionMutex.Lock()
 	// Reset only the state, not the menu
 	g.hasSelection = false
 	g.SelectionWg = sync.WaitGroup{}
 	g.SelectionWg.Add(1)
 	g.exitCode = model.Unset
+	g.selectionMutex.Unlock()
 
 	// Show window and set focus
 	g.ui.MainWindow.Show()
