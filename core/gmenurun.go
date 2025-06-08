@@ -44,17 +44,18 @@ func (g *GMenu) Quit() {
 // Exiting and restarting is expensive.
 func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
-	g.menuCancel()
+	if resetInput {
+		g.menu.query = ""
+		g.ui.SearchEntry.SetText("")
+		g.menu.Search("")
+	}
 	g.ui.SearchEntry.Enable()
 	g.exitCode = model.Unset
 	g.SelectionWg = sync.WaitGroup{}
-	if resetInput {
-		g.ui.SearchEntry.SetText("")
-	}
+	g.hasSelection = false
 	g.menu.Selected = 0
-	// Note: we don't reset isShown here as Reset doesn't change visibility
-	// The visibility state should be preserved during reset
-	g.SetupMenu([]string{model.LoadingItem.Title}, "")
+	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+	g.ui.MenuLabel.SetText(g.matchCounterLabel())
 }
 
 func (g *GMenu) RunAppForever() error {
@@ -76,6 +77,9 @@ func (g *GMenu) RunAppForever() error {
 
 // HideUI hides the UI.
 func (g *GMenu) HideUI() {
+	if !g.isShown {
+		return
+	}
 	g.ui.MainWindow.Hide()
 	// Set visibility state
 	g.setShown(false)

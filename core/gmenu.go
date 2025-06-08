@@ -297,6 +297,9 @@ func (g *GMenu) ShowUI() {
 	g.ui.SearchEntry.Enable()
 	g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
 
+	// Set focus to the search entry so user can type immediately
+	g.ui.MainWindow.Canvas().Focus(g.ui.SearchEntry)
+
 	// Set visibility state
 	g.setShown(true)
 }
