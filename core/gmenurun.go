@@ -24,6 +24,7 @@ func (g *GMenu) QuitWithCode(code model.ExitCode) {
 	defer g.Quit()
 	err := g.SetExitCode(code)
 	if err != nil {
+		fmt.Println("Error setting exit code:", err)
 		panic(err)
 	}
 }
