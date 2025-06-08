@@ -34,7 +34,7 @@ func createPidFile(name string) (string, error) {
 		name = defaultPidFileNem
 	}
 	dir := os.TempDir()
-	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
+	pidFile := fmt.Sprintf("%s%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); err == nil {
 		logrus.Warn("Another instance of gmenu is already running. Exiting.")
 		logrus.Warn("If this is not the case, please delete the pid file:", pidFile)

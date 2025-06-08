@@ -9,18 +9,23 @@ import (
 )
 
 // setExitCode sets the exit code for the application.
-func (g *GMenu) SetExitCode(code model.ExitCode) {
+func (g *GMenu) SetExitCode(code model.ExitCode) error {
 	logrus.Debug("setting exit code to: ", code)
 	if g.ExitCode != model.Unset && g.ExitCode != code {
-		panic("Exit code set multiple times to different values")
+		msg := fmt.Sprintf("Exit code set multiple times to different values: %v -> %v", g.ExitCode, code)
+		return fmt.Errorf(msg)
 	}
 	g.ExitCode = code
+	return nil
 }
 
 // QuitWithCode exits the application.
 func (g *GMenu) QuitWithCode(code model.ExitCode) {
-	g.SetExitCode(code)
-	g.Quit()
+	defer g.Quit()
+	err := g.SetExitCode(code)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Quit exits the application with the preset exit code.
