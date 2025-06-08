@@ -352,9 +352,4 @@ func (g *GMenu) ShowUI() {
 
 	// Set visibility state
 	g.setShown(true)
-
-	_, err := createPidFile(g.menuID)
-	if err != nil {
-		g.QuitWithCode(1)
-	}
 }

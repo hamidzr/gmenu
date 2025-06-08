@@ -7,7 +7,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	defaultPidFileNem = "gmenu"
+)
+
 func removePidFile(name string) error {
+	if name == "" {
+		name = defaultPidFileNem
+	}
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
@@ -23,6 +30,9 @@ func removePidFile(name string) error {
 }
 
 func createPidFile(name string) (string, error) {
+	if name == "" {
+		name = defaultPidFileNem
+	}
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); err == nil {

@@ -48,7 +48,6 @@ func (g *GMenu) Reset(resetInput bool) {
 	g.menu.Selected = 0
 	// Note: we don't reset isShown here as Reset doesn't change visibility
 	// The visibility state should be preserved during reset
-	removePidFile(g.menuID)
 	g.SetupMenu([]string{model.LoadingItem.Title}, "")
 }
 
@@ -57,6 +56,13 @@ func (g *GMenu) RunAppForever() error {
 		panic("Run called multiple times")
 	}
 	g.isRunning = true
+
+	// create PID file when app starts running
+	_, err := createPidFile(g.menuID)
+	if err != nil {
+		return fmt.Errorf("failed to create PID file: %w", err)
+	}
+
 	g.app.Run()
 	return nil
 }
@@ -71,7 +77,6 @@ func (g *GMenu) HideUI() {
 	// } else {
 	// 	logrus.Debug("Minimized window", g.ui.MainWindow.Title())
 	// }
-	removePidFile(g.menuID)
 }
 
 // Run starts the application.

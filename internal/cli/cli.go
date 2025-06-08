@@ -108,6 +108,7 @@ func run(cfg *model.Config) error {
 
 	if err := gmenu.RunAppForever(); err != nil {
 		logrus.WithError(err).Error("run() err")
+		return err
 	}
 	if gmenu.ExitCode != model.NoError {
 		logrus.Trace("Quitting gmenu with code: ", gmenu.ExitCode)
