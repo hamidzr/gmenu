@@ -34,13 +34,15 @@ func (g *GMenu) Quit() {
 
 // Reset resets the gmenu state without exiting.
 // Exiting and restarting is expensive.
-func (g *GMenu) Reset() {
+func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
 	g.menuCancel()
 	g.ui.SearchEntry.Enable()
 	g.ExitCode = model.Unset
 	g.SelectionWg = sync.WaitGroup{}
-	// g.ui.SearchEntry.SetText("")
+	if resetInput {
+		g.ui.SearchEntry.SetText("")
+	}
 	g.menu.Selected = 0
 	removePidFile(g.menuID)
 	g.SetupMenu([]string{model.LoadingItem.Title}, "")
