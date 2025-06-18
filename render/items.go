@@ -34,8 +34,14 @@ func NewItemsCanvas() *ItemsCanvas {
 }
 
 func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection bool) *fyne.Container {
+	// Safety check for item
+	title := item.ComputedTitle()
+	if title == "" {
+		title = "Empty Item" // Fallback for empty items
+	}
+
 	// create the main text content
-	optionText := widget.NewLabel(item.ComputedTitle())
+	optionText := widget.NewLabel(title)
 	optionText.Truncation = fyne.TextTruncateEllipsis
 	if selected {
 		optionText.TextStyle = fyne.TextStyle{Bold: true}
@@ -93,9 +99,30 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 
 // Render updates the container with items, highlighting the selected one.
 func (c *ItemsCanvas) Render(items []model.MenuItem, selected int, noNumericSelection bool) {
+	// Safety checks to prevent nil pointer dereferences
+	if c == nil || c.Container == nil {
+		return
+	}
+
 	c.Container.Objects = nil // Clear current items
 
+	// Handle empty items array
+	if len(items) == 0 {
+		c.Container.Add(layout.NewSpacer()) // Add a final spacer for consistent look
+		c.Container.Refresh()               // Refresh the container to apply changes
+		return
+	}
+
+	// Ensure selected index is within bounds
+	if selected < 0 || selected >= len(items) {
+		selected = 0
+	}
+
 	for i, item := range items {
+		// Safety check for item title
+		if item.ComputedTitle() == "" {
+			continue // Skip empty items
+		}
 		c.Container.Add(RenderItem(item, i, i == selected, noNumericSelection))
 	}
 

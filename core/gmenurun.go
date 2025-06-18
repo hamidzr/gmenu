@@ -44,19 +44,29 @@ func (g *GMenu) Quit() {
 // Exiting and restarting is expensive.
 func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
+
+	// Reset the fuse for a new selection cycle - create new fuse first
+	newFuse := core.Fuse{}
+	g.selectionFuse = newFuse
+
+	// Reset menu state
 	if resetInput {
 		g.menu.query = ""
 		g.ui.SearchEntry.SetText("")
 		g.menu.Search("")
 	}
+
+	// Reset UI state
 	g.ui.SearchEntry.Enable()
 	g.exitCode = model.Unset
-	// Reset the fuse for a new selection cycle
-	g.selectionFuse.Break()
-	g.selectionFuse = core.Fuse{}
 	g.menu.Selected = 0
-	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
-	g.ui.MenuLabel.SetText(g.matchCounterLabel())
+
+	// Safely render UI components
+	if g.ui != nil && g.ui.ItemsCanvas != nil && g.menu != nil {
+		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+		g.ui.MenuLabel.SetText(g.matchCounterLabel())
+	}
+
 	logrus.Info("done resetting gmenu state")
 }
 

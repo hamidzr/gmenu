@@ -11,6 +11,10 @@ func (g *GMenu) startListenDynamicUpdates() {
 		queryChan <- text
 	}
 	resizeBasedOnResults := func() {
+		if g.ui == nil || g.ui.ItemsCanvas == nil || g.ui.MainWindow == nil {
+			return
+		}
+
 		resultsSize := g.ui.ItemsCanvas.Container.Size()
 
 		// calculate desired width: between min and max, based on content
@@ -32,26 +36,38 @@ func (g *GMenu) startListenDynamicUpdates() {
 		for {
 			select {
 			case query := <-queryChan:
-				g.menu.Search(query)
-				g.ui.MenuLabel.SetText(g.matchCounterLabel())
-				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
-				resizeBasedOnResults()
-			case items := <-g.menu.ItemsChan:
-				g.menu.itemsMutex.Lock()
-				deduplicated := make([]model.MenuItem, 0)
-				seen := make(map[string]struct{})
-				for _, item := range items {
-					if _, ok := seen[item.ComputedTitle()]; !ok {
-						seen[item.ComputedTitle()] = struct{}{}
-						deduplicated = append(deduplicated, item)
+				if g.menu != nil {
+					g.menu.Search(query)
+					if g.ui != nil && g.ui.MenuLabel != nil {
+						g.ui.MenuLabel.SetText(g.matchCounterLabel())
 					}
+					if g.ui != nil && g.ui.ItemsCanvas != nil {
+						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+					}
+					resizeBasedOnResults()
 				}
-				g.menu.items = deduplicated
-				g.menu.itemsMutex.Unlock()
-				g.menu.Search(g.menu.query)
-				g.ui.MenuLabel.SetText(g.matchCounterLabel())
-				g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
-				resizeBasedOnResults()
+			case items := <-g.menu.ItemsChan:
+				if g.menu != nil {
+					g.menu.itemsMutex.Lock()
+					deduplicated := make([]model.MenuItem, 0)
+					seen := make(map[string]struct{})
+					for _, item := range items {
+						if _, ok := seen[item.ComputedTitle()]; !ok {
+							seen[item.ComputedTitle()] = struct{}{}
+							deduplicated = append(deduplicated, item)
+						}
+					}
+					g.menu.items = deduplicated
+					g.menu.itemsMutex.Unlock()
+					g.menu.Search(g.menu.query)
+					if g.ui != nil && g.ui.MenuLabel != nil {
+						g.ui.MenuLabel.SetText(g.matchCounterLabel())
+					}
+					if g.ui != nil && g.ui.ItemsCanvas != nil {
+						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+					}
+					resizeBasedOnResults()
+				}
 			case <-g.menu.ctx.Done():
 				return
 			}
@@ -119,7 +135,10 @@ func (g *GMenu) setKeyHandlers() {
 		default:
 			return
 		}
-		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+		// Safely render UI components
+		if g.ui != nil && g.ui.ItemsCanvas != nil && g.menu != nil {
+			g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+		}
 	}
 	g.ui.SearchEntry.OnKeyDown = keyHandler
 	g.ui.MainWindow.Canvas().SetOnTypedKey(keyHandler)
