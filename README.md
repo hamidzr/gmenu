@@ -2,6 +2,7 @@
 
 ## TODO
 
+- x initial  query not working
 - [ ] ctrl+c to work like esc
 
 - [ ] fuzzy search avoid matching single chars alone unless near separator?

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hamidzr/gmenu/model"
 	"github.com/spf13/cobra"
@@ -123,6 +124,24 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 	// bind CLI flags to viper (highest priority)
 	if err := v.BindPFlags(cmd.Flags()); err != nil {
 		return nil, fmt.Errorf("error binding flags: %w", err)
+	}
+
+	// ensure flag name mapping for hyphenated flags
+	flags := []string{
+		"initial_query",
+		"menu_id",
+		"search_method",
+		"preserve_order",
+		"auto_accept",
+		"no_numeric_selection",
+		"min_width",
+		"min_height",
+		"max_width",
+		"max_height",
+	}
+
+	for _, flag := range flags {
+		v.RegisterAlias(flag, strings.ReplaceAll(flag, "_", "-"))
 	}
 
 	// unmarshal into config struct (using regular Unmarshal since we already validated the config file)
