@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/hamidzr/gmenu/model"
+	"github.com/hamidzr/gmenu/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -15,53 +16,6 @@ import (
 // ConfigWithComments represents the config structure with YAML comments for file generation
 type ConfigWithComments struct {
 	model.Config `yaml:",inline"`
-}
-
-// getConfigPaths returns the config directory paths in priority order
-// prefers ~/.config over macos application support dir
-func getConfigPaths(menuID string) []string {
-	var paths []string
-
-	// when menu ID is provided, prioritize namespaced configs
-	if menuID != "" {
-		if homeDir, err := os.UserHomeDir(); err == nil {
-			paths = append(paths, filepath.Join(homeDir, ".config", "gmenu", menuID))
-			paths = append(paths, filepath.Join(homeDir, ".gmenu", menuID))
-		}
-		if configDir, err := os.UserConfigDir(); err == nil {
-			paths = append(paths, filepath.Join(configDir, "gmenu", menuID))
-		}
-	}
-
-	if homeDir, err := os.UserHomeDir(); err == nil {
-		paths = append(paths, filepath.Join(homeDir, ".config", "gmenu"))
-		paths = append(paths, filepath.Join(homeDir, ".gmenu"))
-	}
-	if configDir, err := os.UserConfigDir(); err == nil {
-		paths = append(paths, filepath.Join(configDir, "gmenu"))
-	}
-	paths = append(paths, ".")
-
-	return paths
-}
-
-// getPreferredConfigDir returns the preferred config directory for writing
-func getPreferredConfigDir(menuID string) (string, error) {
-	if homeDir, err := os.UserHomeDir(); err == nil {
-		if menuID != "" {
-			return filepath.Join(homeDir, ".config", "gmenu", menuID), nil
-		}
-		return filepath.Join(homeDir, ".config", "gmenu"), nil
-	}
-
-	if userConfigDir, err := os.UserConfigDir(); err == nil {
-		if menuID != "" {
-			return filepath.Join(userConfigDir, "gmenu", menuID), nil
-		}
-		return filepath.Join(userConfigDir, "gmenu"), nil
-	}
-
-	return "", fmt.Errorf("unable to determine config directory")
 }
 
 // InitConfig initializes Viper configuration with proper priority:
@@ -79,7 +33,7 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 	menuID, _ := cmd.Flags().GetString("menu-id")
 
 	// add config paths in priority order
-	for _, path := range getConfigPaths(menuID) {
+	for _, path := range config.GetConfigPaths(menuID) {
 		v.AddConfigPath(path)
 	}
 
@@ -106,7 +60,7 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 		configValidator := viper.New()
 		configValidator.SetConfigName("config")
 		configValidator.SetConfigType("yaml")
-		for _, path := range getConfigPaths(menuID) {
+		for _, path := range config.GetConfigPaths(menuID) {
 			configValidator.AddConfigPath(path)
 		}
 
@@ -156,7 +110,7 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 // InitConfigFile generates and saves a default config file to the appropriate location
 func InitConfigFile(menuID string) (string, error) {
 	// get the preferred config directory
-	configDir, err := getPreferredConfigDir(menuID)
+	configDir, err := config.GetPreferredConfigDir(menuID)
 	if err != nil {
 		return "", err
 	}
