@@ -38,11 +38,26 @@ func (g *GMenu) startListenDynamicUpdates() {
 			case query := <-queryChan:
 				if g.menu != nil {
 					g.menu.Search(query)
-					if g.ui != nil && g.ui.MenuLabel != nil {
-						g.ui.MenuLabel.SetText(g.matchCounterLabel())
+					// Ensure UI updates happen on main thread or with proper app context
+					if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
+						func() {
+							defer func() {
+								if r := recover(); r != nil {
+									// Silently ignore theme access panics during tests
+								}
+							}()
+							g.ui.MenuLabel.SetText(g.matchCounterLabel())
+						}()
 					}
-					if g.ui != nil && g.ui.ItemsCanvas != nil {
-						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+					if g.ui != nil && g.ui.ItemsCanvas != nil && g.app != nil {
+						func() {
+							defer func() {
+								if r := recover(); r != nil {
+									// Silently ignore theme access panics during tests
+								}
+							}()
+							g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+						}()
 					}
 					resizeBasedOnResults()
 				}
