@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/test"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,6 +12,10 @@ import (
 
 // TestSearchEntryStateAfterReset tests the core issue with SearchEntry state management
 func TestSearchEntryStateAfterReset(t *testing.T) {
+	// Initialize test app to avoid Fyne theme issues
+	testApp := test.NewApp()
+	defer testApp.Quit()
+	
 	// Create a test config
 	config := &model.Config{
 		Title:                 "Test Menu",
@@ -39,7 +44,7 @@ func TestSearchEntryStateAfterReset(t *testing.T) {
 	gmenu.SetupMenu(testItems, "")
 
 	// Test initial state
-	assert.False(t, gmenu.hasSelection, "hasSelection should be false initially")
+	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false initially")
 	assert.False(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be enabled initially")
 
 	// Simulate ShowUI (which initializes the WaitGroup)
@@ -47,12 +52,12 @@ func TestSearchEntryStateAfterReset(t *testing.T) {
 
 	// Simulate user making a selection (this disables the SearchEntry)
 	gmenu.markSelectionMade()
-	assert.True(t, gmenu.hasSelection, "hasSelection should be true after selection")
+	assert.True(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be true after selection")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be disabled after selection")
 
 	// Reset the menu (this should fix the state)
 	gmenu.Reset(true)
-	assert.False(t, gmenu.hasSelection, "hasSelection should be false after Reset")
+	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after Reset")
 	assert.False(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be enabled after Reset")
 
 	// Test that SearchEntry can accept text
@@ -62,6 +67,10 @@ func TestSearchEntryStateAfterReset(t *testing.T) {
 
 // TestResetResetsAllNecessaryState ensures Reset method resets all the required state
 func TestResetResetsAllNecessaryState(t *testing.T) {
+	// Initialize test app to avoid Fyne theme issues
+	testApp := test.NewApp()
+	defer testApp.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -87,13 +96,13 @@ func TestResetResetsAllNecessaryState(t *testing.T) {
 	gmenu.SetupMenu(testItems, "")
 
 	// Set some state that should be reset
-	gmenu.hasSelection = true
+	gmenu.markSelectionMade() // This will break the fuse
 	gmenu.exitCode = model.NoError
 	gmenu.ui.SearchEntry.Disable()
 	gmenu.menu.Selected = 2
 
 	// Verify the state is set
-	assert.True(t, gmenu.hasSelection, "hasSelection should be true before reset")
+	assert.True(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be true before reset")
 	assert.Equal(t, model.NoError, gmenu.exitCode, "exitCode should be NoError before reset")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be disabled before reset")
 	assert.Equal(t, 2, gmenu.menu.Selected, "Selected should be 2 before reset")
@@ -102,7 +111,7 @@ func TestResetResetsAllNecessaryState(t *testing.T) {
 	gmenu.Reset(true)
 
 	// Verify all state is properly reset
-	assert.False(t, gmenu.hasSelection, "hasSelection should be false after reset")
+	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after reset")
 	assert.Equal(t, model.Unset, gmenu.exitCode, "exitCode should be Unset after reset")
 	assert.False(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be enabled after reset")
 	assert.Equal(t, 0, gmenu.menu.Selected, "Selected should be 0 after reset")
@@ -112,6 +121,10 @@ func TestResetResetsAllNecessaryState(t *testing.T) {
 // TestSearchEntryInputAfterHideShowReset reproduces the issue where
 // SearchEntry becomes unresponsive after hide/show/reset cycles
 func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
+	// Initialize test app to avoid Fyne theme issues
+	testApp := test.NewApp()
+	defer testApp.Quit()
+	
 	// Create a test config
 	config := &model.Config{
 		Title:                 "Test Menu",
@@ -140,17 +153,17 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 	gmenu.SetupMenu(testItems, "")
 
 	// Test initial state
-	assert.False(t, gmenu.hasSelection, "hasSelection should be false initially")
+	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false initially")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled initially")
 
 	// Simulate first show
 	gmenu.ShowUI()
-	assert.False(t, gmenu.hasSelection, "hasSelection should be false after ShowUI")
+	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after ShowUI")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled after ShowUI")
 
 	// Simulate user making a selection (this would normally happen via key press)
 	gmenu.markSelectionMade()
-	assert.True(t, gmenu.hasSelection, "hasSelection should be true after selection")
+	assert.True(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be true after selection")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be disabled after selection")
 
 	// Hide the UI
@@ -159,12 +172,12 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 
 	// Reset the menu (this is where the bug might be)
 	gmenu.Reset(true)
-	assert.False(t, gmenu.hasSelection, "hasSelection should be false after Reset")
+	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after Reset")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled after Reset")
 
 	// Show UI again (second time)
 	gmenu.ShowUI()
-	assert.False(t, gmenu.hasSelection, "hasSelection should be false after second ShowUI")
+	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after second ShowUI")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled after second ShowUI")
 
 	// Test that we can simulate typing (this is where the issue manifests)
@@ -196,6 +209,10 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 
 // TestMultipleHideShowCycles tests multiple cycles to ensure the issue is reproducible
 func TestMultipleHideShowCycles(t *testing.T) {
+	// Initialize test app to avoid Fyne theme issues
+	testApp := test.NewApp()
+	defer testApp.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -226,12 +243,12 @@ func TestMultipleHideShowCycles(t *testing.T) {
 
 		// Show UI
 		gmenu.ShowUI()
-		assert.False(t, gmenu.hasSelection, "hasSelection should be false at start of cycle %d", i+1)
+		assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false at start of cycle %d", i+1)
 		assert.False(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be enabled at start of cycle %d", i+1)
 
 		// Simulate selection
 		gmenu.markSelectionMade()
-		assert.True(t, gmenu.hasSelection, "hasSelection should be true after selection in cycle %d", i+1)
+		assert.True(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be true after selection in cycle %d", i+1)
 		assert.True(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be disabled after selection in cycle %d", i+1)
 
 		// Hide and reset
@@ -239,7 +256,7 @@ func TestMultipleHideShowCycles(t *testing.T) {
 		gmenu.Reset(true)
 
 		// Verify state after reset
-		assert.False(t, gmenu.hasSelection, "hasSelection should be false after reset in cycle %d", i+1)
+		assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after reset in cycle %d", i+1)
 		assert.False(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be enabled after reset in cycle %d", i+1)
 
 		// Test input capability
