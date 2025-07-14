@@ -1,10 +1,9 @@
 # gmenu / gomenu
 
 ## TODO
-
+- make lint and fix
 - x initial  query not working
 - [ ] ctrl+c to work like esc
-
 - [ ] fuzzy search avoid matching single chars alone unless near separator?
 - [ ] report created window's id and pid?
 - [ ] multiple selection: select two inputs for guillm.
