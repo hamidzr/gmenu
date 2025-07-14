@@ -12,8 +12,9 @@ import (
 func (g *GMenu) SetExitCode(code model.ExitCode) error {
 	logrus.Debug("setting exit code to: ", code)
 	if g.exitCode != model.Unset && g.exitCode != code {
-		msg := fmt.Sprintf("Exit code set multiple times to different values: %v -> %v", g.exitCode, code)
-		return fmt.Errorf(msg)
+		// Log the conflict but don't panic - just use the first exit code set
+		logrus.Warn("Exit code already set", "current", g.exitCode, "attempted", code)
+		return nil
 	}
 	g.exitCode = code
 	return nil
@@ -36,7 +37,17 @@ func (g *GMenu) Quit() {
 	}
 	// Set visibility state to false when quitting
 	g.setShown(false)
-	g.app.Quit()
+	
+	// Safely quit the Fyne app with error recovery
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logrus.Warn("Recovered from panic during app quit", "panic", r)
+			}
+		}()
+		g.app.Quit()
+	}()
+	
 	_ = removePidFile(g.menuID)
 }
 
