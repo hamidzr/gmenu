@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -49,6 +50,7 @@ type GMenu struct {
 	searchMethod  SearchMethod
 	preserveOrder bool
 	ui            *GUI
+	uiMutex       sync.Mutex
 	isRunning     bool
 	// selectionFuse is a one-way switch that can only be broken once
 	selectionFuse core.Fuse
@@ -245,6 +247,7 @@ func (g *GMenu) setMenuBasedUI() {
 		panic("not initialized")
 	}
 	g.startListenDynamicUpdates()
+	g.uiMutex.Lock()
 	g.ui.SearchEntry.SetText(g.menu.query)
 	if g.menu.query != "" {
 		g.ui.SearchEntry.SelectAll()
@@ -252,6 +255,7 @@ func (g *GMenu) setMenuBasedUI() {
 	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 	// show match items out of total item count.
 	g.ui.MenuLabel.SetText(g.matchCounterLabel())
+	g.uiMutex.Unlock()
 }
 
 // ToggleVisibility toggles the visibility of the gmenu window.

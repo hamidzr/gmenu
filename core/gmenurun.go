@@ -61,11 +61,13 @@ func (g *GMenu) Reset(resetInput bool) {
 	g.exitCode = model.Unset
 	g.menu.Selected = 0
 
-	// Safely render UI components
+	// Safely render UI components with mutex protection
+	g.uiMutex.Lock()
 	if g.ui != nil && g.ui.ItemsCanvas != nil && g.menu != nil {
 		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 		g.ui.MenuLabel.SetText(g.matchCounterLabel())
 	}
+	g.uiMutex.Unlock()
 
 	logrus.Info("done resetting gmenu state")
 }

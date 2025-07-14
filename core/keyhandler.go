@@ -39,6 +39,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 				if g.menu != nil {
 					g.menu.Search(query)
 					// Ensure UI updates happen on main thread or with proper app context
+					g.uiMutex.Lock()
 					if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
 						func() {
 							defer func() {
@@ -60,6 +61,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 						}()
 					}
 					resizeBasedOnResults()
+					g.uiMutex.Unlock()
 				}
 			case items := <-g.menu.ItemsChan:
 				if g.menu != nil {
@@ -75,6 +77,8 @@ func (g *GMenu) startListenDynamicUpdates() {
 					g.menu.items = deduplicated
 					g.menu.itemsMutex.Unlock()
 					g.menu.Search(g.menu.query)
+					// Use a mutex to ensure UI updates are thread-safe
+					g.uiMutex.Lock()
 					if g.ui != nil && g.ui.MenuLabel != nil {
 						g.ui.MenuLabel.SetText(g.matchCounterLabel())
 					}
@@ -82,6 +86,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 					}
 					resizeBasedOnResults()
+					g.uiMutex.Unlock()
 				}
 			case <-g.menu.ctx.Done():
 				return
@@ -151,9 +156,11 @@ func (g *GMenu) setKeyHandlers() {
 			return
 		}
 		// Safely render UI components
+		g.uiMutex.Lock()
 		if g.ui != nil && g.ui.ItemsCanvas != nil && g.menu != nil {
 			g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 		}
+		g.uiMutex.Unlock()
 	}
 	g.ui.SearchEntry.OnKeyDown = keyHandler
 	g.ui.MainWindow.Canvas().SetOnTypedKey(keyHandler)
