@@ -1,6 +1,7 @@
 package core
 
 import (
+	"time"
 	"fyne.io/fyne/v2"
 	"github.com/hamidzr/gmenu/model"
 )
@@ -33,35 +34,52 @@ func (g *GMenu) startListenDynamicUpdates() {
 		g.ui.MainWindow.Resize(size)
 	}
 	go func() { // handle new characters in the search bar and new items loaded.
+		// 60 FPS throttling for UI updates
+		const targetFPS = 60
+		renderTicker := time.NewTicker(time.Second / targetFPS)
+		defer renderTicker.Stop()
+		
+		var pendingRender bool
+		
+		renderUI := func() {
+			if !pendingRender {
+				return
+			}
+			pendingRender = false
+			
+			// Ensure UI updates happen on main thread or with proper app context
+			g.uiMutex.Lock()
+			defer g.uiMutex.Unlock()
+			
+			if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							// Silently ignore theme access panics during tests
+						}
+					}()
+					g.ui.MenuLabel.SetText(g.matchCounterLabel())
+				}()
+			}
+			if g.ui != nil && g.ui.ItemsCanvas != nil && g.app != nil {
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							// Silently ignore theme access panics during tests
+						}
+					}()
+					g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+				}()
+			}
+			resizeBasedOnResults()
+		}
+		
 		for {
 			select {
 			case query := <-queryChan:
 				if g.menu != nil {
 					g.menu.Search(query)
-					// Ensure UI updates happen on main thread or with proper app context
-					g.uiMutex.Lock()
-					if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
-						func() {
-							defer func() {
-								if r := recover(); r != nil {
-									// Silently ignore theme access panics during tests
-								}
-							}()
-							g.ui.MenuLabel.SetText(g.matchCounterLabel())
-						}()
-					}
-					if g.ui != nil && g.ui.ItemsCanvas != nil && g.app != nil {
-						func() {
-							defer func() {
-								if r := recover(); r != nil {
-									// Silently ignore theme access panics during tests
-								}
-							}()
-							g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
-						}()
-					}
-					resizeBasedOnResults()
-					g.uiMutex.Unlock()
+					pendingRender = true
 				}
 			case items := <-g.menu.ItemsChan:
 				if g.menu != nil {
@@ -77,17 +95,10 @@ func (g *GMenu) startListenDynamicUpdates() {
 					g.menu.items = deduplicated
 					g.menu.itemsMutex.Unlock()
 					g.menu.Search(g.menu.query)
-					// Use a mutex to ensure UI updates are thread-safe
-					g.uiMutex.Lock()
-					if g.ui != nil && g.ui.MenuLabel != nil {
-						g.ui.MenuLabel.SetText(g.matchCounterLabel())
-					}
-					if g.ui != nil && g.ui.ItemsCanvas != nil {
-						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
-					}
-					resizeBasedOnResults()
-					g.uiMutex.Unlock()
+					pendingRender = true
 				}
+			case <-renderTicker.C:
+				renderUI()
 			case <-g.menu.ctx.Done():
 				return
 			}

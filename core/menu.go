@@ -39,7 +39,7 @@ func newMenu(
 		Selected:      0,
 		SearchMethod:  searchMethod,
 		resultLimit:   10,
-		ItemsChan:     make(chan []model.MenuItem),
+		ItemsChan:     make(chan []model.MenuItem, 10), // bounded channel to prevent memory leaks
 		query:         initValue,
 		preserveOrder: preserveOrder,
 	}

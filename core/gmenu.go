@@ -55,7 +55,8 @@ type GMenu struct {
 	// selectionFuse is a one-way switch that can only be broken once
 	selectionFuse core.Fuse
 	// isShown tracks whether the UI is currently visible
-	isShown bool
+	isShown         bool
+	visibilityMutex sync.RWMutex
 }
 
 // NewGMenu creates a new GMenu instance.
@@ -278,12 +279,15 @@ func (g *GMenu) Search(query string) []model.MenuItem {
 
 // IsShown returns whether the UI is currently visible
 func (g *GMenu) IsShown() bool {
+	g.visibilityMutex.RLock()
+	defer g.visibilityMutex.RUnlock()
 	return g.isShown
 }
 
 // setShown sets the visibility state with proper locking
 func (g *GMenu) setShown(shown bool) {
-	// TODO: lock? we'll get into a deadlock :thinking:
+	g.visibilityMutex.Lock()
+	defer g.visibilityMutex.Unlock()
 	g.isShown = shown
 }
 
