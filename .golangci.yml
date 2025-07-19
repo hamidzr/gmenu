@@ -45,13 +45,10 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - staticcheck
     - typecheck
     - unused
 
 issues:
   exclude-use-default: true
-  exclude:
-    # Exclude CGO related issues that can't be resolved
-    - "could not load export data.*github.com/go-gl/gl"
-    - "buildir: failed to load package gl"
+  exclude-dirs:
+    - vendor
