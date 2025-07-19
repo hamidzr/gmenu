@@ -20,32 +20,39 @@ gmenu is a fuzzy menu selector written in Go that provides a GUI (via Fyne frame
 ### Build and Development
 ```bash
 # Build the main binary
-make build
+just build
 # or: go build -o bin/gmenu -v ./cmd/main.go
 
 # Build for multiple platforms (Darwin amd64/arm64)
-make build-all
+just build-all
 
-# Install dependencies
-make get-deps
+# Install dependencies and tools
+just setup
 
 # Run tests
-make test
+just test
 
 # Lint code
-make lint
+just lint
 
-# Format code  
-make fmt
+# Format code and clean trailing spaces
+just fmt
+
+# Run all checks (format, lint, test)
+just check
 
 # Development mode (example usage)
-make dev
+just dev
+
+# Clean build artifacts
+just clean
 ```
 
 ### Testing
 - Uses `gotestsum` for test execution
-- Tests are in core/ directory (e.g., search_test.go, ui_test.go)
+- Tests are in core/ directory (e.g., search_test.go, ui_test.go, terminal_test.go)
 - Run specific tests: `go test ./core/...`
+- Run all checks with: `just check`
 
 ## Architecture
 
@@ -57,10 +64,14 @@ make dev
 
 2. **Core Application** (`core/`)
    - `gmenu.go`: Main GMenu struct and application lifecycle
+   - `gmenuitems.go`: Menu item management and operations
+   - `gmenurun.go`: Application execution and runtime logic
+   - `grender.go`: Core rendering coordination
    - `menu.go`: Menu state management and selection logic
    - `search.go`: Search functionality with fuzzy/exact/regex methods
    - `keyhandler.go`: Keyboard input handling
    - `terminal.go`: Terminal mode implementation
+   - `util.go`: Utility functions
 
 3. **Rendering** (`render/`)
    - `items.go`: Item list rendering
@@ -74,8 +85,11 @@ make dev
    - Config files in ~/.config/gmenu/ or ~/.gmenu/
 
 5. **Storage** (`store/`)
-   - File-based storage for menu state persistence
-   - Cache management for selection history
+   - `store.go`: Storage interface and main operations
+   - `file-store.go`: File-based storage implementation
+   - `cache.go`: Cache management for selection history
+   - `config.go`: Storage configuration
+   - `utils.go`: Storage utility functions
 
 ### Entry Points
 
@@ -94,15 +108,23 @@ Config files support menu ID namespacing for different use cases.
 ## Development Notes
 
 ### Dependencies
-- Uses Go modules with go.mod
-- Key dependencies: Fyne (GUI), Cobra (CLI), Viper (config), sahilm/fuzzy (search)
-- Tests use testify/stretchr
+- Uses Go modules with go.mod (Go 1.23+)
+- Key dependencies: 
+  - Fyne v2.5.2 (GUI framework)
+  - Cobra v1.8.1 (CLI framework)
+  - Viper v1.20.1 (configuration management)
+  - sahilm/fuzzy v0.1.1 (fuzzy search)
+  - logrus v1.9.3 (logging)
+- Tests use testify/stretchr v1.10.0
+- Build tools: gotestsum, golangci-lint
 
 ### Code Organization
-- `model/`: Data structures and types
-- `pkg/`: Reusable packages
-- `internal/`: Internal packages not meant for external use
+- `model/`: Data structures and types (config.go, error.go, menu_item.go)
+- `pkg/`: Reusable packages (config loading, utilities)
+- `internal/`: Internal packages (cli, config, logger)
 - `constant/`: Application constants
+- `samples/`: Sample input files for testing
+- `scripts/`: Build and deployment scripts
 
 ### Current Development Focus
 Based on README TODO section, active areas include:
@@ -112,6 +134,12 @@ Based on README TODO section, active areas include:
 - dmenu compatibility options
 
 ### Testing Strategy
-- Unit tests in core/ package
-- Use `make test` or `gotestsum -- ./...`
-- Focus on search functionality and UI components
+- Comprehensive test suite across multiple packages
+- Core functionality tests: search_test.go, ui_test.go, terminal_test.go
+- Integration tests: integration_test.go, keyboard_test.go
+- Configuration tests: config_test.go, model_test.go
+- CLI tests: cli_test.go
+- Storage tests: store_test.go
+- Rendering tests: render_test.go
+- Use `just test` or `gotestsum -- ./...`
+- Use `just check` for full validation (format, lint, test)

@@ -16,9 +16,9 @@ A fast, fuzzy menu selector for desktop and terminal environments, inspired by d
 ### From Source
 
 ```bash
-git clone https://github.com/your-username/gmenu.git
+git clone https://github.com/hamidzr/gmenu.git
 cd gmenu
-make build
+just build
 ```
 
 The binary will be available at `bin/gmenu`.
@@ -62,29 +62,35 @@ echo -e "action1\naction2\naction3" | gmenu --menu-id actions
 
 ```bash
 # Build main binary
-make build
+just build
 
 # Build for multiple platforms
-make build-all
+just build-all
 
-# Install dependencies
-make get-deps
+# Install dependencies and tools
+just setup
+
+# Clean build artifacts
+just clean
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-make test
+just test
 
 # Run specific tests
 go test ./core/...
 
 # Lint code
-make lint
+just lint
 
 # Format code
-make fmt
+just fmt
+
+# Run all checks (format, lint, test)
+just check
 ```
 
 ## Architecture
