@@ -61,7 +61,7 @@ func (e *SearchEntry) FocusLost() {
 
 // NewInputArea returns a horizontal container with input widgets.
 func NewInputArea(searchEntry *SearchEntry, matchLabel *widget.Label) *fyne.Container {
-	cont := container.NewMax(
+	cont := container.NewStack(
 		searchEntry,
 		matchLabel,
 	)

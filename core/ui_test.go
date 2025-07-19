@@ -15,7 +15,7 @@ func TestSearchEntryStateAfterReset(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	// Create a test config
 	config := &model.Config{
 		Title:                 "Test Menu",
@@ -70,7 +70,7 @@ func TestResetResetsAllNecessaryState(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -124,7 +124,7 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	// Create a test config
 	config := &model.Config{
 		Title:                 "Test Menu",
@@ -212,7 +212,7 @@ func TestMultipleHideShowCycles(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",

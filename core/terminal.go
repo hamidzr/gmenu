@@ -21,7 +21,11 @@ func ReadUserInputLive(cfg *model.Config, queryChan chan<- string) string {
 		fmt.Println("Failed to set raw terminal mode:", err)
 		return ""
 	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	defer func() {
+		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
+			fmt.Printf("Failed to restore terminal: %v\n", err)
+		}
+	}()
 
 	// Create a new reader from stdin
 	reader := bufio.NewReader(os.Stdin)
@@ -79,8 +83,10 @@ func ReadUserInputLive(cfg *model.Config, queryChan chan<- string) string {
 	select {
 	case <-sigCh:
 		fmt.Printf("\n%sInput cancelled\n", cfg.Prompt)
-		term.Restore(int(os.Stdin.Fd()), oldState) // Restore terminal before exit
-		os.Exit(0)                                 // Exit immediately on signal
+		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
+			fmt.Printf("Failed to restore terminal: %v\n", err)
+		}
+		os.Exit(0) // Exit immediately on signal
 	case <-enterPressed:
 		fmt.Println()
 		return <-inputCh

@@ -17,7 +17,7 @@ func TestFullApplicationWorkflow(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Integration Test",
 		Prompt:                "Select Item",
@@ -41,7 +41,7 @@ func TestFullApplicationWorkflow(t *testing.T) {
 
 	testItems := []string{
 		"Apple",
-		"Banana", 
+		"Banana",
 		"Cherry",
 		"Date",
 		"Elderberry",
@@ -61,7 +61,7 @@ func TestFullApplicationWorkflow(t *testing.T) {
 	// Step 3: Test search functionality
 	test.Type(gmenu.ui.SearchEntry, "app")
 	time.Sleep(10 * time.Millisecond) // Allow search to process
-	
+
 	// Should filter to items containing "app"
 	filtered := gmenu.menu.Filtered
 	assert.GreaterOrEqual(t, len(filtered), 1) // At least "Apple"
@@ -98,7 +98,7 @@ func TestAutoAcceptWorkflow(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Auto Accept Test",
 		Prompt:                "Select Item",
@@ -138,7 +138,7 @@ func TestInitialQueryWorkflow(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Initial Query Test",
 		Prompt:                "Search",
@@ -162,7 +162,7 @@ func TestInitialQueryWorkflow(t *testing.T) {
 
 	testItems := []string{
 		"apple fruit",
-		"banana fruit", 
+		"banana fruit",
 		"vegetable carrot",
 		"fruit salad",
 	}
@@ -184,7 +184,7 @@ func TestErrorHandling(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Error Test",
 		Prompt:                "Search",
@@ -220,7 +220,7 @@ func TestErrorHandling(t *testing.T) {
 	gmenu.SetupMenu(testItems, "")
 	test.Type(gmenu.ui.SearchEntry, "xyz_no_match")
 	time.Sleep(10 * time.Millisecond)
-	
+
 	filtered := gmenu.menu.Filtered
 	assert.Len(t, filtered, 0) // No matches
 }
@@ -230,7 +230,7 @@ func TestConcurrentOperations(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Concurrent Test",
 		Prompt:                "Search",
@@ -261,7 +261,7 @@ func TestConcurrentOperations(t *testing.T) {
 
 	// Test concurrent search operations
 	done := make(chan bool, 3)
-	
+
 	// Goroutine 1: Rapid search changes
 	go func() {
 		defer func() { done <- true }()
@@ -313,7 +313,7 @@ func TestContextCancellation(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Context Test",
 		Prompt:                "Search",
@@ -340,7 +340,7 @@ func TestContextCancellation(t *testing.T) {
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Start an operation that should be cancelled
 	go func() {
 		// Simulate some work that respects context
@@ -361,18 +361,18 @@ func TestContextCancellation(t *testing.T) {
 	// Verify that the menu still functions after cancellation
 	test.Type(gmenu.ui.SearchEntry, "item")
 	time.Sleep(10 * time.Millisecond)
-	
+
 	filtered := gmenu.menu.Filtered
 	assert.GreaterOrEqual(t, len(filtered), 1)
 }
 
 // TestMemoryManagement tests that resources are properly cleaned up
 func TestMemoryManagement(t *testing.T) {
-	
+
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Memory Test",
 		Prompt:                "Search",
@@ -403,14 +403,14 @@ func TestMemoryManagement(t *testing.T) {
 
 		gmenu.SetupMenu(testItems, "")
 		gmenu.ShowUI()
-		
+
 		// Perform some operations
 		test.Type(gmenu.ui.SearchEntry, "large")
 		time.Sleep(5 * time.Millisecond)
-		
+
 		gmenu.HideUI()
 		gmenu.Reset(true)
-		
+
 		// The instance should be ready for garbage collection
 		gmenu = nil
 	}

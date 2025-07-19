@@ -77,9 +77,9 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 	}
 
 	// create background
-	background := canvas.NewRectangle(theme.BackgroundColor())
+	background := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	if selected {
-		background.FillColor = theme.PrimaryColor()
+		background.FillColor = theme.Color(theme.ColorNamePrimary)
 	} else {
 		background.StrokeColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
 		background.StrokeWidth = 1

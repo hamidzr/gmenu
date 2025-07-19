@@ -13,7 +13,7 @@ import (
 // TestInitCLI tests CLI initialization
 func TestInitCLI(t *testing.T) {
 	cmd := InitCLI()
-	
+
 	require.NotNil(t, cmd)
 	assert.Equal(t, "gmenu", cmd.Use)
 	assert.Equal(t, "gmenu is a fuzzy menu selector", cmd.Short)
@@ -24,14 +24,14 @@ func TestInitCLI(t *testing.T) {
 func TestCLIFlags(t *testing.T) {
 	t.Skip("Skipping CLI flag tests")
 	cmd := InitCLI()
-	
+
 	// Test that flags exist (this tests flag registration)
 	flags := cmd.Flags()
-	
+
 	// Test some expected flags
 	flag := flags.Lookup("init-config")
 	assert.NotNil(t, flag, "init-config flag should exist")
-	
+
 	flag = flags.Lookup("menu-id")
 	assert.NotNil(t, flag, "menu-id flag should exist")
 }
@@ -56,7 +56,11 @@ func TestCLIConfigInitialization(t *testing.T) {
 	// Change to temp directory
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("failed to restore directory: %v", err)
+		}
+	}()
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
@@ -64,11 +68,11 @@ func TestCLIConfigInitialization(t *testing.T) {
 
 	// Test with --init-config flag
 	cmd.SetArgs([]string{"--init-config"})
-	
+
 	// Capture output
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
-	
+
 	err = cmd.Execute()
 	require.NoError(t, err)
 
@@ -85,7 +89,11 @@ func TestCLIWithMenuID(t *testing.T) {
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("failed to restore directory: %v", err)
+		}
+	}()
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
@@ -93,10 +101,10 @@ func TestCLIWithMenuID(t *testing.T) {
 
 	// Test with --init-config and --menu-id flags
 	cmd.SetArgs([]string{"--init-config", "--menu-id", "test-menu"})
-	
+
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
-	
+
 	err = cmd.Execute()
 	require.NoError(t, err)
 
@@ -109,33 +117,33 @@ func TestCLIWithMenuID(t *testing.T) {
 func TestCLIArgumentParsing(t *testing.T) {
 	t.Skip("Skipping CLI tests")
 	testCases := []struct {
-		name     string
-		args     []string
+		name        string
+		args        []string
 		shouldError bool
 	}{
 		{
-			name:     "no arguments",
-			args:     []string{},
+			name:        "no arguments",
+			args:        []string{},
 			shouldError: false,
 		},
 		{
-			name:     "help flag",
-			args:     []string{"--help"},
+			name:        "help flag",
+			args:        []string{"--help"},
 			shouldError: false,
 		},
 		{
-			name:     "init config only",
-			args:     []string{"--init-config"},
+			name:        "init config only",
+			args:        []string{"--init-config"},
 			shouldError: false,
 		},
 		{
-			name:     "menu id without init config",
-			args:     []string{"--menu-id", "test"},
+			name:        "menu id without init config",
+			args:        []string{"--menu-id", "test"},
 			shouldError: false,
 		},
 		{
-			name:     "invalid flag",
-			args:     []string{"--invalid-flag"},
+			name:        "invalid flag",
+			args:        []string{"--invalid-flag"},
 			shouldError: true,
 		},
 	}
@@ -144,13 +152,13 @@ func TestCLIArgumentParsing(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cmd := InitCLI()
 			cmd.SetArgs(tc.args)
-			
+
 			// Suppress output for cleaner test results
 			cmd.SetOut(new(bytes.Buffer))
 			cmd.SetErr(new(bytes.Buffer))
 
 			err := cmd.Execute()
-			
+
 			if tc.shouldError {
 				assert.Error(t, err)
 			} else {
@@ -167,10 +175,10 @@ func TestCLIArgumentParsing(t *testing.T) {
 func TestCLIErrorHandling(t *testing.T) {
 	t.Skip("Skipping CLI tests")
 	cmd := InitCLI()
-	
+
 	// Test with invalid directory for config creation
 	cmd.SetArgs([]string{"--init-config", "--menu-id", "/invalid/path/menu"})
-	
+
 	// Should handle gracefully without panicking
 	assert.NotPanics(t, func() {
 		err := cmd.Execute()
@@ -184,10 +192,10 @@ func TestCLIWithStdinSimulation(t *testing.T) {
 	t.Skip("Skipping CLI tests")
 	// This test verifies the CLI can handle various scenarios
 	// In a real implementation, you might want to test with actual stdin simulation
-	
+
 	cmd := InitCLI()
 	assert.NotNil(t, cmd.RunE, "CLI should have a run function")
-	
+
 	// Test that readItems() function exists and is callable
 	items := readItems()
 	assert.NotNil(t, items, "readItems should return a slice (even if empty)")
@@ -214,11 +222,11 @@ func TestCLIFlagTypes(t *testing.T) {
 // TestCLISubcommands tests if there are any subcommands
 func TestCLISubcommands(t *testing.T) {
 	cmd := InitCLI()
-	
+
 	// Test that the root command is properly configured
 	assert.NotEmpty(t, cmd.Use)
 	assert.NotEmpty(t, cmd.Short)
-	
+
 	// Check if there are subcommands (currently there should be none)
 	subcommands := cmd.Commands()
 	assert.Empty(t, subcommands, "Root command should not have subcommands currently")
@@ -227,13 +235,13 @@ func TestCLISubcommands(t *testing.T) {
 // TestCLIUsageAndHelp tests help and usage output
 func TestCLIUsageAndHelp(t *testing.T) {
 	cmd := InitCLI()
-	
+
 	// Test that usage can be generated without panic
 	assert.NotPanics(t, func() {
 		usage := cmd.UsageString()
 		assert.NotEmpty(t, usage)
 	})
-	
+
 	// Test help generation
 	assert.NotPanics(t, func() {
 		help := cmd.Long
@@ -245,11 +253,11 @@ func TestCLIUsageAndHelp(t *testing.T) {
 // TestCLIVersionInfo tests version-related functionality if present
 func TestCLIVersionInfo(t *testing.T) {
 	cmd := InitCLI()
-	
+
 	// Test that version can be set without issues
 	cmd.Version = "test-version"
 	assert.Equal(t, "test-version", cmd.Version)
-	
+
 	// Test version flag behavior
 	versionFlag := cmd.Flags().Lookup("version")
 	if versionFlag != nil {

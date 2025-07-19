@@ -117,7 +117,7 @@ func TestMenuItemComputedTitle(t *testing.T) {
 func TestMenuItemWithAType(t *testing.T) {
 	testSerializable := TestSerializable{}
 	var serializable GmenuSerializable = testSerializable
-	
+
 	menuItem := MenuItem{
 		Title: "AType Test",
 		AType: &serializable,
@@ -127,7 +127,7 @@ func TestMenuItemWithAType(t *testing.T) {
 	assert.Equal(t, "AType Test", menuItem.Title)
 	assert.Equal(t, 42, menuItem.Score)
 	assert.NotNil(t, menuItem.AType)
-	
+
 	// Test ComputedTitle with AType
 	menuItemNoTitle := MenuItem{
 		Title: "",
@@ -252,7 +252,7 @@ func TestConfigValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test that config can be created and used
 			config := tc.config
-			
+
 			// Basic validation - config should have required fields
 			if tc.valid {
 				assert.NotNil(t, &config)

@@ -1,9 +1,9 @@
 package core
 
 import (
-	"time"
 	"fyne.io/fyne/v2"
 	"github.com/hamidzr/gmenu/model"
+	"time"
 )
 
 func (g *GMenu) startListenDynamicUpdates() {
@@ -38,24 +38,25 @@ func (g *GMenu) startListenDynamicUpdates() {
 		const targetFPS = 60
 		renderTicker := time.NewTicker(time.Second / targetFPS)
 		defer renderTicker.Stop()
-		
+
 		var pendingRender bool
-		
+
 		renderUI := func() {
 			if !pendingRender {
 				return
 			}
 			pendingRender = false
-			
+
 			// Ensure UI updates happen on main thread or with proper app context
 			g.uiMutex.Lock()
 			defer g.uiMutex.Unlock()
-			
+
 			if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
 				func() {
 					defer func() {
 						if r := recover(); r != nil {
 							// Silently ignore theme access panics during tests
+							_ = r // SA9003: intentionally ignore panic
 						}
 					}()
 					g.ui.MenuLabel.SetText(g.matchCounterLabel())
@@ -66,6 +67,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 					defer func() {
 						if r := recover(); r != nil {
 							// Silently ignore theme access panics during tests
+							_ = r // SA9003: intentionally ignore panic
 						}
 					}()
 					g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
@@ -73,7 +75,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 			}
 			resizeBasedOnResults()
 		}
-		
+
 		for {
 			select {
 			case query := <-queryChan:

@@ -14,11 +14,11 @@ import (
 // TestKeyboardShortcuts tests all keyboard shortcuts and key handlers
 func TestKeyboardShortcuts(t *testing.T) {
 	t.Skip("Keyboard test needs investigation - filtered items issue")
-	
+
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Keyboard Test",
 		Prompt:                "Search",
@@ -62,10 +62,10 @@ func TestKeyboardShortcuts(t *testing.T) {
 
 	// Test Tab key (should be accepted)
 	assert.True(t, gmenu.ui.SearchEntry.AcceptsTab())
-	
+
 	// Test arrow keys navigation
 	testNavigationKeys(t, gmenu)
-	
+
 	// Test numeric keys
 	testNumericKeys(t, gmenu)
 }
@@ -110,7 +110,7 @@ func testNavigationKeys(t *testing.T, gmenu *GMenu) {
 	gmenu.ui.SearchEntry.TypedKey(homeEvent)
 	assert.Equal(t, 0, gmenu.menu.Selected)
 
-	// Test End key  
+	// Test End key
 	endEvent := &fyne.KeyEvent{Name: fyne.KeyEnd}
 	gmenu.ui.SearchEntry.TypedKey(endEvent)
 	assert.Equal(t, len(gmenu.menu.Filtered)-1, gmenu.menu.Selected)
@@ -129,10 +129,10 @@ func testNumericKeys(t *testing.T, gmenu *GMenu) {
 
 	for i, key := range numericKeys {
 		gmenu.Reset(true)
-		
+
 		keyEvent := &fyne.KeyEvent{Name: key}
 		gmenu.ui.SearchEntry.TypedKey(keyEvent)
-		
+
 		// Should select the corresponding item (1-indexed to 0-indexed)
 		if i < len(gmenu.menu.Filtered) {
 			assert.Equal(t, i, gmenu.menu.Selected)
@@ -226,7 +226,7 @@ func TestNumericSelectionDisabled(t *testing.T) {
 	// Try numeric key - should not change selection
 	key1Event := &fyne.KeyEvent{Name: fyne.Key1}
 	gmenu.ui.SearchEntry.TypedKey(key1Event)
-	
+
 	// Selection should remain unchanged when numeric selection is disabled
 	assert.Equal(t, originalSelected, gmenu.menu.Selected)
 }

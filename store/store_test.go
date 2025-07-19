@@ -34,7 +34,11 @@ func TestCacheOperations(t *testing.T) {
 	// Change to temp directory
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("failed to restore directory: %v", err)
+		}
+	}()
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
@@ -52,10 +56,10 @@ func TestCacheOperations(t *testing.T) {
 
 	// Create test cache data
 	testCache := &Cache{
-		UsageCount: map[string]int{"item1": 5, "item2": 3},
+		UsageCount:       map[string]int{"item1": 5, "item2": 3},
 		NotFoundAccepted: []string{"not_found1", "not_found2"},
-		LastEntry: "test_entry",
-		LastInput: "test input",
+		LastEntry:        "test_entry",
+		LastInput:        "test input",
 	}
 
 	// Test saving cache
@@ -86,7 +90,11 @@ func TestConfigOperations(t *testing.T) {
 	// Change to temp directory
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("failed to restore directory: %v", err)
+		}
+	}()
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
@@ -133,7 +141,11 @@ func TestStoreWithDifferentFormats(t *testing.T) {
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("failed to restore directory: %v", err)
+		}
+	}()
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
@@ -145,23 +157,27 @@ func TestStoreWithDifferentFormats(t *testing.T) {
 			formatTmpDir := filepath.Join(tmpDir, format+"_test")
 			err := os.MkdirAll(formatTmpDir, 0755)
 			require.NoError(t, err)
-			
+
 			// Change to format-specific directory and restore afterwards
 			currentDir, err := os.Getwd()
 			require.NoError(t, err)
-			defer os.Chdir(currentDir)
-			
+			defer func() {
+				if err := os.Chdir(currentDir); err != nil {
+					t.Logf("failed to restore directory: %v", err)
+				}
+			}()
+
 			err = os.Chdir(formatTmpDir)
 			require.NoError(t, err)
-			
+
 			storePath := []string{"test", format}
 			store, err := NewFileStore[Cache, Config](storePath, format)
 			require.NoError(t, err)
 
 			testCache := &Cache{
 				UsageCount: map[string]int{"test": 1},
-				LastEntry: "test_" + format,
-				LastInput: "test input " + format,
+				LastEntry:  "test_" + format,
+				LastInput:  "test input " + format,
 			}
 
 			// Test save/load cycle
@@ -209,23 +225,27 @@ func TestConcurrentAccess(t *testing.T) {
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("failed to restore directory: %v", err)
+		}
+	}()
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
 	// Create separate stores for each goroutine to avoid file conflicts
 	store1, err := NewFileStore[Cache, Config]([]string{"concurrent", "test1"}, "yaml")
 	require.NoError(t, err)
-	store2, err := NewFileStore[Cache, Config]([]string{"concurrent", "test2"}, "yaml") 
+	store2, err := NewFileStore[Cache, Config]([]string{"concurrent", "test2"}, "yaml")
 	require.NoError(t, err)
 	store3, err := NewFileStore[Cache, Config]([]string{"concurrent", "test3"}, "yaml")
 	require.NoError(t, err)
 
 	// Create initial caches for each store
 	initialCache := &Cache{
-		LastEntry: "initial",
+		LastEntry:        "initial",
 		NotFoundAccepted: []string{"initial"},
-		LastInput: "initial query",
+		LastInput:        "initial query",
 	}
 	err = store1.SaveCache(*initialCache)
 	require.NoError(t, err)
@@ -253,9 +273,9 @@ func TestConcurrentAccess(t *testing.T) {
 		defer func() { done <- true }()
 		for i := 0; i < 10; i++ {
 			cache := &Cache{
-				LastEntry: "concurrent_write",
+				LastEntry:        "concurrent_write",
 				NotFoundAccepted: []string{"write", "test"},
-				LastInput: "concurrent query",
+				LastInput:        "concurrent query",
 			}
 			err := store2.SaveCache(*cache)
 			if err != nil {
@@ -273,12 +293,12 @@ func TestConcurrentAccess(t *testing.T) {
 			if err != nil {
 				t.Errorf("Concurrent mixed read failed: %v", err)
 			}
-			
+
 			// Write
 			cache := &Cache{
-				LastEntry: "mixed_op",
+				LastEntry:        "mixed_op",
 				NotFoundAccepted: []string{"mixed"},
-				LastInput: "mixed query",
+				LastInput:        "mixed query",
 			}
 			err = store3.SaveCache(*cache)
 			if err != nil {
@@ -296,11 +316,11 @@ func TestConcurrentAccess(t *testing.T) {
 	finalCache1, err := store1.LoadCache()
 	require.NoError(t, err)
 	assert.NotNil(t, finalCache1)
-	
+
 	finalCache2, err := store2.LoadCache()
 	require.NoError(t, err)
 	assert.NotNil(t, finalCache2)
-	
+
 	finalCache3, err := store3.LoadCache()
 	require.NoError(t, err)
 	assert.NotNil(t, finalCache3)
@@ -364,11 +384,11 @@ func TestUtilityFunctions(t *testing.T) {
 
 	// Test createDirectoryPath (if it exists)
 	testPath := filepath.Join(tmpDir, "deep", "nested", "path")
-	
+
 	// Create the directory structure
 	err = os.MkdirAll(testPath, 0755)
 	require.NoError(t, err)
-	
+
 	// Verify it was created
 	info, err := os.Stat(testPath)
 	require.NoError(t, err)

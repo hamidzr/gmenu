@@ -6,7 +6,7 @@ build-all:
 
 get-deps:
 	go mod download
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 test:
 	gotestsum -- ./...

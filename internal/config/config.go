@@ -140,7 +140,7 @@ func InitConfigFile(menuID string) (string, error) {
 	// add header comment
 	header := `# gmenu configuration file
 # Generated automatically - customize as needed
-# 
+#
 # Search method options: fuzzy, exact, regex
 # Window dimensions: set to 0 for auto-calculated max dimensions
 #

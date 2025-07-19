@@ -52,10 +52,8 @@ func TestReadUserInputLive(t *testing.T) {
 	go func() {
 		// Simulate the ReadUserInputLive function behavior
 		// In a real test, you might need to mock stdin or use a different approach
-		select {
-		case <-ctx.Done():
-			done <- config.InitialQuery // Return initial query on timeout
-		}
+		<-ctx.Done()
+		done <- config.InitialQuery // Return initial query on timeout
 	}()
 
 	// Wait for result or timeout
@@ -223,7 +221,7 @@ func TestTerminalContextHandling(t *testing.T) {
 
 	// Test that context cancellation is handled properly
 	done := make(chan bool, 1)
-	
+
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -348,8 +346,8 @@ func TestTerminalConfigDefaults(t *testing.T) {
 	config := &model.Config{}
 
 	// Test default values
-	assert.False(t, config.TerminalMode) // Should default to false
-	assert.Equal(t, "", config.Prompt)   // Should default to empty
+	assert.False(t, config.TerminalMode)     // Should default to false
+	assert.Equal(t, "", config.Prompt)       // Should default to empty
 	assert.Equal(t, "", config.InitialQuery) // Should default to empty
 
 	// Test setting terminal mode

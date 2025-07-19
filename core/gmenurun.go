@@ -37,7 +37,7 @@ func (g *GMenu) Quit() {
 	}
 	// Set visibility state to false when quitting
 	g.setShown(false)
-	
+
 	// Safely quit the Fyne app with error recovery
 	func() {
 		defer func() {
@@ -47,7 +47,7 @@ func (g *GMenu) Quit() {
 		}()
 		g.app.Quit()
 	}()
-	
+
 	_ = removePidFile(g.menuID)
 }
 
@@ -57,8 +57,7 @@ func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
 
 	// Reset the fuse for a new selection cycle - create new fuse first
-	newFuse := core.Fuse{}
-	g.selectionFuse = newFuse
+	g.resetSelectionFuse()
 
 	// Reset menu state
 	if resetInput {
@@ -94,7 +93,11 @@ func (g *GMenu) RunAppForever() error {
 	if err != nil {
 		return fmt.Errorf("failed to create PID file: %w", err)
 	}
-	defer removePidFile(g.menuID)
+	defer func() {
+		if err := removePidFile(g.menuID); err != nil {
+			logrus.Errorf("failed to remove PID file: %v", err)
+		}
+	}()
 
 	g.app.Run()
 	return nil
@@ -126,4 +129,9 @@ func (g *GMenu) CacheSelectedValue() error {
 	}
 	err = g.cacheState(selectedVal.ComputedTitle())
 	return err
+}
+
+// resetSelectionFuse creates a new fuse to avoid copy lock issues
+func (g *GMenu) resetSelectionFuse() {
+	g.selectionFuse = core.Fuse{}
 }

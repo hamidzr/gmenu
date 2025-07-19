@@ -81,12 +81,6 @@ func fuzzyContainsConsec(s, query string, ignoreCase bool, minConsecutive int) b
 	return false
 }
 
-// fuzzyContains checks if all characters in the query exist in the string in order.
-// TODO: compute how many chars/ratio violate this?
-func fuzzyContains(s, query string, ignoreCase bool) bool {
-	return fuzzyContainsConsec(s, query, ignoreCase, 1)
-}
-
 // calculates the ratio of the query chars that exists in s in anyorder.
 // func matching(s, query string) float32 {
 // }

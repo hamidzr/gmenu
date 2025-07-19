@@ -17,13 +17,13 @@ func loadConfigFromFile(configPath string) (*model.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var config model.Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &config, nil
 }
 
@@ -83,7 +83,7 @@ initial_query: "test query"
 func TestConfigDefaults(t *testing.T) {
 	// Get defaults directly from the model (since the helper function doesn't apply defaults)
 	defaults := model.DefaultConfig()
-	
+
 	// Test that defaults are set correctly
 	assert.Equal(t, "gmenu", defaults.Title)
 	assert.Equal(t, "Search", defaults.Prompt)
@@ -124,7 +124,7 @@ prompt: [invalid yaml syntax
 // TestNonExistentConfig tests handling of missing config files
 func TestNonExistentConfig(t *testing.T) {
 	nonExistentPath := "/path/that/does/not/exist/config.yaml"
-	
+
 	config, err := loadConfigFromFile(nonExistentPath)
 	assert.Error(t, err)
 	assert.Nil(t, config)
@@ -166,7 +166,7 @@ search_method: "exact"
 	assert.Equal(t, "exact", config.SearchMethod)
 
 	// Check that defaults are used for unspecified values
-	assert.Equal(t, "Search", config.Prompt) // default
+	assert.Equal(t, "Search", config.Prompt)        // default
 	assert.Equal(t, float32(300), config.MinHeight) // default
 }
 
@@ -179,7 +179,11 @@ func TestInitConfigFile(t *testing.T) {
 	// Change to temp directory for testing
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("failed to restore directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -187,18 +191,18 @@ func TestInitConfigFile(t *testing.T) {
 	// Override the config directory function to use temp directory
 	// Create a temporary config dir that doesn't exist yet
 	testConfigDir := filepath.Join(tmpDir, ".config", "gmenu")
-	
-	// Test generating default config by manually creating the file 
+
+	// Test generating default config by manually creating the file
 	// since InitConfigFile checks for existing files
 	configPath := filepath.Join(testConfigDir, "config.yaml")
 	err = os.MkdirAll(testConfigDir, 0755)
 	require.NoError(t, err)
-	
+
 	// Generate config content manually for testing
 	defaults := model.DefaultConfig()
 	yamlData, err := yaml.Marshal(defaults)
 	require.NoError(t, err)
-	
+
 	err = os.WriteFile(configPath, yamlData, 0644)
 	require.NoError(t, err)
 	assert.NotEmpty(t, configPath)
@@ -216,7 +220,7 @@ func TestInitConfigFile(t *testing.T) {
 	menuConfigPath := filepath.Join(testConfigDir2, "config.yaml")
 	err = os.MkdirAll(testConfigDir2, 0755)
 	require.NoError(t, err)
-	
+
 	err = os.WriteFile(menuConfigPath, yamlData, 0644)
 	require.NoError(t, err)
 	assert.FileExists(t, menuConfigPath)
@@ -300,7 +304,7 @@ func TestEnvironmentVariableOverrides(t *testing.T) {
 	// Note: This test demonstrates that env vars would override config files
 	// when using the proper viper-based config system. The loadConfigFromFile
 	// helper doesn't implement env var handling, so we test the expected behavior.
-	
+
 	// Set environment variables
 	os.Setenv("GMENU_TITLE", "Env Title")
 	os.Setenv("GMENU_MIN_WIDTH", "1000")
@@ -315,7 +319,7 @@ func TestEnvironmentVariableOverrides(t *testing.T) {
 	assert.Equal(t, "Env Title", os.Getenv("GMENU_TITLE"))
 	assert.Equal(t, "1000", os.Getenv("GMENU_MIN_WIDTH"))
 	assert.Equal(t, "exact", os.Getenv("GMENU_SEARCH_METHOD"))
-	
+
 	// In a real viper-based config system, these would override file values
 	// This test validates the expected behavior rather than the helper function
 }
@@ -324,9 +328,9 @@ func TestEnvironmentVariableOverrides(t *testing.T) {
 func TestConfigSearchPaths(t *testing.T) {
 	// This test would typically test the file search paths,
 	// but since we're using viper, we'll test the path resolution logic
-	
+
 	testCases := []struct {
-		menuID       string
+		menuID        string
 		expectedPaths []string
 	}{
 		{
