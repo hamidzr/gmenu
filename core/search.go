@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -81,25 +80,16 @@ func fuzzyContainsConsec(s, query string, ignoreCase bool, minConsecutive int) b
 	return false
 }
 
-// calculates the ratio of the query chars that exists in s in anyorder.
-// func matching(s, query string) float32 {
-// }
-
 // FuzzySearchV2 is a fuzzy search that uses a different scoring mechanism.
 func FuzzySearchV2(items []model.MenuItem, query string, preserveOrder bool, limit int) []model.MenuItem {
-	// var results []string
 	matchedList := make([]model.MenuItem, 0)
-	fmt.Println("Query, order, limit ", query, preserveOrder, limit)
 
 	for _, item := range items {
-		// distance := levenshtein.DistanceForStrings([]rune(query), []rune(item.Title), levenshtein.DefaultOptions)
 		distance := calculateInsertions(query, item.ComputedTitle())
 		maxLen := max(len(query), len(item.ComputedTitle()))
 		score := 100 - (distance * 100 / maxLen) // Convert distance to a similarity score
 
 		if score > 0 { // You can adjust this threshold as needed
-			fmt.Println(distance, " ", item.ComputedTitle(), " ", query, score)
-			// result := fmt.Sprintf("%s (Score: %d%%)", item, score)
 			matchedList = append(matchedList, item)
 		}
 	}

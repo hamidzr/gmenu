@@ -34,7 +34,34 @@ func (fs FileStore[Cache, Cfg]) Unmarshal(data []byte, v any) error {
 	return yaml.Unmarshal(data, v)
 }
 
-// TODO cache and cofnig logic are the same.
+// buildFilePath creates a file path with the given directory and filename
+func (fs FileStore[C, Cfg]) buildFilePath(dir, name string) string {
+	return filepath.Join(dir, name+"."+fs.format)
+}
+
+// saveData is a generic helper for saving data to a file
+func (fs FileStore[C, Cfg]) saveData(data any, filePath string) error {
+	serialized, err := fs.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filePath, serialized, 0o644)
+}
+
+// loadData is a generic helper for loading data from a file
+func (fs FileStore[C, Cfg]) loadData(filePath string, target any, allowMissing bool) error {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		if allowMissing {
+			return nil // Return zero value for cache
+		}
+		return err // Return error for config
+	}
+	serialized, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	return fs.Unmarshal(serialized, target)
+}
 
 // NewFileStore initializes a new FileStore with directories for cache and config.
 func NewFileStore[Cache any, Cfg any](namespace []string, format string) (*FileStore[Cache, Cfg], error) {

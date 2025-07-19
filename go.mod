@@ -6,6 +6,7 @@ toolchain go1.23.3
 
 require (
 	fyne.io/fyne/v2 v2.5.2
+	github.com/frostbyte73/core v0.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sirupsen/logrus v1.9.3
@@ -22,7 +23,6 @@ require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fredbi/uri v1.1.0 // indirect
-	github.com/frostbyte73/core v0.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20230506162202-1fdaa286a934 // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20240101223322-6e1efdc71b7a // indirect

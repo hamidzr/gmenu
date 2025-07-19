@@ -8,12 +8,12 @@ import (
 )
 
 const (
-	defaultPidFileNem = "gmenu"
+	defaultPidFileName = "gmenu"
 )
 
 func removePidFile(name string) error {
 	if name == "" {
-		name = defaultPidFileNem
+		name = defaultPidFileName
 	}
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
@@ -31,10 +31,10 @@ func removePidFile(name string) error {
 
 func createPidFile(name string) (string, error) {
 	if name == "" {
-		name = defaultPidFileNem
+		name = defaultPidFileName
 	}
 	dir := os.TempDir()
-	pidFile := fmt.Sprintf("%s%s.pid", dir, name)
+	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); err == nil {
 		logrus.Warn("Another instance of gmenu is already running. Exiting.")
 		logrus.Warn("If this is not the case, please delete the pid file:", pidFile)
@@ -53,9 +53,9 @@ func createPidFile(name string) (string, error) {
 }
 
 // canBeHighlighted returns true if the menu item can be highlighted
-// programmatically via exiting fayne interface.
+// programmatically via existing fyne interface.
 func canBeHighlighted(entry string) bool {
-	// TODO: find a better way to select all on searchEnty.
+	// TODO: find a better way to select all on searchEntry.
 	for _, c := range entry {
 		if !(c >= 'a' && c <= 'z' ||
 			c >= 'A' && c <= 'Z' ||

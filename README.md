@@ -1,8 +1,6 @@
 # gmenu / gomenu
 
 ## TODO
-- make lint and fix
-- x initial  query not working
 - [ ] ctrl+c to work like esc
 - [ ] fuzzy search avoid matching single chars alone unless near separator?
 - [ ] report created window's id and pid?
@@ -22,6 +20,8 @@
 - [x] a single instance with the same title
 - [x] the current fuzzy search is not great
 - [x] simple fuzzy to ignore some letters eg space - \_
+- [x] make lint and fix
+- [x] initial  query not working
 
 ```
 choose:

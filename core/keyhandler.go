@@ -48,32 +48,31 @@ func (g *GMenu) startListenDynamicUpdates() {
 			pendingRender = false
 
 			// Ensure UI updates happen on main thread or with proper app context
-			g.uiMutex.Lock()
-			defer g.uiMutex.Unlock()
-
-			if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
-				func() {
-					defer func() {
-						if r := recover(); r != nil {
-							// Silently ignore theme access panics during tests
-							_ = r // SA9003: intentionally ignore panic
-						}
+			g.safeUIUpdate(func() {
+				if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								// Silently ignore theme access panics during tests
+								_ = r // SA9003: intentionally ignore panic
+							}
+						}()
+						g.ui.MenuLabel.SetText(g.matchCounterLabel())
 					}()
-					g.ui.MenuLabel.SetText(g.matchCounterLabel())
-				}()
-			}
-			if g.ui != nil && g.ui.ItemsCanvas != nil && g.app != nil {
-				func() {
-					defer func() {
-						if r := recover(); r != nil {
-							// Silently ignore theme access panics during tests
-							_ = r // SA9003: intentionally ignore panic
-						}
+				}
+				if g.ui != nil && g.ui.ItemsCanvas != nil && g.app != nil {
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								// Silently ignore theme access panics during tests
+								_ = r // SA9003: intentionally ignore panic
+							}
+						}()
+						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
 					}()
-					g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
-				}()
-			}
-			resizeBasedOnResults()
+				}
+				resizeBasedOnResults()
+			})
 		}
 
 		for {

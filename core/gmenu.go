@@ -129,38 +129,19 @@ func (g *GMenu) SetupMenu(initialItems []string, initialQuery string) {
 }
 
 func (g *GMenu) clearCache() error {
-	if g.menuID == "" {
+	return g.withCache(func(cache *store.Cache) error {
+		cache.SetLastInput("")
+		cache.SetLastEntry("")
 		return nil
-	}
-	cache, err := g.store.LoadCache()
-	if err != nil {
-		return err
-	}
-	cache.SetLastInput("")
-	cache.SetLastEntry("")
-	err = g.store.SaveCache(cache)
-	if err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func (g *GMenu) cacheState(value string) error {
-	if g.menuID == "" {
-		// skip caching if menuID is not set.
+	return g.withCache(func(cache *store.Cache) error {
+		cache.SetLastInput(g.menu.query)
+		cache.SetLastEntry(value)
 		return nil
-	}
-	cache, err := g.store.LoadCache()
-	if err != nil {
-		return err
-	}
-	cache.SetLastInput(g.menu.query)
-	cache.SetLastEntry(value)
-	err = g.store.SaveCache(cache)
-	if err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func (g *GMenu) isUIInitialized() bool {
@@ -242,21 +223,45 @@ func (g *GMenu) WaitForSelection() {
 	<-g.selectionFuse.Watch()
 }
 
+// safeUIUpdate executes a UI update function with proper mutex protection
+func (g *GMenu) safeUIUpdate(updateFunc func()) {
+	g.uiMutex.Lock()
+	defer g.uiMutex.Unlock()
+	updateFunc()
+}
+
+// withCache executes an operation on the cache and saves it back
+func (g *GMenu) withCache(operation func(*store.Cache) error) error {
+	if g.menuID == "" {
+		return nil // skip caching if menuID is not set
+	}
+	cache, err := g.store.LoadCache()
+	if err != nil {
+		return err
+	}
+
+	if err := operation(&cache); err != nil {
+		return err
+	}
+
+	return g.store.SaveCache(cache)
+}
+
 // ResetUI based on g.menu with minimal rerendering.
 func (g *GMenu) setMenuBasedUI() {
 	if g.menu == nil || g.ui == nil {
 		panic("not initialized")
 	}
 	g.startListenDynamicUpdates()
-	g.uiMutex.Lock()
-	g.ui.SearchEntry.SetText(g.menu.query)
-	if g.menu.query != "" {
-		g.ui.SearchEntry.SelectAll()
-	}
-	g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
-	// show match items out of total item count.
-	g.ui.MenuLabel.SetText(g.matchCounterLabel())
-	g.uiMutex.Unlock()
+	g.safeUIUpdate(func() {
+		g.ui.SearchEntry.SetText(g.menu.query)
+		if g.menu.query != "" {
+			g.ui.SearchEntry.SelectAll()
+		}
+		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+		// show match items out of total item count.
+		g.ui.MenuLabel.SetText(g.matchCounterLabel())
+	})
 }
 
 // ToggleVisibility toggles the visibility of the gmenu window.
