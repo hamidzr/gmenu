@@ -1,9 +1,10 @@
 package core
 
 import (
+	"time"
+
 	"fyne.io/fyne/v2"
 	"github.com/hamidzr/gmenu/model"
-	"time"
 )
 
 func (g *GMenu) startListenDynamicUpdates() {
