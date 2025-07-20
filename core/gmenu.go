@@ -87,7 +87,9 @@ func NewGMenu(
 		// selectionFuse is initialized as zero value (ready to be broken)
 		isShown: false, // initially not shown
 	}
-	g.initUI()
+	if err := g.initUI(); err != nil {
+		return nil, fmt.Errorf("failed to initialize UI: %w", err)
+	}
 	return g, nil
 }
 
@@ -95,15 +97,15 @@ func (g *GMenu) GetExitCode() model.ExitCode {
 	return g.exitCode
 }
 
-// initValues computes the initial value
-func (g *GMenu) initValue(initialQuery string) string {
+// initValue computes the initial value for the search query
+func (g *GMenu) initValue(initialQuery string) (string, error) {
 	lastInput := ""
 	if g.menuID != "" && initialQuery == "" {
 		cache, err := g.store.LoadCache()
 		if err != nil {
-			panic(err)
-		}
-		if canBeHighlighted(cache.LastInput) {
+			logrus.Warn("Failed to load cache for initial value:", err)
+			// continue with empty lastInput rather than failing
+		} else if canBeHighlighted(cache.LastInput) {
 			lastInput = cache.LastInput
 		}
 	}
@@ -111,21 +113,30 @@ func (g *GMenu) initValue(initialQuery string) string {
 	if initialQuery != "" {
 		initValue = initialQuery
 	}
-	return initValue
+	return initValue, nil
 }
 
 // SetupMenu sets up the backing menu.
-func (g *GMenu) SetupMenu(initialItems []string, initialQuery string) {
+func (g *GMenu) SetupMenu(initialItems []string, initialQuery string) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	submenu, err := newMenu(ctx, initialItems, g.initValue(initialQuery), g.searchMethod, g.preserveOrder)
+	initVal, err := g.initValue(initialQuery)
 	if err != nil {
-		fmt.Println("Failed to setup menu:", err)
-		logrus.Error(err)
-		panic(err)
+		cancel()
+		return fmt.Errorf("failed to get initial value: %w", err)
+	}
+	submenu, err := newMenu(ctx, initialItems, initVal, g.searchMethod, g.preserveOrder)
+	if err != nil {
+		cancel()
+		logrus.Error("Failed to setup menu:", err)
+		return fmt.Errorf("failed to create menu: %w", err)
 	}
 	g.menu = submenu
 	g.menuCancel = cancel
-	g.setMenuBasedUI()
+	if err := g.setMenuBasedUI(); err != nil {
+		cancel()
+		return fmt.Errorf("failed to setup UI: %w", err)
+	}
+	return nil
 }
 
 func (g *GMenu) clearCache() error {
@@ -148,10 +159,10 @@ func (g *GMenu) isUIInitialized() bool {
 	return g.ui != nil
 }
 
-// one time init for ui elements.
-func (g *GMenu) initUI() {
+// initUI initializes UI elements - should only be called once
+func (g *GMenu) initUI() error {
 	if g.isUIInitialized() {
-		panic("ui is already initialized")
+		return fmt.Errorf("ui is already initialized")
 	}
 	g.app = app.New()
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
@@ -207,6 +218,7 @@ func (g *GMenu) initUI() {
 		MainWindow:  mainWindow,
 	}
 
+	return nil
 }
 
 // markSelectionMade marks that a selection has been made by breaking the fuse.
@@ -247,10 +259,10 @@ func (g *GMenu) withCache(operation func(*store.Cache) error) error {
 	return g.store.SaveCache(cache)
 }
 
-// ResetUI based on g.menu with minimal rerendering.
-func (g *GMenu) setMenuBasedUI() {
+// setMenuBasedUI updates UI based on g.menu with minimal rerendering.
+func (g *GMenu) setMenuBasedUI() error {
 	if g.menu == nil || g.ui == nil {
-		panic("not initialized")
+		return fmt.Errorf("menu or UI not initialized")
 	}
 	g.startListenDynamicUpdates()
 	g.safeUIUpdate(func() {
@@ -262,6 +274,7 @@ func (g *GMenu) setMenuBasedUI() {
 		// show match items out of total item count.
 		g.ui.MenuLabel.SetText(g.matchCounterLabel())
 	})
+	return nil
 }
 
 // ToggleVisibility toggles the visibility of the gmenu window.

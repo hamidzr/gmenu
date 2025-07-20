@@ -111,11 +111,6 @@ func (g *GMenu) HideUI() {
 	g.ui.MainWindow.Hide()
 	// Set visibility state
 	g.setShown(false)
-	// if err := util.MinimizeWindow(context.TODO(), g.ui.MainWindow.Title()); err != nil {
-	// 	logrus.Error("Failed to minimize window:", err)
-	// } else {
-	// 	logrus.Debug("Minimized window", g.ui.MainWindow.Title())
-	// }
 }
 
 // Run starts the application.

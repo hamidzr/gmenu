@@ -50,7 +50,7 @@ func TestFullApplicationWorkflow(t *testing.T) {
 	}
 
 	// Step 1: Setup menu with items
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 	assert.Len(t, gmenu.menu.items, len(testItems))
 	assert.Equal(t, 0, gmenu.menu.Selected)
 
@@ -121,7 +121,7 @@ func TestAutoAcceptWorkflow(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"unique_item", "other", "another"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Search for something that matches only one item
 	test.Type(gmenu.ui.SearchEntry, "unique")
@@ -168,7 +168,7 @@ func TestInitialQueryWorkflow(t *testing.T) {
 	}
 
 	// Setup with initial query
-	gmenu.SetupMenu(testItems, config.InitialQuery)
+	require.NoError(t, gmenu.SetupMenu(testItems, config.InitialQuery))
 
 	// Search entry should have the initial query
 	assert.Equal(t, config.InitialQuery, gmenu.ui.SearchEntry.Text)
@@ -207,17 +207,17 @@ func TestErrorHandling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test with empty items list
-	gmenu.SetupMenu([]string{}, "")
+	require.NoError(t, gmenu.SetupMenu([]string{}, ""))
 	assert.Len(t, gmenu.menu.items, 1) // Should have loading item
 	assert.Equal(t, "Loading", gmenu.menu.items[0].Title)
 
 	// Test with nil items
-	gmenu.SetupMenu(nil, "")
+	require.NoError(t, gmenu.SetupMenu(nil, ""))
 	assert.Len(t, gmenu.menu.items, 1) // Should handle gracefully
 
 	// Test search with no matches
 	testItems := []string{"apple", "banana", "cherry"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 	test.Type(gmenu.ui.SearchEntry, "xyz_no_match")
 	time.Sleep(10 * time.Millisecond)
 
@@ -257,7 +257,7 @@ func TestConcurrentOperations(t *testing.T) {
 		testItems[i] = "item" + string(rune('0'+i%10))
 	}
 
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test concurrent search operations
 	done := make(chan bool, 3)
@@ -336,7 +336,7 @@ func TestContextCancellation(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -401,7 +401,7 @@ func TestMemoryManagement(t *testing.T) {
 			testItems[j] = "large_item_" + string(rune('0'+j%10))
 		}
 
-		gmenu.SetupMenu(testItems, "")
+		require.NoError(t, gmenu.SetupMenu(testItems, ""))
 		gmenu.ShowUI()
 
 		// Perform some operations

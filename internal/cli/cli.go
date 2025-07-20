@@ -86,7 +86,9 @@ func run(cfg *model.Config) error {
 		return runTerminalMode(gmenu, cfg)
 	}
 
-	gmenu.SetupMenu([]string{}, cfg.InitialQuery)
+	if err := gmenu.SetupMenu([]string{}, cfg.InitialQuery); err != nil {
+		return fmt.Errorf("failed to setup menu: %w", err)
+	}
 	gmenu.ShowUI()
 	go func() {
 		items := readItems()

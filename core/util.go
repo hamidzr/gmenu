@@ -39,29 +39,42 @@ func createPidFile(name string) (string, error) {
 		logrus.Warn("Another instance of gmenu is already running. Exiting.")
 		logrus.Warn("If this is not the case, please delete the pid file:", pidFile)
 		return "", fmt.Errorf("gmenu-%s pid file already exists", name)
-
 	}
 	f, err := os.Create(pidFile)
 	if err != nil {
 		logrus.Error("Failed to create gmenu pid file")
-		if ferr := f.Close(); ferr != nil {
-			logrus.Error("Failed to close pid file:", ferr)
-		}
 		return "", err
 	}
-	return pidFile, f.Close()
+	// ensure file is closed before returning
+	if closeErr := f.Close(); closeErr != nil {
+		logrus.Error("Failed to close pid file:", closeErr)
+		// attempt cleanup on close failure
+		if removeErr := os.Remove(pidFile); removeErr != nil {
+			logrus.Error("Failed to clean up pid file after close error:", removeErr)
+		}
+		return "", closeErr
+	}
+	return pidFile, nil
 }
 
 // canBeHighlighted returns true if the menu item can be highlighted
 // programmatically via existing fyne interface.
+// Currently restricted to alphanumeric characters due to fyne limitations.
 func canBeHighlighted(entry string) bool {
-	// TODO: find a better way to select all on searchEntry.
+	if entry == "" {
+		return true
+	}
 	for _, c := range entry {
-		if !(c >= 'a' && c <= 'z' ||
-			c >= 'A' && c <= 'Z' ||
-			c >= '0' && c <= '9') {
+		if !isAlphaNumeric(c) {
 			return false
 		}
 	}
 	return true
+}
+
+// isAlphaNumeric returns true if the character is alphanumeric
+func isAlphaNumeric(c rune) bool {
+	return (c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		(c >= '0' && c <= '9')
 }

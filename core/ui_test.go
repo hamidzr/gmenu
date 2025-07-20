@@ -41,7 +41,7 @@ func TestSearchEntryStateAfterReset(t *testing.T) {
 
 	// Setup initial menu
 	testItems := []string{"apple", "banana", "cherry", "date"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test initial state
 	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false initially")
@@ -93,7 +93,7 @@ func TestResetResetsAllNecessaryState(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Set some state that should be reset
 	gmenu.markSelectionMade() // This will break the fuse
@@ -150,7 +150,7 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 
 	// Setup initial menu
 	testItems := []string{"apple", "banana", "cherry", "date"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test initial state
 	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false initially")
@@ -235,7 +235,7 @@ func TestMultipleHideShowCycles(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test multiple cycles
 	for i := 0; i < 3; i++ {

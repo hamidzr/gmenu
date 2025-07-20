@@ -12,9 +12,9 @@ import (
 // SetItems sets the items to be displayed in the menu.
 func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable) {
 	menuItems := g.menu.titlesToMenuItem(items)
-	for _, item := range serializables {
-		myItem := item
-		menuItems = append(menuItems, model.MenuItem{AType: &myItem})
+	for i := range serializables {
+		// avoid variable capture in loop by using index
+		menuItems = append(menuItems, model.MenuItem{AType: &serializables[i]})
 	}
 	g.menu.ItemsChan <- menuItems
 	go g.AttemptAutoSelect()
@@ -41,29 +41,38 @@ func (g *GMenu) AttemptAutoSelect() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(g.menu.ctx, 200*time.Millisecond)
+	const (
+		autoSelectTimeout = 200 * time.Millisecond
+		checkInterval     = 20 * time.Millisecond
+	)
+
+	ctx, cancel := context.WithTimeout(g.menu.ctx, autoSelectTimeout)
 	defer cancel()
 
-	ticker := time.NewTicker(20 * time.Millisecond)
+	ticker := time.NewTicker(checkInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			g.menu.itemsMutex.Lock()
-			if len(g.menu.Filtered) == 1 && g.menu.Filtered[0].Title == model.LoadingItem.Title {
-				g.menu.itemsMutex.Unlock()
-				continue
-			}
-			if len(g.menu.Filtered) == 1 {
+			if g.shouldAutoSelect() {
 				g.markSelectionMade()
+				return
 			}
-			g.menu.itemsMutex.Unlock()
-			return
 		case <-ctx.Done():
 			return
 		}
 	}
+}
+
+// shouldAutoSelect checks if auto-selection conditions are met
+func (g *GMenu) shouldAutoSelect() bool {
+	g.menu.itemsMutex.Lock()
+	defer g.menu.itemsMutex.Unlock()
+
+	// need exactly one filtered item that isn't the loading placeholder
+	return len(g.menu.Filtered) == 1 &&
+		g.menu.Filtered[0].Title != model.LoadingItem.Title
 }
 
 // PrependItems adds items to the beginning of the menu.

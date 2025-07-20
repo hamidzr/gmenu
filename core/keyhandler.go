@@ -7,6 +7,32 @@ import (
 	"github.com/hamidzr/gmenu/model"
 )
 
+// numericKeyToIndex converts numeric key names to zero-based indices
+func numericKeyToIndex(keyName fyne.KeyName) (int, bool) {
+	switch keyName {
+	case fyne.Key1:
+		return 0, true
+	case fyne.Key2:
+		return 1, true
+	case fyne.Key3:
+		return 2, true
+	case fyne.Key4:
+		return 3, true
+	case fyne.Key5:
+		return 4, true
+	case fyne.Key6:
+		return 5, true
+	case fyne.Key7:
+		return 6, true
+	case fyne.Key8:
+		return 7, true
+	case fyne.Key9:
+		return 8, true
+	default:
+		return 0, false
+	}
+}
+
 func (g *GMenu) startListenDynamicUpdates() {
 	queryChan := make(chan string)
 	g.ui.SearchEntry.OnChanged = func(text string) {
@@ -137,32 +163,13 @@ func (g *GMenu) setKeyHandlers() {
 		case fyne.Key1, fyne.Key2, fyne.Key3, fyne.Key4, fyne.Key5, fyne.Key6, fyne.Key7, fyne.Key8, fyne.Key9:
 			// handle numeric selection if enabled
 			if !g.config.NoNumericSelection {
-				var selectedIndex int
-				switch key.Name {
-				case fyne.Key1:
-					selectedIndex = 0
-				case fyne.Key2:
-					selectedIndex = 1
-				case fyne.Key3:
-					selectedIndex = 2
-				case fyne.Key4:
-					selectedIndex = 3
-				case fyne.Key5:
-					selectedIndex = 4
-				case fyne.Key6:
-					selectedIndex = 5
-				case fyne.Key7:
-					selectedIndex = 6
-				case fyne.Key8:
-					selectedIndex = 7
-				case fyne.Key9:
-					selectedIndex = 8
-				}
-				// only select if the index is within bounds
-				if selectedIndex < len(g.menu.Filtered) {
-					g.menu.Selected = selectedIndex
-					g.markSelectionMade()
-					return
+				if selectedIndex, ok := numericKeyToIndex(key.Name); ok {
+					// only select if the index is within bounds
+					if selectedIndex < len(g.menu.Filtered) {
+						g.menu.Selected = selectedIndex
+						g.markSelectionMade()
+						return
+					}
 				}
 			}
 		default:

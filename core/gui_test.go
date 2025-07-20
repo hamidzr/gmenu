@@ -78,7 +78,7 @@ func TestSearchEntryInteraction(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"apple", "banana", "cherry", "date", "elderberry"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test initial state
 	assert.Equal(t, "", gmenu.ui.SearchEntry.Text)
@@ -123,7 +123,7 @@ func TestKeyboardNavigation(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test initial selection
 	assert.Equal(t, 0, gmenu.menu.Selected)
@@ -176,7 +176,7 @@ func TestNumericSelection(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3", "item4", "item5"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test numeric key selection
 	key1Event := &fyne.KeyEvent{Name: fyne.Key1}
@@ -212,7 +212,7 @@ func TestSearchFiltering(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"apple", "application", "banana", "cherry", "app"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test initial state - all items should be visible
 	assert.Len(t, gmenu.menu.items, len(testItems))
@@ -258,7 +258,7 @@ func TestGUIStateManagement(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test initial enabled state
 	assert.False(t, gmenu.ui.SearchEntry.Disabled())
@@ -327,7 +327,7 @@ func TestMenuItemRendering(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"short", "this is a longer item", "🚀 emoji item", ""}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test that items canvas is not nil
 	require.NotNil(t, gmenu.ui.ItemsCanvas)
@@ -361,7 +361,7 @@ func TestInitialQueryHandling(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"initial value", "other", "initial setup"}
-	gmenu.SetupMenu(testItems, config.InitialQuery)
+	require.NoError(t, gmenu.SetupMenu(testItems, config.InitialQuery))
 
 	// Search entry should have the initial query
 	assert.Equal(t, config.InitialQuery, gmenu.ui.SearchEntry.Text)

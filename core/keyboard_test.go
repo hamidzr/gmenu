@@ -41,7 +41,7 @@ func TestKeyboardShortcuts(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3", "item4", "item5"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test Enter key (selection)
 	enterEvent := &fyne.KeyEvent{Name: fyne.KeyReturn}
@@ -74,7 +74,7 @@ func testNavigationKeys(t *testing.T, gmenu *GMenu) {
 	// Reset to known state and re-setup menu
 	gmenu.Reset(true)
 	testItems := []string{"item1", "item2", "item3", "item4", "item5"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 	gmenu.menu.Selected = 0
 
 	// Test Down arrow
@@ -120,7 +120,7 @@ func testNumericKeys(t *testing.T, gmenu *GMenu) {
 	// Reset to known state and re-setup menu
 	gmenu.Reset(true)
 	testItems := []string{"item1", "item2", "item3", "item4", "item5"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	numericKeys := []fyne.KeyName{
 		fyne.Key1, fyne.Key2, fyne.Key3, fyne.Key4, fyne.Key5,
@@ -164,7 +164,7 @@ func TestKeyboardShortcutsWithModifiers(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test Ctrl+L (clear search)
 	gmenu.ui.SearchEntry.SetText("some text")
@@ -219,7 +219,7 @@ func TestNumericSelectionDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	originalSelected := gmenu.menu.Selected
 
@@ -255,7 +255,7 @@ func TestKeyPropagationBlacklist(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Set up blacklist for Enter key
 	gmenu.ui.SearchEntry.PropagationBlacklist = map[fyne.KeyName]bool{
@@ -298,7 +298,7 @@ func TestFocusHandling(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Test focus loss callback
 	focusLost := false
@@ -339,7 +339,7 @@ func TestKeyHandlerCallback(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	// Track key events
 	var lastKeyEvent *fyne.KeyEvent
@@ -380,7 +380,7 @@ func TestSpecialKeys(t *testing.T) {
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
-	gmenu.SetupMenu(testItems, "")
+	require.NoError(t, gmenu.SetupMenu(testItems, ""))
 
 	specialKeys := []fyne.KeyName{
 		fyne.KeyF1, fyne.KeyF2, fyne.KeyF3, fyne.KeyF4,
