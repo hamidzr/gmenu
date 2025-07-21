@@ -47,6 +47,23 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 		optionText.TextStyle = fyne.TextStyle{Bold: true}
 	}
 
+	// add icon if present
+	var iconWidget *widget.Icon
+	if item.Icon != "" {
+		// simple icon mapping based on common patterns
+		switch item.Icon {
+		case "app", "application":
+			iconWidget = widget.NewIcon(theme.ComputerIcon())
+		case "file":
+			iconWidget = widget.NewIcon(theme.DocumentIcon())
+		case "folder", "directory":
+			iconWidget = widget.NewIcon(theme.FolderIcon())
+		default:
+			iconWidget = widget.NewIcon(theme.InfoIcon())
+		}
+		iconWidget.Resize(fyne.NewSize(16, 16))
+	}
+
 	var textContent *fyne.Container
 	if !noNumericSelection && idx < 9 {
 		// create number hint on the left with fixed width to prevent overlap
@@ -63,9 +80,25 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 		spacer := layout.NewSpacer()
 		spacer.Resize(fyne.NewSize(4, 1)) // small spacer
 
-		textContent = container.NewBorder(nil, nil, container.NewHBox(numberContainer, spacer), nil, optionText)
+		// combine number, icon (if present), and text
+		leftContent := container.NewHBox(numberContainer, spacer)
+		if iconWidget != nil {
+			leftContent.Add(iconWidget)
+			iconSpacer := layout.NewSpacer()
+			iconSpacer.Resize(fyne.NewSize(4, 1))
+			leftContent.Add(iconSpacer)
+		}
+
+		textContent = container.NewBorder(nil, nil, leftContent, nil, optionText)
 	} else {
-		textContent = container.NewStack(optionText)
+		// just icon and text without numbers
+		if iconWidget != nil {
+			iconSpacer := layout.NewSpacer()
+			iconSpacer.Resize(fyne.NewSize(4, 1))
+			textContent = container.NewBorder(nil, nil, container.NewHBox(iconWidget, iconSpacer), nil, optionText)
+		} else {
+			textContent = container.NewStack(optionText)
+		}
 	}
 
 	// create score metadata if needed
@@ -76,21 +109,34 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 		metadata.TextStyle = fyne.TextStyle{Bold: false, Italic: true}
 	}
 
-	// create background
-	background := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
+	// create background with better styling and separation
+	background := canvas.NewRectangle(color.Transparent)
 	if selected {
-		background.FillColor = theme.Color(theme.ColorNamePrimary)
+		background.FillColor = theme.Color(theme.ColorNameSelection)
 	} else {
-		background.StrokeColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
-		background.StrokeWidth = 1
+		// subtle alternating row colors for better item separation
+		if idx%2 == 0 {
+			background.FillColor = color.NRGBA{R: 0, G: 0, B: 0, A: 12} // slightly more visible stripe
+		} else {
+			background.FillColor = color.Transparent
+		}
+		// add subtle bottom border for item separation
+		background.StrokeColor = color.NRGBA{R: 128, G: 128, B: 128, A: 30}
+		background.StrokeWidth = 0.5
 	}
 
-	// compose final container
+	// add light padding for comfortable spacing
+	paddedContent := container.NewWithoutLayout(textContent)
+	paddedContent.Move(fyne.NewPos(4, 2))
+
+	// compose final container with balanced padding
 	var itemContainer *fyne.Container
 	if metadata != nil {
-		itemContainer = container.NewStack(background, container.NewBorder(nil, nil, nil, metadata, textContent))
+		paddedMetadata := container.NewWithoutLayout(metadata)
+		paddedMetadata.Move(fyne.NewPos(-4, 2))
+		itemContainer = container.NewStack(background, container.NewBorder(nil, nil, nil, paddedMetadata, paddedContent))
 	} else {
-		itemContainer = container.NewStack(background, textContent)
+		itemContainer = container.NewStack(background, paddedContent)
 	}
 
 	itemContainer.Layout = layout.NewStackLayout()

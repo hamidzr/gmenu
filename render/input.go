@@ -61,6 +61,9 @@ func (e *SearchEntry) FocusLost() {
 
 // NewInputArea returns a horizontal container with input widgets.
 func NewInputArea(searchEntry *SearchEntry, matchLabel *widget.Label) *fyne.Container {
+	// style the search entry with better visual design
+	searchEntry.PlaceHolder = "Type to search..."
+
 	cont := container.NewStack(
 		searchEntry,
 		matchLabel,

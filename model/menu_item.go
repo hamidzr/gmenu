@@ -12,6 +12,7 @@ type MenuItem struct {
 	Title string
 	AType *GmenuSerializable // why a ptr
 	Score int
+	Icon  string // optional icon identifier
 }
 
 // ComputedTitle returns the title of the menu item.
