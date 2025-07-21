@@ -13,6 +13,9 @@ import (
 
 // TestGUIComponentInitialization tests that all GUI components are properly initialized
 func TestGUIComponentInitialization(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -31,7 +34,7 @@ func TestGUIComponentInitialization(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 	require.NotNil(t, gmenu)
 
@@ -56,6 +59,9 @@ func TestGUIComponentInitialization(t *testing.T) {
 
 // TestSearchEntryInteraction tests user interaction with the search entry
 func TestSearchEntryInteraction(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -74,7 +80,7 @@ func TestSearchEntryInteraction(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{"apple", "banana", "cherry", "date", "elderberry"}
@@ -101,6 +107,9 @@ func TestSearchEntryInteraction(t *testing.T) {
 
 // TestKeyboardNavigation tests keyboard navigation through menu items
 func TestKeyboardNavigation(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -119,7 +128,7 @@ func TestKeyboardNavigation(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
@@ -154,6 +163,9 @@ func TestKeyboardNavigation(t *testing.T) {
 
 // TestNumericSelection tests numeric key selection
 func TestNumericSelection(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -172,7 +184,7 @@ func TestNumericSelection(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3", "item4", "item5"}
@@ -190,6 +202,9 @@ func TestNumericSelection(t *testing.T) {
 
 // TestSearchFiltering tests that search properly filters items
 func TestSearchFiltering(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -208,7 +223,7 @@ func TestSearchFiltering(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{"apple", "application", "banana", "cherry", "app"}
@@ -236,6 +251,9 @@ func TestSearchFiltering(t *testing.T) {
 
 // TestGUIStateManagement tests UI state changes
 func TestGUIStateManagement(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -254,7 +272,7 @@ func TestGUIStateManagement(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{"item1", "item2", "item3"}
@@ -275,6 +293,9 @@ func TestGUIStateManagement(t *testing.T) {
 
 // TestWindowDimensions tests window sizing
 func TestWindowDimensions(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -293,7 +314,7 @@ func TestWindowDimensions(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	// Test that dimensions are stored correctly
@@ -305,6 +326,9 @@ func TestWindowDimensions(t *testing.T) {
 
 // TestMenuItemRendering tests that menu items are properly rendered
 func TestMenuItemRendering(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -323,7 +347,7 @@ func TestMenuItemRendering(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{"short", "this is a longer item", "🚀 emoji item", ""}
@@ -339,6 +363,9 @@ func TestMenuItemRendering(t *testing.T) {
 
 // TestInitialQueryHandling tests handling of initial query
 func TestInitialQueryHandling(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -357,7 +384,7 @@ func TestInitialQueryHandling(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(app, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{"initial value", "other", "initial setup"}

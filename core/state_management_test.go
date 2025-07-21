@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/test"
 	"github.com/hamidzr/gmenu/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -292,6 +293,9 @@ func TestConcurrentMenuOperations(t *testing.T) {
 
 // TestUIUpdateMutexProtection tests UI update mutex protection
 func TestUIUpdateMutexProtection(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
+	
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
@@ -300,7 +304,7 @@ func TestUIUpdateMutexProtection(t *testing.T) {
 		MinHeight: 200,
 	}
 
-	gmenu, err := NewGMenu(DirectSearch, config)
+	gmenu, err := NewGMenuWithApp(app, DirectSearch, config)
 	require.NoError(t, err)
 	defer func() {
 		if gmenu.menuCancel != nil {
@@ -314,24 +318,35 @@ func TestUIUpdateMutexProtection(t *testing.T) {
 	numGoroutines := 10
 	iterations := 20
 
-	// Concurrent UI updates
-	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
-		go func(id int) {
-			defer wg.Done()
-			for j := 0; j < iterations; j++ {
-				gmenu.safeUIUpdate(func() {
-					// Simulate UI operations
-					text := gmenu.ui.SearchEntry.Text
-					gmenu.ui.SearchEntry.SetText(text + "test")
-					time.Sleep(time.Microsecond)     // small delay to increase chance of race
-					gmenu.ui.SearchEntry.SetText("") // reset
-				})
-			}
-		}(i)
-	}
+	// Concurrent UI updates with timeout
+	done := make(chan struct{})
+	go func() {
+		wg.Add(numGoroutines)
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer wg.Done()
+				for j := 0; j < iterations; j++ {
+					gmenu.safeUIUpdate(func() {
+						// Simulate UI operations
+						text := gmenu.ui.SearchEntry.Text
+						gmenu.ui.SearchEntry.SetText(text + "test")
+						time.Sleep(time.Microsecond)     // small delay to increase chance of race
+						gmenu.ui.SearchEntry.SetText("") // reset
+					})
+				}
+			}(i)
+		}
+		wg.Wait()
+		close(done)
+	}()
 
-	wg.Wait()
+	// Wait with timeout to prevent hanging
+	select {
+	case <-done:
+		// Test completed successfully
+	case <-time.After(5 * time.Second):
+		t.Fatal("Test timed out - possible deadlock in UI updates")
+	}
 
 	// UI should be in valid state
 	assert.NotNil(t, gmenu.ui.SearchEntry)

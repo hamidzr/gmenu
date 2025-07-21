@@ -64,6 +64,15 @@ func NewGMenu(
 	searchMethod SearchMethod,
 	conf *model.Config,
 ) (*GMenu, error) {
+	return NewGMenuWithApp(nil, searchMethod, conf)
+}
+
+// NewGMenuWithApp creates a new GMenu instance with a specific Fyne app (useful for testing).
+func NewGMenuWithApp(
+	fyneApp fyne.App,
+	searchMethod SearchMethod,
+	conf *model.Config,
+) (*GMenu, error) {
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", conf.MenuID}, "yaml")
 	if err != nil {
 		return nil, err
@@ -77,6 +86,7 @@ func NewGMenu(
 		preserveOrder: conf.PreserveOrder,
 		config:        conf,
 		store:         store,
+		app:           fyneApp, // Use provided app if available
 		dims: Dimensions{
 			MinWidth:  conf.MinWidth,
 			MinHeight: conf.MinHeight,
@@ -164,7 +174,9 @@ func (g *GMenu) initUI() error {
 	if g.isUIInitialized() {
 		return fmt.Errorf("ui is already initialized")
 	}
-	g.app = app.New()
+	if g.app == nil {
+		g.app = app.New()
+	}
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
 
 	// g.app.Lifecycle().SetOnExitedForeground(func() {

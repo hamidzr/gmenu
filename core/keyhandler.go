@@ -34,9 +34,13 @@ func numericKeyToIndex(keyName fyne.KeyName) (int, bool) {
 }
 
 func (g *GMenu) startListenDynamicUpdates() {
-	queryChan := make(chan string)
+	queryChan := make(chan string, 100) // buffered channel to prevent blocking
 	g.ui.SearchEntry.OnChanged = func(text string) {
-		queryChan <- text
+		select {
+		case queryChan <- text:
+		default:
+			// drop update if channel is full to prevent blocking
+		}
 	}
 	resizeBasedOnResults := func() {
 		if g.ui == nil || g.ui.ItemsCanvas == nil || g.ui.MainWindow == nil {

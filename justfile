@@ -16,7 +16,7 @@ get-deps:
 
 # Run tests
 test:
-	gotestsum -- ./...
+	gotestsum --format=short -- -timeout=30s ./...
 
 # Lint code
 lint:
