@@ -108,9 +108,19 @@ func (g *GMenu) HideUI() {
 	if !g.isShown {
 		return
 	}
+	
+	// Set flag to prevent OnFocusLost from cancelling during programmatic hide
+	g.visibilityMutex.Lock()
+	g.isHiding = true
+	g.visibilityMutex.Unlock()
+	
 	g.ui.MainWindow.Hide()
-	// Set visibility state
-	g.setShown(false)
+	
+	// Reset flag and set visibility state
+	g.visibilityMutex.Lock()
+	g.isHiding = false
+	g.isShown = false
+	g.visibilityMutex.Unlock()
 }
 
 // Run starts the application.

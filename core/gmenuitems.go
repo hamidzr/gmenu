@@ -69,11 +69,6 @@ func (g *GMenu) AttemptAutoSelect() {
 
 // shouldAutoSelect checks if auto-selection conditions are met
 func (g *GMenu) shouldAutoSelect() bool {
-	// check if auto accept is still enabled
-	if !g.config.AutoAccept {
-		return false
-	}
-
 	g.menu.itemsMutex.Lock()
 	defer g.menu.itemsMutex.Unlock()
 

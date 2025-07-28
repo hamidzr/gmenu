@@ -56,6 +56,8 @@ type GMenu struct {
 	selectionFuse core.Fuse
 	// isShown tracks whether the UI is currently visible
 	isShown         bool
+	// isHiding tracks when UI is being hidden programmatically to avoid focus loss cancellation
+	isHiding        bool
 	visibilityMutex sync.RWMutex
 }
 
@@ -201,9 +203,17 @@ func (g *GMenu) initUI() error {
 	searchEntry.ExtendBaseWidget(searchEntry)
 	searchEntry.SetPlaceHolder(g.prompt)
 	searchEntry.OnFocusLost = func() {
-		g.markSelectionMade()
-		if g.exitCode == model.Unset {
-			g.exitCode = model.UserCanceled
+		// only cancel on focus loss if not being hidden programmatically
+		g.visibilityMutex.RLock()
+		isHiding := g.isHiding
+		g.visibilityMutex.RUnlock()
+		
+		if !isHiding {
+			// user clicked away or lost focus - cancel the menu
+			g.markSelectionMade()
+			if g.exitCode == model.Unset {
+				g.exitCode = model.UserCanceled
+			}
 		}
 	}
 	itemsCanvas := render.NewItemsCanvas()
