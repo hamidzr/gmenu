@@ -143,3 +143,7 @@ Based on README TODO section, active areas include:
 - Rendering tests: render_test.go
 - Use `just test` or `gotestsum -- ./...`
 - Use `just check` for full validation (format, lint, test)
+
+## Dev Memories
+
+- On focus loss, the menu should behave exactly as a user-cancelled event that comes from pressing escape 

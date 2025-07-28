@@ -209,11 +209,14 @@ func (g *GMenu) initUI() error {
 		g.visibilityMutex.RUnlock()
 		
 		if !isHiding {
-			// user clicked away or lost focus - cancel the menu
-			g.markSelectionMade()
+			// user clicked away or lost focus - cancel the menu and hide immediately
+			// IMPORTANT: Set exit code BEFORE marking selection made to avoid race condition
 			if g.exitCode == model.Unset {
 				g.exitCode = model.UserCanceled
 			}
+			g.markSelectionMade()
+			// hide the window immediately to provide better UX
+			g.HideUI()
 		}
 	}
 	itemsCanvas := render.NewItemsCanvas()
