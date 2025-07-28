@@ -17,7 +17,9 @@ func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable
 		menuItems = append(menuItems, model.MenuItem{AType: &serializables[i]})
 	}
 	g.menu.ItemsChan <- menuItems
-	go g.AttemptAutoSelect()
+	if g.config.AutoAccept {
+		go g.AttemptAutoSelect()
+	}
 }
 
 // addItems adds items to the menu.
