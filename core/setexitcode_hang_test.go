@@ -16,7 +16,7 @@ import (
 func TestSetExitCodeHangDetection(t *testing.T) {
 	fmt.Println("🚨 Testing SetExitCode hang scenario...")
 	fmt.Println("This test reproduces the selection hang without GUI dependencies")
-	
+
 	config := &model.Config{
 		MenuID:    "setexitcode-hang-test",
 		Title:     "SetExitCode Hang Test",
@@ -34,7 +34,7 @@ func TestSetExitCodeHangDetection(t *testing.T) {
 
 	fmt.Println("1. Menu setup completed")
 	fmt.Println("2. Testing normal operations before SetExitCode...")
-	
+
 	// Test that normal operations work
 	results := gmenu.Search("apple")
 	require.Greater(t, len(results), 0, "Should find at least one apple item")
@@ -42,10 +42,10 @@ func TestSetExitCodeHangDetection(t *testing.T) {
 
 	// Test WaitForSelection in a controlled way
 	fmt.Println("3. Testing WaitForSelection behavior...")
-	
+
 	selectionDone := make(chan bool, 1)
 	hangDetected := make(chan bool, 1)
-	
+
 	// Start a WaitForSelection call in background
 	go func() {
 		fmt.Println("   Starting WaitForSelection...")
@@ -53,18 +53,18 @@ func TestSetExitCodeHangDetection(t *testing.T) {
 		fmt.Println("   WaitForSelection returned")
 		selectionDone <- true
 	}()
-	
+
 	// Start hang detection
 	go func() {
 		time.Sleep(2 * time.Second) // Give some time for normal operation
-		
+
 		fmt.Println("4. ⚠️  Triggering the problematic SetExitCode call...")
-		
+
 		// This is the exact call that was causing hangs in the visual test
 		gmenu.SetExitCode(model.NoError)
-		
+
 		fmt.Println("   SetExitCode call completed")
-		
+
 		// Wait to see if WaitForSelection completes or hangs
 		select {
 		case <-selectionDone:
@@ -79,7 +79,7 @@ func TestSetExitCodeHangDetection(t *testing.T) {
 	// Wait for the test to complete
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	select {
 	case hung := <-hangDetected:
 		if hung {
@@ -106,7 +106,7 @@ func TestSetExitCodeHangDetection(t *testing.T) {
 // TestSetExitCodeProperUsage shows how SetExitCode should be used to avoid hangs
 func TestSetExitCodeProperUsage(t *testing.T) {
 	fmt.Println("✅ Testing proper SetExitCode usage...")
-	
+
 	config := &model.Config{
 		MenuID:    "proper-usage-test",
 		Title:     "Proper Usage Test",
@@ -123,7 +123,7 @@ func TestSetExitCodeProperUsage(t *testing.T) {
 	// Test that normal operations work fine
 	results := gmenu.Search("item")
 	require.Len(t, results, 2)
-	
+
 	fmt.Println("✓ Normal operations work correctly")
 	fmt.Println("✓ SetExitCode can be used safely for configuration")
 	fmt.Println("⚠️  But should not be used to simulate selection completion")
@@ -132,7 +132,7 @@ func TestSetExitCodeProperUsage(t *testing.T) {
 // TestDetectSelectionHangWithTimeout tests hang detection with a simple timeout
 func TestDetectSelectionHangWithTimeout(t *testing.T) {
 	fmt.Println("⏱️  Testing selection hang detection with timeout...")
-	
+
 	config := &model.Config{
 		MenuID:    "timeout-hang-test",
 		Title:     "Timeout Test",
@@ -148,18 +148,18 @@ func TestDetectSelectionHangWithTimeout(t *testing.T) {
 
 	// This test demonstrates how to detect hangs with timeouts
 	done := make(chan bool, 1)
-	
+
 	go func() {
 		fmt.Println("   Starting operation that might hang...")
-		
+
 		// Simulate the problematic sequence
 		gmenu.SetExitCode(model.NoError)
-		
+
 		// Try an operation that would hang if selection state is broken
 		// Note: We don't call WaitForSelection as that's known to hang
 		// Instead we test other operations
 		_ = gmenu.Search("test")
-		
+
 		fmt.Println("   Operation completed successfully")
 		done <- true
 	}()

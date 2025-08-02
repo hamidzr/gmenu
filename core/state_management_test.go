@@ -295,7 +295,7 @@ func TestConcurrentMenuOperations(t *testing.T) {
 func TestUIUpdateMutexProtection(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",

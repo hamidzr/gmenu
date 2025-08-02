@@ -36,7 +36,7 @@ func TestWaitForSelectionTimeout(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		
+
 		// Start waiting for selection
 		go func() {
 			gmenu.WaitForSelection()
@@ -61,7 +61,7 @@ func TestWaitForSelectionTimeout(t *testing.T) {
 // TestRunAppForeverDoesNotHang tests that RunAppForever can be properly terminated
 func TestRunAppForeverDoesNotHang(t *testing.T) {
 	app := test.NewApp()
-	
+
 	config := &model.Config{
 		MenuID:    "app-forever-test",
 		Title:     "App Forever Test",
@@ -83,7 +83,7 @@ func TestRunAppForeverDoesNotHang(t *testing.T) {
 
 	// Allow some time for the app to start
 	time.Sleep(50 * time.Millisecond)
-	
+
 	// Quit the app to terminate RunAppForever
 	app.Quit()
 
@@ -97,7 +97,7 @@ func TestRunAppForeverDoesNotHang(t *testing.T) {
 	}
 }
 
-// TestHideShowSelectionCycle tests the specific scenario where menu goes hidden, 
+// TestHideShowSelectionCycle tests the specific scenario where menu goes hidden,
 // comes up with new items, selection is made, then goes hidden again
 func TestHideShowSelectionCycle(t *testing.T) {
 	config := &model.Config{
@@ -120,10 +120,10 @@ func TestHideShowSelectionCycle(t *testing.T) {
 	require.NoError(t, gmenu.SetupMenu([]string{"initial1", "initial2"}, ""))
 
 	cycleComplete := make(chan struct{})
-	
+
 	go func() {
 		defer close(cycleComplete)
-		
+
 		for cycle := 0; cycle < 5; cycle++ {
 			// Step 1: Show menu
 			gmenu.ShowUI()
@@ -142,7 +142,7 @@ func TestHideShowSelectionCycle(t *testing.T) {
 
 			// Step 4: Search and make selection
 			gmenu.Search("cycle" + string(rune('0'+cycle)))
-			
+
 			// Simulate user selection
 			gmenu.markSelectionMade()
 			assert.True(t, gmenu.selectionFuse.IsBroken())
@@ -198,10 +198,10 @@ func TestConcurrentHideShowSelection(t *testing.T) {
 	iterations := 20
 
 	completed := make(chan struct{})
-	
+
 	go func() {
 		defer close(completed)
-		
+
 		// Multiple goroutines performing hide/show cycles
 		wg.Add(numGoroutines * 3)
 
@@ -286,24 +286,24 @@ func TestLongRunningOperationsWithTimeout(t *testing.T) {
 	}
 
 	done := make(chan struct{})
-	
+
 	go func() {
 		defer close(done)
-		
+
 		// Setup large dataset
 		require.NoError(t, gmenu.SetupMenu(largeItems, ""))
-		
+
 		// Perform multiple operations that might be slow
 		for i := 0; i < 10; i++ {
 			// Search operations
 			gmenu.Search("large_dataset")
 			gmenu.Search("item_5")
 			gmenu.Search("")
-			
+
 			// UI operations
 			gmenu.ShowUI()
 			gmenu.HideUI()
-			
+
 			// State changes
 			gmenu.markSelectionMade()
 			gmenu.Reset(true)
@@ -334,7 +334,7 @@ func TestResourceCleanupPreventsHangs(t *testing.T) {
 
 			gmenu, err := NewGMenu(DirectSearch, config)
 			require.NoError(t, err)
-			
+
 			defer func() {
 				if gmenu.menuCancel != nil {
 					gmenu.menuCancel()
@@ -375,10 +375,10 @@ func TestContextCancellationPreventsHangs(t *testing.T) {
 	defer cancel()
 
 	done := make(chan struct{})
-	
+
 	go func() {
 		defer close(done)
-		
+
 		// Start operations that should be cancelled
 		for {
 			select {
@@ -431,10 +431,10 @@ func TestMutexDeadlockPrevention(t *testing.T) {
 	numGoroutines := 10
 
 	completed := make(chan struct{})
-	
+
 	go func() {
 		defer close(completed)
-		
+
 		// Multiple goroutines accessing different mutexes in different orders
 		wg.Add(numGoroutines * 2)
 
@@ -443,7 +443,7 @@ func TestMutexDeadlockPrevention(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				for j := 0; j < 50; j++ {
-					gmenu.ShowUI() // Uses visibility mutex
+					gmenu.ShowUI()              // Uses visibility mutex
 					gmenu.safeUIUpdate(func() { // Uses UI mutex
 						// UI operation
 					})
@@ -498,10 +498,10 @@ func TestRapidOperationsCycle(t *testing.T) {
 	require.NoError(t, gmenu.SetupMenu([]string{"item1", "item2", "item3"}, ""))
 
 	done := make(chan struct{})
-	
+
 	go func() {
 		defer close(done)
-		
+
 		// Perform rapid operations that might cause issues
 		for i := 0; i < 100; i++ {
 			// Rapid hide/show/selection cycle
@@ -510,7 +510,7 @@ func TestRapidOperationsCycle(t *testing.T) {
 			gmenu.markSelectionMade()
 			gmenu.HideUI()
 			gmenu.Reset(true)
-			
+
 			// Update items
 			newItems := []string{
 				"rapid_item_" + string(rune('0'+i%10)),

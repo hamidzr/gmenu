@@ -16,7 +16,7 @@ func TestVisualGUIHideShowCycle(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping visual GUI test in short mode")
 	}
-	
+
 	// Skip this test in automated test runs due to Fyne main goroutine requirement
 	t.Skip("Skipping visual GUI test - requires manual execution with real GUI")
 
@@ -41,7 +41,7 @@ func TestVisualGUIHideShowCycle(t *testing.T) {
 
 	testItems := []string{
 		"Apple 🍎",
-		"Banana 🍌", 
+		"Banana 🍌",
 		"Cherry 🍒",
 		"Date 🌴",
 		"Elderberry 🫐",
@@ -66,63 +66,63 @@ func TestVisualGUIHideShowCycle(t *testing.T) {
 	// Test multiple hide/show cycles with user-visible pauses
 	for cycle := 0; cycle < 3; cycle++ {
 		t.Logf("=== Cycle %d ===", cycle+1)
-		
+
 		// Show the menu
 		t.Log("Showing GUI...")
 		gmenu.ShowUI()
 		assert.True(t, gmenu.IsShown())
-		
+
 		// Give user time to see the GUI
 		time.Sleep(2 * time.Second)
-		
+
 		// Update with new items for this cycle
 		newItems := []string{
 			"Cycle " + string(rune('1'+cycle)) + " - Item A",
-			"Cycle " + string(rune('1'+cycle)) + " - Item B", 
+			"Cycle " + string(rune('1'+cycle)) + " - Item B",
 			"Cycle " + string(rune('1'+cycle)) + " - Item C",
 		}
-		
+
 		t.Log("Updating items...")
 		require.NoError(t, gmenu.SetupMenu(newItems, ""))
-		
+
 		// Give user time to see the updated items
 		time.Sleep(2 * time.Second)
-		
+
 		// Simulate a search
 		t.Log("Performing search...")
 		results := gmenu.Search("Cycle")
 		assert.GreaterOrEqual(t, len(results), 1)
-		
+
 		// Wait a bit more
 		time.Sleep(1 * time.Second)
-		
+
 		// Simulate selection
 		t.Log("Simulating selection...")
 		gmenu.markSelectionMade()
 		assert.True(t, gmenu.selectionFuse.IsBroken())
-		
+
 		// Wait for user to see the disabled state
 		time.Sleep(1 * time.Second)
-		
+
 		// Hide the menu
 		t.Log("Hiding GUI...")
 		gmenu.HideUI()
 		assert.False(t, gmenu.IsShown())
-		
+
 		// Reset for next cycle
 		t.Log("Resetting for next cycle...")
 		gmenu.Reset(true)
 		assert.False(t, gmenu.selectionFuse.IsBroken())
-		
+
 		// Pause between cycles
 		time.Sleep(1 * time.Second)
 	}
-	
+
 	t.Log("Test completed successfully! Stopping app...")
-	
+
 	// Stop the app
 	gmenu.Quit()
-	
+
 	// Wait for app to stop
 	select {
 	case <-appDone:
@@ -139,7 +139,7 @@ func TestVisualGUILongRunning(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping long-running visual GUI test in short mode")
 	}
-	
+
 	// Skip this test in automated test runs due to Fyne main goroutine requirement
 	t.Skip("Skipping visual GUI test - requires manual execution with real GUI")
 
@@ -199,7 +199,7 @@ func TestVisualGUILongRunning(t *testing.T) {
 		{1 * time.Second, func() { gmenu.Search("Long") }, "Searching for 'Long'"},
 		{2 * time.Second, func() { gmenu.Search("Item B") }, "Searching for 'Item B'"},
 		{1 * time.Second, func() { gmenu.Search("") }, "Clearing search again"},
-		{2 * time.Second, func() { 
+		{2 * time.Second, func() {
 			// Add some new items
 			newItems := []string{"🚀 New Item 1", "🎯 New Item 2", "⭐ New Item 3"}
 			gmenu.AppendItems(newItems)
@@ -218,10 +218,10 @@ func TestVisualGUILongRunning(t *testing.T) {
 	assert.False(t, gmenu.IsShown())
 
 	t.Log("Long running test completed successfully! Stopping app...")
-	
+
 	// Stop the app
 	gmenu.Quit()
-	
+
 	// Wait for app to stop
 	select {
 	case <-appDone:
@@ -238,7 +238,7 @@ func TestVisualGUIStressTest(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping visual GUI stress test in short mode")
 	}
-	
+
 	// Skip this test in automated test runs due to Fyne main goroutine requirement
 	t.Skip("Skipping visual GUI test - requires manual execution with real GUI")
 
@@ -281,12 +281,12 @@ func TestVisualGUIStressTest(t *testing.T) {
 
 	// Perform rapid operations
 	searches := []string{"A", "B", "C", "", "Apple", "Ban", "", "Cherry", "D", ""}
-	
+
 	for i := 0; i < 50; i++ {
 		// Rapid search changes
 		searchTerm := searches[i%len(searches)]
 		gmenu.Search(searchTerm)
-		
+
 		// Occasionally update items
 		if i%10 == 0 {
 			newItems := []string{
@@ -295,7 +295,7 @@ func TestVisualGUIStressTest(t *testing.T) {
 			}
 			gmenu.AppendItems(newItems)
 		}
-		
+
 		// Small delay to make it visible but still stress the system
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -305,10 +305,10 @@ func TestVisualGUIStressTest(t *testing.T) {
 	assert.False(t, gmenu.IsShown())
 
 	t.Log("Stress test completed successfully! Stopping app...")
-	
+
 	// Stop the app
 	gmenu.Quit()
-	
+
 	// Wait for app to stop
 	select {
 	case <-appDone:
@@ -325,7 +325,7 @@ func TestVisualGUIInteractive(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping interactive visual GUI test in short mode")
 	}
-	
+
 	// Skip this test in automated test runs due to Fyne main goroutine requirement
 	t.Skip("Skipping visual GUI test - requires manual execution with real GUI")
 
@@ -357,7 +357,7 @@ func TestVisualGUIInteractive(t *testing.T) {
 		"🍊 Orange - Citrus fruit",
 		"🍇 Grapes - Purple cluster",
 		"🥭 Mango - Tropical yellow fruit",
-		"🍑 Peach - Fuzzy orange fruit", 
+		"🍑 Peach - Fuzzy orange fruit",
 		"🍐 Pear - Green or yellow fruit",
 		"📱 iPhone - Apple smartphone",
 		"💻 MacBook - Apple laptop",
@@ -390,7 +390,7 @@ func TestVisualGUIInteractive(t *testing.T) {
 	t.Log("Showing interactive GUI - try typing to search!")
 	t.Log("The window will stay open for 15 seconds so you can interact with it")
 	t.Log("You can type to search, use arrow keys to navigate, press ESC to close")
-	
+
 	gmenu.ShowUI()
 	assert.True(t, gmenu.IsShown())
 
@@ -398,10 +398,10 @@ func TestVisualGUIInteractive(t *testing.T) {
 	time.Sleep(15 * time.Second)
 
 	t.Log("Interactive test completed! Stopping app...")
-	
+
 	// Stop the app
 	gmenu.Quit()
-	
+
 	// Wait for app to stop
 	select {
 	case <-appDone:

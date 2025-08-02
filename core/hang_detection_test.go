@@ -22,10 +22,10 @@ func TestDetectGUIHang(t *testing.T) {
 
 	fmt.Println("Starting hang detection test...")
 	fmt.Println("This test reproduces the exact scenario that caused the hang")
-	
+
 	// Use Fyne's test app instead of real GUI app
 	app := test.NewApp()
-	
+
 	config := &model.Config{
 		MenuID:    "hang-detection-test",
 		Title:     "Hang Detection Test",
@@ -44,9 +44,9 @@ func TestDetectGUIHang(t *testing.T) {
 
 	// Create a responsiveness checker that monitors if the GUI is responding
 	respChecker := NewResponsivenessChecker(gmenu, 1*time.Second)
-	
+
 	fmt.Println("1. Starting app in background...")
-	
+
 	// Start the app in a goroutine using test app
 	appDone := make(chan error, 1)
 	go func() {
@@ -57,19 +57,19 @@ func TestDetectGUIHang(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	fmt.Println("2. Showing GUI with apple items...")
-	
+
 	// Show the GUI - this should display the menu with items
 	gmenu.ShowUI()
 
 	fmt.Println("3. GUI should be visible now with apple items...")
 	fmt.Println("4. Starting responsiveness monitoring...")
-	
+
 	// Start monitoring responsiveness
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
-	
+
 	hangDetected := make(chan bool, 1)
-	
+
 	go func() {
 		hung := respChecker.MonitorForHang(ctx)
 		hangDetected <- hung
@@ -77,18 +77,18 @@ func TestDetectGUIHang(t *testing.T) {
 
 	// Wait a bit to let the GUI stabilize and be visible
 	time.Sleep(100 * time.Millisecond)
-	
+
 	fmt.Println("5. Attempting to trigger the hang scenario...")
-	
+
 	// Try to recreate the exact scenario that caused the hang
 	// This simulates what happens when a selection is attempted
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		
+
 		// This is the problematic code that was causing hangs
 		fmt.Println("   Setting exit code (this was causing the hang)...")
 		gmenu.SetExitCode(model.NoError)
-		
+
 		// The hang occurs because SetExitCode doesn't properly complete the selection
 		// without calling markSelectionMade() which is unexported
 		fmt.Println("   Hang should be detected now if the bug is present...")
@@ -112,7 +112,7 @@ func TestDetectGUIHang(t *testing.T) {
 	fmt.Println("6. Cleaning up...")
 	gmenu.HideUI()
 	app.Quit() // Use test app quit instead
-	
+
 	// Wait for app to finish
 	select {
 	case <-appDone:
@@ -139,10 +139,10 @@ func NewResponsivenessChecker(gmenu *GMenu, interval time.Duration) *Responsiven
 func (rc *ResponsivenessChecker) MonitorForHang(ctx context.Context) bool {
 	ticker := time.NewTicker(rc.interval)
 	defer ticker.Stop()
-	
+
 	consecutiveFailures := 0
 	maxFailures := 3 // Consider hung after 3 consecutive failures
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -155,7 +155,7 @@ func (rc *ResponsivenessChecker) MonitorForHang(ctx context.Context) bool {
 			} else {
 				consecutiveFailures++
 				fmt.Printf("   GUI responsive check: FAILED (failure count: %d/%d)\n", consecutiveFailures, maxFailures)
-				
+
 				if consecutiveFailures >= maxFailures {
 					fmt.Printf("   HANG DETECTED: %d consecutive failures\n", consecutiveFailures)
 					return true // Hang detected
@@ -170,7 +170,7 @@ func (rc *ResponsivenessChecker) isResponsive() bool {
 	// Use a timeout for each responsiveness check
 	done := make(chan bool, 1)
 	var success bool
-	
+
 	go func() {
 		defer func() {
 			// Recover from any panics during responsiveness check
@@ -180,25 +180,25 @@ func (rc *ResponsivenessChecker) isResponsive() bool {
 			}
 			done <- success
 		}()
-		
+
 		// Try multiple basic operations that should work if GUI is responsive
 		// Test 1: Try to access mutex-protected state safely
 		rc.gmenu.uiMutex.Lock()
 		isShown := rc.gmenu.isShown
 		rc.gmenu.uiMutex.Unlock()
-		
+
 		// Test 2: Check if we can access the running state
 		isRunning := rc.gmenu.isRunning
-		
+
 		// Test 3: Try to do a simple search operation
 		_ = rc.gmenu.Search("test")
-		
+
 		// If we got here without hanging, the GUI is responsive
 		_ = isShown
 		_ = isRunning
 		success = true
 	}()
-	
+
 	// Wait for responsiveness check with timeout
 	select {
 	case result := <-done:
@@ -212,7 +212,7 @@ func (rc *ResponsivenessChecker) isResponsive() bool {
 // TestHangDetectionWithSimplifiedCase tests a simpler version without GUI complexity
 func TestHangDetectionWithSimplifiedCase(t *testing.T) {
 	fmt.Println("Testing hang detection with simplified scenario...")
-	
+
 	config := &model.Config{
 		MenuID:    "simplified-hang-test",
 		Title:     "Simplified Test",
@@ -230,11 +230,11 @@ func TestHangDetectionWithSimplifiedCase(t *testing.T) {
 	// Test that SetExitCode alone doesn't complete the selection properly
 	fmt.Println("Setting exit code without proper selection completion...")
 	gmenu.SetExitCode(model.NoError)
-	
+
 	// This should still work if the GUI is responsive
 	results := gmenu.Search("item")
 	require.Len(t, results, 2, "Search should still work after SetExitCode")
-	
+
 	fmt.Println("Simplified test completed - no hang detected")
 }
 
@@ -246,9 +246,9 @@ func cleanupGMenu(gmenu *GMenu) {
 				fmt.Printf("Panic during cleanup: %v\n", r)
 			}
 		}()
-		
+
 		gmenu.HideUI()
-		
+
 		// Note: PID file cleanup is handled by the app itself
 	}
 }

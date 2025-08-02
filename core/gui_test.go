@@ -15,7 +15,7 @@ import (
 func TestGUIComponentInitialization(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -61,7 +61,7 @@ func TestGUIComponentInitialization(t *testing.T) {
 func TestSearchEntryInteraction(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -109,7 +109,7 @@ func TestSearchEntryInteraction(t *testing.T) {
 func TestKeyboardNavigation(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -165,7 +165,7 @@ func TestKeyboardNavigation(t *testing.T) {
 func TestNumericSelection(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -204,7 +204,7 @@ func TestNumericSelection(t *testing.T) {
 func TestSearchFiltering(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -253,7 +253,7 @@ func TestSearchFiltering(t *testing.T) {
 func TestGUIStateManagement(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -295,7 +295,7 @@ func TestGUIStateManagement(t *testing.T) {
 func TestWindowDimensions(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -328,7 +328,7 @@ func TestWindowDimensions(t *testing.T) {
 func TestMenuItemRendering(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",
@@ -365,7 +365,7 @@ func TestMenuItemRendering(t *testing.T) {
 func TestInitialQueryHandling(t *testing.T) {
 	app := test.NewApp()
 	defer app.Quit()
-	
+
 	config := &model.Config{
 		Title:                 "Test Menu",
 		Prompt:                "Search",

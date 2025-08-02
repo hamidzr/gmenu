@@ -17,13 +17,13 @@ func (g *GMenu) SetExitCode(code model.ExitCode) error {
 		return nil
 	}
 	g.exitCode = code
-	
+
 	// Mark selection as made when exit code is set to completion states
 	// This ensures WaitForSelection() doesn't hang when SetExitCode is called
 	if code != model.Unset {
 		g.markSelectionMade()
 	}
-	
+
 	return nil
 }
 
@@ -42,8 +42,11 @@ func (g *GMenu) Quit() {
 	if g.exitCode == model.Unset {
 		panic("Exit code not set")
 	}
-	// Set visibility state to false when quitting
-	g.setShown(false)
+
+	// Ensure UI is hidden before quitting (in case it wasn't already)
+	if g.isShown {
+		g.HideUI()
+	}
 
 	// Safely quit the Fyne app with error recovery
 	func() {
@@ -115,19 +118,27 @@ func (g *GMenu) HideUI() {
 	if !g.isShown {
 		return
 	}
-	
+
 	// Set flag to prevent OnFocusLost from cancelling during programmatic hide
 	g.visibilityMutex.Lock()
 	g.isHiding = true
 	g.visibilityMutex.Unlock()
-	
+
 	g.ui.MainWindow.Hide()
-	
+
 	// Reset flag and set visibility state
 	g.visibilityMutex.Lock()
 	g.isHiding = false
 	g.isShown = false
 	g.visibilityMutex.Unlock()
+}
+
+// HideAndReset atomically hides the UI and resets state for reuse
+// This ensures consistent behavior between quit and non-quit paths
+func (g *GMenu) completeSelection() {
+	// Shared logic for completing a selection - used by both quit and non-quit paths
+	// This ensures UI is hidden immediately for responsive behavior
+	g.HideUI()
 }
 
 // Run starts the application.

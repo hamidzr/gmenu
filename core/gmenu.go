@@ -55,7 +55,7 @@ type GMenu struct {
 	// selectionFuse is a one-way switch that can only be broken once
 	selectionFuse core.Fuse
 	// isShown tracks whether the UI is currently visible
-	isShown         bool
+	isShown bool
 	// isHiding tracks when UI is being hidden programmatically to avoid focus loss cancellation
 	isHiding        bool
 	visibilityMutex sync.RWMutex
@@ -207,7 +207,7 @@ func (g *GMenu) initUI() error {
 		g.visibilityMutex.RLock()
 		isHiding := g.isHiding
 		g.visibilityMutex.RUnlock()
-		
+
 		if !isHiding {
 			// user clicked away or lost focus - cancel the menu and hide immediately
 			// IMPORTANT: Set exit code BEFORE marking selection made to avoid race condition
@@ -215,8 +215,8 @@ func (g *GMenu) initUI() error {
 				g.exitCode = model.UserCanceled
 			}
 			g.markSelectionMade()
-			// hide the window immediately to provide better UX
-			g.HideUI()
+			// Complete selection with shared logic
+			g.completeSelection()
 		}
 	}
 	itemsCanvas := render.NewItemsCanvas()
