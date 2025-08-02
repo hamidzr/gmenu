@@ -7,6 +7,10 @@ import (
 	"github.com/hamidzr/gmenu/model"
 )
 
+const (
+	queryChannelBufferSize = 100 // buffer size for query updates channel
+)
+
 // numericKeyToIndex converts numeric key names to zero-based indices
 func numericKeyToIndex(keyName fyne.KeyName) (int, bool) {
 	switch keyName {
@@ -34,7 +38,7 @@ func numericKeyToIndex(keyName fyne.KeyName) (int, bool) {
 }
 
 func (g *GMenu) startListenDynamicUpdates() {
-	queryChan := make(chan string, 100) // buffered channel to prevent blocking
+	queryChan := make(chan string, queryChannelBufferSize) // buffered channel to prevent blocking
 	g.ui.SearchEntry.OnChanged = func(text string) {
 		select {
 		case queryChan <- text:

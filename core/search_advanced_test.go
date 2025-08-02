@@ -126,15 +126,15 @@ func TestDirectSearchPerformance(t *testing.T) {
 // TestFuzzySearchBruteRobustness tests robustness of fuzzy search
 func TestFuzzySearchBruteRobustness(t *testing.T) {
 	testItems := []model.MenuItem{
-		{Title: ""},                               // empty string
-		{Title: "a"},                              // single character
-		{Title: "🚀"},                              // emoji
-		{Title: "café naïve résumé"},              // unicode with accents
-		{Title: "line1\nline2"},                   // multiline
-		{Title: "tab\there"},                      // tabs
-		{Title: "  spaces  "},                     // leading/trailing spaces
+		{Title: ""},                         // empty string
+		{Title: "a"},                        // single character
+		{Title: "🚀"},                        // emoji
+		{Title: "café naïve résumé"},        // unicode with accents
+		{Title: "line1\nline2"},             // multiline
+		{Title: "tab\there"},                // tabs
+		{Title: "  spaces  "},               // leading/trailing spaces
 		{Title: string(make([]byte, 1000))}, // very long string
-		{Title: "normal text"},                    // normal case
+		{Title: "normal text"},              // normal case
 	}
 
 	// Fill the very long string with repeating pattern
