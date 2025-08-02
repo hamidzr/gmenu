@@ -17,6 +17,13 @@ func (g *GMenu) SetExitCode(code model.ExitCode) error {
 		return nil
 	}
 	g.exitCode = code
+	
+	// Mark selection as made when exit code is set to completion states
+	// This ensures WaitForSelection() doesn't hang when SetExitCode is called
+	if code != model.Unset {
+		g.markSelectionMade()
+	}
+	
 	return nil
 }
 
