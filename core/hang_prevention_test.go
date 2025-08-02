@@ -135,7 +135,8 @@ func TestHideShowSelectionCycle(t *testing.T) {
 				"cycle" + string(rune('0'+cycle)) + "_item2",
 				"cycle" + string(rune('0'+cycle)) + "_item3",
 			}
-			require.NoError(t, gmenu.SetupMenu(newItems, ""))
+			err := gmenu.SetupMenu(newItems, "") // SetupMenu call
+			require.NoError(t, err)
 
 			// Step 3: Verify items were updated
 			assert.Equal(t, len(newItems), len(gmenu.menu.items))
@@ -239,7 +240,7 @@ func TestConcurrentHideShowSelection(t *testing.T) {
 					newItems := []string{
 						"concurrent_item_" + string(rune('0'+id)) + "_" + string(rune('0'+j)),
 					}
-					gmenu.SetupMenu(newItems, "")
+					_ = gmenu.SetupMenu(newItems, "") //nolint:errcheck // Intentionally ignoring error in concurrent test
 					time.Sleep(time.Microsecond)
 				}
 			}(i)
@@ -516,7 +517,7 @@ func TestRapidOperationsCycle(t *testing.T) {
 				"rapid_item_" + string(rune('0'+i%10)),
 				"rapid_item_" + string(rune('1'+i%10)),
 			}
-			gmenu.SetupMenu(newItems, "")
+			_ = gmenu.SetupMenu(newItems, "") //nolint:errcheck // Intentionally ignoring error in rapid test
 		}
 	}()
 

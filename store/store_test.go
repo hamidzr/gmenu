@@ -13,7 +13,7 @@ import (
 func TestFileStoreCreation(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-store-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create store with test path
 	storePath := []string{"test", "gmenu"}
@@ -29,7 +29,7 @@ func TestFileStoreCreation(t *testing.T) {
 func TestCacheOperations(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-cache-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Change to temp directory
 	originalDir, err := os.Getwd()
@@ -85,7 +85,7 @@ func TestCacheOperations(t *testing.T) {
 func TestConfigOperations(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-config-store-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Change to temp directory
 	originalDir, err := os.Getwd()
@@ -137,7 +137,7 @@ func TestConfigOperations(t *testing.T) {
 func TestStoreWithDifferentFormats(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-format-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -205,7 +205,7 @@ func TestStoreErrorHandling(t *testing.T) {
 	// Test loading from non-existent directory with proper setup
 	tmpDir, err := os.MkdirTemp("", "store-error-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create store in a nested path that doesn't exist yet
 	store2, err := NewFileStore[Cache, Config]([]string{"non", "existent", "path"}, "yaml")
@@ -221,7 +221,7 @@ func TestStoreErrorHandling(t *testing.T) {
 func TestConcurrentAccess(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-concurrent-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -380,7 +380,7 @@ func TestConfigStructure(t *testing.T) {
 func TestUtilityFunctions(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-utils-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Test createDirectoryPath (if it exists)
 	testPath := filepath.Join(tmpDir, "deep", "nested", "path")

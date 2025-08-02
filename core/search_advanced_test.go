@@ -133,7 +133,7 @@ func TestFuzzySearchBruteRobustness(t *testing.T) {
 		{Title: "line1\nline2"},                   // multiline
 		{Title: "tab\there"},                      // tabs
 		{Title: "  spaces  "},                     // leading/trailing spaces
-		{Title: string(make([]byte, 1000, 1000))}, // very long string
+		{Title: string(make([]byte, 1000))}, // very long string
 		{Title: "normal text"},                    // normal case
 	}
 

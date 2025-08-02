@@ -135,7 +135,7 @@ func runTerminalMode(gmenu *core.GMenu, cfg *model.Config) error {
 		return fmt.Errorf("no items provided through standard input")
 	}
 	// reset stdin from non-interactive to interactive.
-	os.Stdin.Close()
+	_ = os.Stdin.Close()
 	os.Stdin, _ = os.Open("/dev/tty")
 
 	matcher := func(items []string, query string) []string {

@@ -131,9 +131,10 @@ func TestFuzzy(t *testing.T) {
 				// ensure the first item comes before the seoncd.
 				var sawFirst, sawSecond bool
 				for _, item := range resStrs { // scan the results.
-					if item == relOrder[0] {
+					switch item {
+					case relOrder[0]:
 						sawFirst = true
-					} else if item == relOrder[1] {
+					case relOrder[1]:
 						sawSecond = true
 					}
 					if sawSecond && !sawFirst {
@@ -141,7 +142,7 @@ func TestFuzzy(t *testing.T) {
 							itemStrs, tc.query, resStrs, relOrder)
 					}
 				}
-				if !(sawFirst && sawSecond) {
+				if !sawFirst || !sawSecond {
 					assert.Fail(t, "expected to see both items", resStrs)
 				}
 			}

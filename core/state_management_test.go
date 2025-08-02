@@ -320,8 +320,8 @@ func TestUIUpdateMutexProtection(t *testing.T) {
 
 	// Concurrent UI updates with timeout
 	done := make(chan struct{})
+	wg.Add(numGoroutines)
 	go func() {
-		wg.Add(numGoroutines)
 		for i := 0; i < numGoroutines; i++ {
 			go func(id int) {
 				defer wg.Done()

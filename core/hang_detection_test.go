@@ -87,7 +87,7 @@ func TestDetectGUIHang(t *testing.T) {
 
 		// This is the problematic code that was causing hangs
 		fmt.Println("   Setting exit code (this was causing the hang)...")
-		gmenu.SetExitCode(model.NoError)
+		_ = gmenu.SetExitCode(model.NoError) // Ignoring error in test scenario
 
 		// The hang occurs because SetExitCode doesn't properly complete the selection
 		// without calling markSelectionMade() which is unexported
@@ -229,7 +229,7 @@ func TestHangDetectionWithSimplifiedCase(t *testing.T) {
 
 	// Test that SetExitCode alone doesn't complete the selection properly
 	fmt.Println("Setting exit code without proper selection completion...")
-	gmenu.SetExitCode(model.NoError)
+	_ = gmenu.SetExitCode(model.NoError) // Ignoring error in test scenario
 
 	// This should still work if the GUI is responsive
 	results := gmenu.Search("item")

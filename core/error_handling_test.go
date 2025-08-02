@@ -384,7 +384,7 @@ func TestFileOperationErrors(t *testing.T) {
 
 	tmpDir, err := os.MkdirTemp("", "gmenu-error-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Test createPidFile with valid directory
 	pidFile, err := createPidFile("test_pid")

@@ -32,7 +32,7 @@ func TestConfigLoading(t *testing.T) {
 	// Create a temporary directory for test config files
 	tmpDir, err := os.MkdirTemp("", "gmenu-config-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Test config content
 	configContent := `
@@ -105,7 +105,7 @@ func TestConfigDefaults(t *testing.T) {
 func TestInvalidConfig(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-config-invalid")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Test invalid YAML syntax
 	invalidConfigPath := filepath.Join(tmpDir, "invalid.yaml")
@@ -134,7 +134,7 @@ func TestNonExistentConfig(t *testing.T) {
 func TestPartialConfig(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-config-partial")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Config with only some fields
 	partialConfigContent := `
@@ -174,7 +174,7 @@ search_method: "exact"
 func TestInitConfigFile(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-config-init")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Change to temp directory for testing
 	originalDir, err := os.Getwd()
@@ -277,7 +277,7 @@ min_height: 0
 		t.Run(tc.name, func(t *testing.T) {
 			tmpDir, err := os.MkdirTemp("", "gmenu-config-validation")
 			require.NoError(t, err)
-			defer os.RemoveAll(tmpDir)
+			defer func() { _ = os.RemoveAll(tmpDir) }()
 
 			configPath := filepath.Join(tmpDir, "test.yaml")
 			err = os.WriteFile(configPath, []byte(tc.config), 0644)
@@ -306,13 +306,13 @@ func TestEnvironmentVariableOverrides(t *testing.T) {
 	// helper doesn't implement env var handling, so we test the expected behavior.
 
 	// Set environment variables
-	os.Setenv("GMENU_TITLE", "Env Title")
-	os.Setenv("GMENU_MIN_WIDTH", "1000")
-	os.Setenv("GMENU_SEARCH_METHOD", "exact")
+	_ = os.Setenv("GMENU_TITLE", "Env Title")
+	_ = os.Setenv("GMENU_MIN_WIDTH", "1000")
+	_ = os.Setenv("GMENU_SEARCH_METHOD", "exact")
 	defer func() {
-		os.Unsetenv("GMENU_TITLE")
-		os.Unsetenv("GMENU_MIN_WIDTH")
-		os.Unsetenv("GMENU_SEARCH_METHOD")
+		_ = os.Unsetenv("GMENU_TITLE")
+		_ = os.Unsetenv("GMENU_MIN_WIDTH")
+		_ = os.Unsetenv("GMENU_SEARCH_METHOD")
 	}()
 
 	// Test that environment variables are accessible

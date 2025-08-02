@@ -15,7 +15,7 @@ func TestCacheOperationsWithMenuID(t *testing.T) {
 	// Create temporary directory for test
 	tmpDir, err := os.MkdirTemp("", "gmenu-cache-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestCacheOperationsWithMenuID(t *testing.T) {
 func TestInitValueWithCache(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-initval-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -205,7 +205,7 @@ func TestWithCacheErrorHandling(t *testing.T) {
 func TestCacheStateWithDifferentValues(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-cache-state-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -437,7 +437,7 @@ func TestConfigurationFlags(t *testing.T) {
 func TestClearCacheFunction(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "gmenu-clear-cache-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)

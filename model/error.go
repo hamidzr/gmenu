@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	// CustomUserEntry is when the user inputs and pushes an entry through that doesn't exist
+	// ErrCustomUserEntry is when the user inputs and pushes an entry through that doesn't exist
 	// and gmenu is not set to accept it.
-	CustomUserEntry = errors.New("unmatched user entry")
+	ErrCustomUserEntry = errors.New("unmatched user entry")
 )

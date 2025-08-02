@@ -61,7 +61,7 @@ func TestSetExitCodeHangDetection(t *testing.T) {
 		fmt.Println("4. ⚠️  Triggering the problematic SetExitCode call...")
 
 		// This is the exact call that was causing hangs in the visual test
-		gmenu.SetExitCode(model.NoError)
+		_ = gmenu.SetExitCode(model.NoError) // Ignoring error in test scenario
 
 		fmt.Println("   SetExitCode call completed")
 
@@ -153,7 +153,7 @@ func TestDetectSelectionHangWithTimeout(t *testing.T) {
 		fmt.Println("   Starting operation that might hang...")
 
 		// Simulate the problematic sequence
-		gmenu.SetExitCode(model.NoError)
+		_ = gmenu.SetExitCode(model.NoError) // Ignoring error in test scenario
 
 		// Try an operation that would hang if selection state is broken
 		// Note: We don't call WaitForSelection as that's known to hang

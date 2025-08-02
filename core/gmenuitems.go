@@ -113,5 +113,5 @@ func (g *GMenu) SelectedValue() (*model.MenuItem, error) {
 	if g.config.AcceptCustomSelection {
 		return &model.MenuItem{Title: g.menu.query}, nil
 	}
-	return nil, model.CustomUserEntry
+	return nil, model.ErrCustomUserEntry
 }

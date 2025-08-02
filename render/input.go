@@ -18,7 +18,7 @@ type SearchEntry struct {
 // SelectAll selects all text in the entry.
 func (e *SearchEntry) SelectAll() {
 	// TODO: this cannot select anything outside non-alphanumeric characters.
-	e.Entry.DoubleTapped(nil)
+	e.DoubleTapped(nil)
 }
 
 // AcceptsTab implements the fyne.Tabbable interface.

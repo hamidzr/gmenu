@@ -10,8 +10,8 @@ import (
 
 func main() {
 	// Suppress system debug output
-	os.Setenv("OS_ACTIVITY_MODE", "debug")
-	os.Stderr.Close()
+	_ = os.Setenv("OS_ACTIVITY_MODE", "debug")
+	_ = os.Stderr.Close()
 	os.Stderr, _ = os.Open(os.DevNull)
 
 	cmd := cli.InitCLI()

@@ -1,3 +1,5 @@
+version: 2
+
 run:
   timeout: 5m
   build-tags:
@@ -41,12 +43,10 @@ linters:
   disable-all: true
   enable:
     - errcheck
-    - gofmt
-    - gosimple
     - govet
     - ineffassign
-    - typecheck
     - unused
+    - staticcheck
 
 issues:
   exclude-use-default: true

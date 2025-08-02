@@ -51,7 +51,7 @@ func TestCLIConfigInitialization(t *testing.T) {
 	t.Skip("Skipping CLI tests")
 	tmpDir, err := os.MkdirTemp("", "gmenu-cli-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Change to temp directory
 	originalDir, err := os.Getwd()
@@ -85,7 +85,7 @@ func TestCLIWithMenuID(t *testing.T) {
 	t.Skip("Skipping CLI tests")
 	tmpDir, err := os.MkdirTemp("", "gmenu-cli-menu-id")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalDir, err := os.Getwd()
 	require.NoError(t, err)
