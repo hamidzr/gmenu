@@ -33,7 +33,7 @@ func NewItemsCanvas() *ItemsCanvas {
 	}
 }
 
-func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection bool) *fyne.Container {
+func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection bool, onItemClick func(int)) *fyne.Container {
 	// Safety check for item
 	title := item.ComputedTitle()
 	if title == "" {
@@ -140,11 +140,22 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 	}
 
 	itemContainer.Layout = layout.NewStackLayout()
+	
+	// Make the item clickable if callback is provided
+	if onItemClick != nil {
+		clickableButton := widget.NewButton("", func() {
+			onItemClick(idx)
+		})
+		clickableButton.Importance = widget.LowImportance
+		// Make button transparent and overlay it on the item
+		return container.NewStack(itemContainer, clickableButton)
+	}
+	
 	return itemContainer
 }
 
 // Render updates the container with items, highlighting the selected one.
-func (c *ItemsCanvas) Render(items []model.MenuItem, selected int, noNumericSelection bool) {
+func (c *ItemsCanvas) Render(items []model.MenuItem, selected int, noNumericSelection bool, onItemClick func(int)) {
 	// Safety checks to prevent nil pointer dereferences
 	if c == nil || c.Container == nil {
 		return
@@ -169,7 +180,7 @@ func (c *ItemsCanvas) Render(items []model.MenuItem, selected int, noNumericSele
 		if item.ComputedTitle() == "" {
 			continue // Skip empty items
 		}
-		c.Container.Add(RenderItem(item, i, i == selected, noNumericSelection))
+		c.Container.Add(RenderItem(item, i, i == selected, noNumericSelection, onItemClick))
 	}
 
 	c.Container.Add(layout.NewSpacer()) // Add a final spacer for consistent look

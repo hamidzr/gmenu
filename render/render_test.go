@@ -135,7 +135,7 @@ func TestRenderItem(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			container := RenderItem(tc.item, tc.idx, tc.selected, tc.noNumericSelection)
+			container := RenderItem(tc.item, tc.idx, tc.selected, tc.noNumericSelection, nil)
 
 			require.NotNil(t, container)
 			assert.Greater(t, len(container.Objects), 0, "Container should have at least one object")
@@ -160,7 +160,7 @@ func TestItemsCanvasWithItems(t *testing.T) {
 
 	// Render items and add to canvas
 	for i, item := range items {
-		itemContainer := RenderItem(item, i, i == 0, false) // first item selected
+		itemContainer := RenderItem(item, i, i == 0, false, nil) // first item selected
 		canvas.Container.Add(itemContainer)
 	}
 
@@ -211,7 +211,7 @@ func TestItemRenderingWithComplexContent(t *testing.T) {
 
 	for i, item := range testItems {
 		t.Run(item.Title, func(t *testing.T) {
-			container := RenderItem(item, i, false, false)
+			container := RenderItem(item, i, false, false, nil)
 			require.NotNil(t, container)
 			assert.Greater(t, len(container.Objects), 0)
 		})
@@ -236,7 +236,7 @@ func TestItemsCanvasLayout(t *testing.T) {
 	// Add some items to test layout behavior
 	for i := 0; i < 3; i++ {
 		item := model.MenuItem{Title: "Item " + string(rune('1'+i))}
-		itemContainer := RenderItem(item, i, false, false)
+		itemContainer := RenderItem(item, i, false, false, nil)
 		canvas.Container.Add(itemContainer)
 	}
 

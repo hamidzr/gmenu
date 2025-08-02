@@ -103,7 +103,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 								_ = r // SA9003: intentionally ignore panic
 							}
 						}()
-						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection, g.handleItemClick)
 					}()
 				}
 				resizeBasedOnResults()
@@ -198,7 +198,7 @@ func (g *GMenu) setKeyHandlers() {
 		// Safely render UI components
 		g.uiMutex.Lock()
 		if g.ui != nil && g.ui.ItemsCanvas != nil && g.menu != nil {
-			g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+			g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection, g.handleItemClick)
 		}
 		g.uiMutex.Unlock()
 	}

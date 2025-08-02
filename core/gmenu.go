@@ -256,6 +256,20 @@ func (g *GMenu) markSelectionMade() {
 	}
 }
 
+// handleItemClick handles when a user clicks on a menu item
+func (g *GMenu) handleItemClick(index int) {
+	// Protect navigation state with menu items mutex
+	g.menu.itemsMutex.Lock()
+	if index >= 0 && index < len(g.menu.Filtered) {
+		g.menu.Selected = index
+	}
+	g.menu.itemsMutex.Unlock()
+	
+	// Complete the selection like keyboard Enter
+	g.markSelectionMade()
+	g.completeSelection()
+}
+
 // WaitForSelection waits for the user to make a selection
 func (g *GMenu) WaitForSelection() {
 	<-g.selectionFuse.Watch()
@@ -296,7 +310,7 @@ func (g *GMenu) setMenuBasedUI() error {
 		if g.menu.query != "" {
 			g.ui.SearchEntry.SelectAll()
 		}
-		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection)
+		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection, g.handleItemClick)
 		// show match items out of total item count.
 		g.ui.MenuLabel.SetText(g.matchCounterLabel())
 	})
