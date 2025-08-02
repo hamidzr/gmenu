@@ -161,9 +161,13 @@ func (g *GMenu) setKeyHandlers() {
 				return
 			}
 			g.markSelectionMade()
+			// Hide UI immediately like focus loss and escape do
+			g.HideUI()
 		case fyne.KeyEscape:
 			g.exitCode = model.UserCanceled
 			g.markSelectionMade()
+			// Hide UI immediately like focus loss does
+			g.HideUI()
 		case fyne.Key1, fyne.Key2, fyne.Key3, fyne.Key4, fyne.Key5, fyne.Key6, fyne.Key7, fyne.Key8, fyne.Key9:
 			// handle numeric selection if enabled
 			if !g.config.NoNumericSelection {
@@ -172,6 +176,8 @@ func (g *GMenu) setKeyHandlers() {
 					if selectedIndex < len(g.menu.Filtered) {
 						g.menu.Selected = selectedIndex
 						g.markSelectionMade()
+						// Hide UI immediately like other selection methods do
+						g.HideUI()
 						return
 					}
 				}
