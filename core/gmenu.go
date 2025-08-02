@@ -232,8 +232,9 @@ func (g *GMenu) initUI() error {
 	mainWindow.SetOnClosed(func() {
 		if g.exitCode == model.Unset {
 			g.exitCode = model.UserCanceled
-			g.markSelectionMade()
 		}
+		// Always call markSelectionMade to ensure the fuse is broken
+		g.markSelectionMade()
 	})
 
 	g.ui = &GUI{

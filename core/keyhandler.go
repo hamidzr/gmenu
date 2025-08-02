@@ -147,18 +147,24 @@ func (g *GMenu) setKeyHandlers() {
 	keyHandler := func(key *fyne.KeyEvent) {
 		switch key.Name {
 		case fyne.KeyDown, fyne.KeyTab:
+			// Protect navigation state with menu items mutex
+			g.menu.itemsMutex.Lock()
 			if g.menu.Selected < len(g.menu.Filtered)-1 {
 				g.menu.Selected++
 			} else { // wrap
 				g.menu.Selected = 0
 			}
+			g.menu.itemsMutex.Unlock()
 
 		case fyne.KeyUp:
+			// Protect navigation state with menu items mutex
+			g.menu.itemsMutex.Lock()
 			if g.menu.Selected > 0 {
 				g.menu.Selected--
 			} else { // wrap
 				g.menu.Selected = len(g.menu.Filtered) - 1
 			}
+			g.menu.itemsMutex.Unlock()
 		case fyne.KeyReturn, fyne.KeyEnter:
 			// con't accept enter key if no items are present and custom selection is disabled.'
 			if !g.config.AcceptCustomSelection && len(g.menu.Filtered) == 0 {
@@ -197,5 +203,6 @@ func (g *GMenu) setKeyHandlers() {
 		g.uiMutex.Unlock()
 	}
 	g.ui.SearchEntry.OnKeyDown = keyHandler
-	g.ui.MainWindow.Canvas().SetOnTypedKey(keyHandler)
+	// Note: MainWindow.Canvas().SetOnTypedKey() removed to prevent double key processing
+	// SearchEntry handles all keys via OnKeyDown and PropagationBlacklist
 }
