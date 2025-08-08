@@ -18,7 +18,7 @@ type SearchEntry struct {
 // SelectAll selects all text in the entry.
 func (e *SearchEntry) SelectAll() {
 	// TODO: this cannot select anything outside non-alphanumeric characters.
-	e.DoubleTapped(nil)
+    e.DoubleTapped(nil)
 }
 
 // AcceptsTab implements the fyne.Tabbable interface.
@@ -36,7 +36,7 @@ func (e *SearchEntry) TypedKey(key *fyne.KeyEvent) {
 			return
 		}
 	}
-	e.Entry.TypedKey(key)
+    e.Entry.TypedKey(key)
 }
 
 // TypedShortcut implements the fyne.TypedShortcutReceiver interface.
@@ -56,7 +56,7 @@ func (e *SearchEntry) FocusLost() {
 	if e.OnFocusLost != nil {
 		e.OnFocusLost()
 	}
-	e.Entry.FocusLost()
+    e.Entry.FocusLost()
 }
 
 // NewInputArea returns a horizontal container with input widgets.

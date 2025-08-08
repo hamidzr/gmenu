@@ -277,8 +277,8 @@ func TestConcurrentMenuOperations(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < iterations; j++ {
 				query := queries[(id+j)%len(queries)]
-				results := gmenu.Search(query)
-				assert.NotNil(t, results)
+                results := gmenu.Search(query)
+                assert.NotNil(t, results)
 			}
 		}(i)
 	}
@@ -286,8 +286,11 @@ func TestConcurrentMenuOperations(t *testing.T) {
 	wg.Wait()
 
 	// Menu should still be in valid state
-	assert.NotNil(t, gmenu.menu.items)
-	assert.NotNil(t, gmenu.menu.Filtered)
+    // Access menu state under lock to avoid race warnings
+    gmenu.menu.itemsMutex.Lock()
+    defer gmenu.menu.itemsMutex.Unlock()
+    assert.NotNil(t, gmenu.menu.items)
+    assert.NotNil(t, gmenu.menu.Filtered)
 	assert.GreaterOrEqual(t, gmenu.menu.Selected, -1) // -1 is valid for empty results
 }
 
@@ -515,12 +518,14 @@ func TestConcurrentItemOperations(t *testing.T) {
 	assert.Greater(t, len(gmenu.menu.items), 1) // Should have more than initial item
 
 	// Should contain initial item and some added items
-	found := false
-	for _, item := range gmenu.menu.items {
+    found := false
+    gmenu.menu.itemsMutex.Lock()
+    for _, item := range gmenu.menu.items {
 		if item.Title == "initial" {
 			found = true
 			break
 		}
 	}
+    gmenu.menu.itemsMutex.Unlock()
 	assert.True(t, found, "Initial item should still be present")
 }

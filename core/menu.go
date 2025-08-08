@@ -56,26 +56,31 @@ func newMenu(
 
 // Filters the menu filtered list to only include items that match the keyword.
 func (m *menu) Search(keyword string) {
-	m.queryMutex.Lock()
-	m.query = keyword
-	m.queryMutex.Unlock()
-	if keyword == "" {
-		m.Filtered = m.items
-	} else {
-		// start := time.Now()
-		m.Filtered = m.SearchMethod(m.items, keyword, m.preserveOrder, 0)
-		// elapsed := time.Since(start)
-		// fmt.Println("Search took", elapsed)
-	}
-	if len(m.Filtered) > 0 {
-		m.Selected = 0
-	} else {
-		m.Selected = constant.UnsetInt
-	}
-	m.MatchCount = len(m.Filtered)
-	if len(m.Filtered) > m.resultLimit {
-		m.Filtered = m.Filtered[:m.resultLimit]
-	}
+    // Update the query under its own lock
+    m.queryMutex.Lock()
+    m.query = keyword
+    m.queryMutex.Unlock()
+
+    // Compute filtered results and update shared menu state under items lock
+    m.itemsMutex.Lock()
+    if keyword == "" {
+        // Use current items snapshot directly
+        m.Filtered = m.items
+    } else {
+        // Run search based on a stable snapshot of items
+        itemsSnapshot := m.items
+        m.Filtered = m.SearchMethod(itemsSnapshot, keyword, m.preserveOrder, 0)
+    }
+    if len(m.Filtered) > 0 {
+        m.Selected = 0
+    } else {
+        m.Selected = constant.UnsetInt
+    }
+    m.MatchCount = len(m.Filtered)
+    if len(m.Filtered) > m.resultLimit {
+        m.Filtered = m.Filtered[:m.resultLimit]
+    }
+    m.itemsMutex.Unlock()
 }
 
 func (m *menu) titlesToMenuItem(titles []string) []model.MenuItem {

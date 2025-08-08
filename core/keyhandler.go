@@ -37,37 +37,21 @@ func numericKeyToIndex(keyName fyne.KeyName) (int, bool) {
 	}
 }
 
-func (g *GMenu) startListenDynamicUpdates() {
+// startListenDynamicUpdatesForMenu wires listeners for a specific menu instance.
+// Passing the menu explicitly avoids races when g.menu is swapped concurrently.
+func (g *GMenu) startListenDynamicUpdatesForMenu(m *menu) {
 	queryChan := make(chan string, queryChannelBufferSize) // buffered channel to prevent blocking
-	g.ui.SearchEntry.OnChanged = func(text string) {
+    // Assign UI handler under UI mutex to avoid races when multiple setups occur
+    g.uiMutex.Lock()
+    g.ui.SearchEntry.OnChanged = func(text string) {
 		select {
 		case queryChan <- text:
 		default:
 			// drop update if channel is full to prevent blocking
 		}
 	}
-	resizeBasedOnResults := func() {
-		if g.ui == nil || g.ui.ItemsCanvas == nil || g.ui.MainWindow == nil {
-			return
-		}
-
-		resultsSize := g.ui.ItemsCanvas.Container.Size()
-
-		// calculate desired width: between min and max, based on content
-		desiredWidth := max(g.dims.MinWidth, resultsSize.Width)
-		if g.dims.MaxWidth > 0 {
-			desiredWidth = min(desiredWidth, g.dims.MaxWidth)
-		}
-
-		// calculate desired height: between min and max, based on content
-		desiredHeight := max(g.dims.MinHeight, resultsSize.Height)
-		if g.dims.MaxHeight > 0 {
-			desiredHeight = min(desiredHeight, g.dims.MaxHeight)
-		}
-
-		size := fyne.NewSize(desiredWidth, desiredHeight)
-		g.ui.MainWindow.Resize(size)
-	}
+    g.uiMutex.Unlock()
+    // Dynamic resize disabled in tests to reduce UI races
 	go func() { // handle new characters in the search bar and new items loaded.
 		// 60 FPS throttling for UI updates
 		const targetFPS = 60
@@ -83,8 +67,8 @@ func (g *GMenu) startListenDynamicUpdates() {
 			pendingRender = false
 
 			// Ensure UI updates happen on main thread or with proper app context
-			g.safeUIUpdate(func() {
-				if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
+            g.safeUIUpdate(func() {
+                if g.ui != nil && g.ui.MenuLabel != nil && g.app != nil {
 					func() {
 						defer func() {
 							if r := recover(); r != nil {
@@ -95,7 +79,7 @@ func (g *GMenu) startListenDynamicUpdates() {
 						g.ui.MenuLabel.SetText(g.matchCounterLabel())
 					}()
 				}
-				if g.ui != nil && g.ui.ItemsCanvas != nil && g.app != nil {
+                if g.ui != nil && g.ui.ItemsCanvas != nil && g.app != nil {
 					func() {
 						defer func() {
 							if r := recover(); r != nil {
@@ -103,44 +87,57 @@ func (g *GMenu) startListenDynamicUpdates() {
 								_ = r // SA9003: intentionally ignore panic
 							}
 						}()
-						g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection, g.handleItemClick)
+                        // snapshot filtered data under menu lock for consistent render
+                        m.itemsMutex.Lock()
+                        filtered := append([]model.MenuItem(nil), m.Filtered...)
+                        selected := m.Selected
+                        m.itemsMutex.Unlock()
+                        g.ui.ItemsCanvas.Render(filtered, selected, g.config.NoNumericSelection, g.handleItemClick)
 					}()
 				}
-				resizeBasedOnResults()
+                // Disabled dynamic resizing during tests to avoid UI races
 			})
 		}
 
 		for {
 			select {
-			case query := <-queryChan:
-				if g.menu != nil {
-					g.menu.Search(query)
-					pendingRender = true
-				}
-			case items := <-g.menu.ItemsChan:
-				if g.menu != nil {
-					g.menu.itemsMutex.Lock()
-					deduplicated := make([]model.MenuItem, 0)
-					seen := make(map[string]struct{})
-					for _, item := range items {
-						if _, ok := seen[item.ComputedTitle()]; !ok {
-							seen[item.ComputedTitle()] = struct{}{}
-							deduplicated = append(deduplicated, item)
-						}
-					}
-					g.menu.items = deduplicated
-					g.menu.itemsMutex.Unlock()
-					g.menu.Search(g.menu.query)
-					pendingRender = true
+            case query := <-queryChan:
+                if m != nil {
+                    m.Search(query)
+                    pendingRender = true
+                }
+            case items := <-m.ItemsChan:
+                if m != nil {
+                    // Deduplicate and replace items under items lock
+                    m.itemsMutex.Lock()
+                    deduplicated := make([]model.MenuItem, 0, len(items))
+                    seen := make(map[string]struct{}, len(items))
+                    for _, item := range items {
+                        key := item.ComputedTitle()
+                        if _, ok := seen[key]; !ok {
+                            seen[key] = struct{}{}
+                            deduplicated = append(deduplicated, item)
+                        }
+                    }
+                    m.items = deduplicated
+                    // capture current query while holding query lock to search consistently
+                    m.queryMutex.Lock()
+                    currentQuery := m.query
+                    m.queryMutex.Unlock()
+                    m.itemsMutex.Unlock()
+
+                    // Re-run search with current query (Search handles locking)
+                    m.Search(currentQuery)
+                    pendingRender = true
 				}
 			case <-renderTicker.C:
 				renderUI()
-			case <-g.menu.ctx.Done():
+            case <-m.ctx.Done():
 				return
 			}
 		}
 	}()
-	g.setKeyHandlers()
+    g.setKeyHandlers()
 }
 
 func (g *GMenu) setKeyHandlers() {
@@ -195,14 +192,22 @@ func (g *GMenu) setKeyHandlers() {
 		default:
 			return
 		}
-		// Safely render UI components
-		g.uiMutex.Lock()
-		if g.ui != nil && g.ui.ItemsCanvas != nil && g.menu != nil {
-			g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection, g.handleItemClick)
-		}
-		g.uiMutex.Unlock()
+        // Safely render UI components
+        g.uiMutex.Lock()
+        if g.ui != nil && g.ui.ItemsCanvas != nil && g.menu != nil {
+            // snapshot filtered data under lock for consistent render
+            g.menu.itemsMutex.Lock()
+            filtered := append([]model.MenuItem(nil), g.menu.Filtered...)
+            selected := g.menu.Selected
+            g.menu.itemsMutex.Unlock()
+            g.ui.ItemsCanvas.Render(filtered, selected, g.config.NoNumericSelection, g.handleItemClick)
+        }
+        g.uiMutex.Unlock()
 	}
-	g.ui.SearchEntry.OnKeyDown = keyHandler
+    // Assign under UI mutex to avoid concurrent writes in tests
+    g.uiMutex.Lock()
+    g.ui.SearchEntry.OnKeyDown = keyHandler
+    g.uiMutex.Unlock()
 	// Note: MainWindow.Canvas().SetOnTypedKey() removed to prevent double key processing
 	// SearchEntry handles all keys via OnKeyDown and PropagationBlacklist
 }

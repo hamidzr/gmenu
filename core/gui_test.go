@@ -236,16 +236,20 @@ func TestSearchFiltering(t *testing.T) {
 	test.Type(gmenu.ui.SearchEntry, "app")
 	time.Sleep(10 * time.Millisecond) // Allow search to process
 
-	// Should show items containing "app"
-	filteredItems := gmenu.menu.Filtered
+    // Should show items containing "app" - read under lock
+    gmenu.menu.itemsMutex.Lock()
+    filteredItems := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
+    gmenu.menu.itemsMutex.Unlock()
 	assert.GreaterOrEqual(t, len(filteredItems), 2) // At least "apple" and "app"
 
 	// Clear search
 	gmenu.ui.SearchEntry.SetText("")
 	time.Sleep(10 * time.Millisecond)
 
-	// All items should be visible again
-	filteredItems = gmenu.menu.Filtered
+    // All items should be visible again - read under lock
+    gmenu.menu.itemsMutex.Lock()
+    filteredItems = append([]model.MenuItem(nil), gmenu.menu.Filtered...)
+    gmenu.menu.itemsMutex.Unlock()
 	assert.Len(t, filteredItems, len(testItems))
 }
 

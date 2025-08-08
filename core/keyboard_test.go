@@ -142,6 +142,12 @@ func testNumericKeys(t *testing.T, gmenu *GMenu) {
 
 // TestKeyboardShortcutsWithModifiers tests Ctrl+key combinations
 func TestKeyboardShortcutsWithModifiers(t *testing.T) {
+    // Force test app factory to fyne test app for this test to reduce races
+    testApp := test.NewApp()
+    defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 	config := &model.Config{
 		Title:                 "Shortcut Test",
 		Prompt:                "Search",
@@ -197,6 +203,11 @@ func TestKeyboardShortcutsWithModifiers(t *testing.T) {
 
 // TestNumericSelectionDisabled tests when numeric selection is disabled
 func TestNumericSelectionDisabled(t *testing.T) {
+    testApp := test.NewApp()
+    defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 	config := &model.Config{
 		Title:                 "No Numeric Test",
 		Prompt:                "Search",
@@ -233,6 +244,11 @@ func TestNumericSelectionDisabled(t *testing.T) {
 
 // TestKeyPropagationBlacklist tests that certain keys can be blocked
 func TestKeyPropagationBlacklist(t *testing.T) {
+    testApp := test.NewApp()
+    defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 	config := &model.Config{
 		Title:                 "Propagation Test",
 		Prompt:                "Search",
@@ -276,6 +292,11 @@ func TestKeyPropagationBlacklist(t *testing.T) {
 
 // TestFocusHandling tests focus-related keyboard behavior
 func TestFocusHandling(t *testing.T) {
+    testApp := test.NewApp()
+    defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 	config := &model.Config{
 		Title:                 "Focus Test",
 		Prompt:                "Search",
@@ -317,6 +338,11 @@ func TestFocusHandling(t *testing.T) {
 
 // TestKeyHandlerCallback tests custom key handler functionality
 func TestKeyHandlerCallback(t *testing.T) {
+    testApp := test.NewApp()
+    defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 	config := &model.Config{
 		Title:                 "Key Handler Test",
 		Prompt:                "Search",
@@ -358,6 +384,11 @@ func TestKeyHandlerCallback(t *testing.T) {
 
 // TestSpecialKeys tests handling of special function keys
 func TestSpecialKeys(t *testing.T) {
+    testApp := test.NewApp()
+    defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 	config := &model.Config{
 		Title:                 "Special Keys Test",
 		Prompt:                "Search",

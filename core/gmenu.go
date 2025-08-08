@@ -43,6 +43,8 @@ type GMenu struct {
 	menu          *menu
 	config        *model.Config
 	menuCancel    context.CancelFunc
+    // menuMutex protects access to menu and menuCancel swapping
+    menuMutex     sync.RWMutex
 	app           fyne.App
 	store         store.Store
 	exitCode      model.ExitCode
@@ -54,12 +56,21 @@ type GMenu struct {
 	isRunning     bool
 	// selectionFuse is a one-way switch that can only be broken once
 	selectionFuse core.Fuse
+    // selectionMutex guards selectionFuse operations and resets
+    selectionMutex sync.Mutex
 	// isShown tracks whether the UI is currently visible
 	isShown bool
 	// isHiding tracks when UI is being hidden programmatically to avoid focus loss cancellation
 	isHiding        bool
 	visibilityMutex sync.RWMutex
 }
+
+// newAppFunc creates a new fyne App. Overridden in tests to use fyne test app.
+var newAppFunc = func() fyne.App { return app.New() }
+
+// Note: UI serialization is handled via render.UIRenderMutex to ensure
+// all UI interactions (including those originating from tests) share the
+// same critical section.
 
 // NewGMenu creates a new GMenu instance.
 func NewGMenu(
@@ -130,7 +141,7 @@ func (g *GMenu) initValue(initialQuery string) (string, error) {
 
 // SetupMenu sets up the backing menu.
 func (g *GMenu) SetupMenu(initialItems []string, initialQuery string) error {
-	ctx, cancel := context.WithCancel(context.Background())
+    ctx, cancel := context.WithCancel(context.Background())
 	initVal, err := g.initValue(initialQuery)
 	if err != nil {
 		cancel()
@@ -142,8 +153,14 @@ func (g *GMenu) SetupMenu(initialItems []string, initialQuery string) error {
 		logrus.Error("Failed to setup menu:", err)
 		return fmt.Errorf("failed to create menu: %w", err)
 	}
-	g.menu = submenu
-	g.menuCancel = cancel
+    // Cancel existing and swap under lock
+    g.menuMutex.Lock()
+    if g.menuCancel != nil {
+        g.menuCancel()
+    }
+    g.menu = submenu
+    g.menuCancel = cancel
+    g.menuMutex.Unlock()
 	if err := g.setMenuBasedUI(); err != nil {
 		cancel()
 		return fmt.Errorf("failed to setup UI: %w", err)
@@ -177,7 +194,7 @@ func (g *GMenu) initUI() error {
 		return fmt.Errorf("ui is already initialized")
 	}
 	if g.app == nil {
-		g.app = app.New()
+        g.app = newAppFunc()
 	}
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
 
@@ -250,9 +267,16 @@ func (g *GMenu) initUI() error {
 // markSelectionMade marks that a selection has been made by breaking the fuse.
 func (g *GMenu) markSelectionMade() {
 	// break the fuse - this can only happen once and is thread-safe
-	if g.selectionFuse.Break() {
-		// only disable the search entry if we were the one to break the fuse
-		g.ui.SearchEntry.Disable()
+    g.selectionMutex.Lock()
+    broke := g.selectionFuse.Break()
+    g.selectionMutex.Unlock()
+    if broke {
+        // only disable the search entry if we were the one to break the fuse
+        g.safeUIUpdate(func() {
+            if g.ui != nil && g.ui.SearchEntry != nil {
+                g.ui.SearchEntry.Disable()
+            }
+        })
 	}
 }
 
@@ -277,9 +301,21 @@ func (g *GMenu) WaitForSelection() {
 
 // safeUIUpdate executes a UI update function with proper mutex protection
 func (g *GMenu) safeUIUpdate(updateFunc func()) {
-	g.uiMutex.Lock()
-	defer g.uiMutex.Unlock()
-	updateFunc()
+    // Serialize per-instance and marshal onto main thread when possible
+    g.uiMutex.Lock()
+    defer g.uiMutex.Unlock()
+    if g.app != nil && g.app.Driver() != nil {
+        if runner, ok := g.app.Driver().(interface{ RunOnMain(func()) }); ok {
+            done := make(chan struct{})
+            runner.RunOnMain(func() {
+                updateFunc()
+                close(done)
+            })
+            <-done
+            return
+        }
+    }
+    updateFunc()
 }
 
 // withCache executes an operation on the cache and saves it back
@@ -301,16 +337,29 @@ func (g *GMenu) withCache(operation func(*store.Cache) error) error {
 
 // setMenuBasedUI updates UI based on g.menu with minimal rerendering.
 func (g *GMenu) setMenuBasedUI() error {
-	if g.menu == nil || g.ui == nil {
+    g.menuMutex.RLock()
+    currentMenu := g.menu
+    g.menuMutex.RUnlock()
+    if currentMenu == nil || g.ui == nil {
 		return fmt.Errorf("menu or UI not initialized")
 	}
-	g.startListenDynamicUpdates()
-	g.safeUIUpdate(func() {
-		g.ui.SearchEntry.SetText(g.menu.query)
-		if g.menu.query != "" {
+    // Start listeners bound to the current menu snapshot so later swaps don't race
+    g.startListenDynamicUpdatesForMenu(currentMenu)
+    g.safeUIUpdate(func() {
+        // Read query under its lock to avoid data race
+        currentMenu.queryMutex.Lock()
+        currentQuery := currentMenu.query
+        currentMenu.queryMutex.Unlock()
+        g.ui.SearchEntry.SetText(currentQuery)
+        if currentQuery != "" {
 			g.ui.SearchEntry.SelectAll()
 		}
-		g.ui.ItemsCanvas.Render(g.menu.Filtered, g.menu.Selected, g.config.NoNumericSelection, g.handleItemClick)
+        // Read filtered state under items lock for consistency
+        currentMenu.itemsMutex.Lock()
+        filtered := append([]model.MenuItem(nil), currentMenu.Filtered...)
+        selected := currentMenu.Selected
+        currentMenu.itemsMutex.Unlock()
+        g.ui.ItemsCanvas.Render(filtered, selected, g.config.NoNumericSelection, g.handleItemClick)
 		// show match items out of total item count.
 		g.ui.MenuLabel.SetText(g.matchCounterLabel())
 	})
@@ -328,11 +377,18 @@ func (g *GMenu) ToggleVisibility() {
 
 // Search performs a search on the menu items using the configured search method.
 func (g *GMenu) Search(query string) []model.MenuItem {
-	if g.menu == nil {
-		return nil
-	}
-	g.menu.Search(query)
-	return g.menu.Filtered
+    g.menuMutex.RLock()
+    m := g.menu
+    g.menuMutex.RUnlock()
+    if m == nil {
+        return []model.MenuItem{}
+    }
+    m.Search(query)
+    // snapshot results under items lock for thread-safety
+    m.itemsMutex.Lock()
+    filtered := append([]model.MenuItem(nil), m.Filtered...)
+    m.itemsMutex.Unlock()
+    return filtered
 }
 
 // IsShown returns whether the UI is currently visible
@@ -353,13 +409,22 @@ func (g *GMenu) setShown(shown bool) {
 func (g *GMenu) ShowUI() {
 
 	// Show window and set focus
-	g.ui.MainWindow.Show()
-	g.ui.SearchEntry.Enable()
-	g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
+    g.safeUIUpdate(func() {
+        if g.ui == nil || g.ui.MainWindow == nil || g.ui.SearchEntry == nil {
+            return
+        }
+        g.ui.MainWindow.Show()
+        g.ui.SearchEntry.Enable()
+        g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
+    })
 
 	// Set focus to the search entry so user can type immediately
-	g.ui.MainWindow.Canvas().Focus(g.ui.SearchEntry)
+    g.safeUIUpdate(func() {
+        if g.ui != nil && g.ui.MainWindow != nil && g.ui.SearchEntry != nil {
+            g.ui.MainWindow.Canvas().Focus(g.ui.SearchEntry)
+        }
+    })
 
 	// Set visibility state
-	g.setShown(true)
+    g.setShown(true)
 }

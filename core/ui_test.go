@@ -1,13 +1,14 @@
 package core
 
 import (
-	"testing"
-	"time"
+    "testing"
+    "time"
 
-	"fyne.io/fyne/v2/test"
-	"github.com/hamidzr/gmenu/model"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+    "fyne.io/fyne/v2"
+    "fyne.io/fyne/v2/test"
+    "github.com/hamidzr/gmenu/model"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
 )
 
 // TestSearchEntryStateAfterReset tests the core issue with SearchEntry state management
@@ -15,6 +16,9 @@ func TestSearchEntryStateAfterReset(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 
 	// Create a test config
 	config := &model.Config{
@@ -70,6 +74,9 @@ func TestResetResetsAllNecessaryState(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 
 	config := &model.Config{
 		Title:                 "Test Menu",
@@ -124,6 +131,9 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 
 	// Create a test config
 	config := &model.Config{
@@ -212,6 +222,9 @@ func TestMultipleHideShowCycles(t *testing.T) {
 	// Initialize test app to avoid Fyne theme issues
 	testApp := test.NewApp()
 	defer testApp.Quit()
+    oldNewApp := newAppFunc
+    newAppFunc = func() fyne.App { return testApp }
+    defer func() { newAppFunc = oldNewApp }()
 
 	config := &model.Config{
 		Title:                 "Test Menu",
