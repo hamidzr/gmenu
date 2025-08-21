@@ -89,7 +89,7 @@ func NewFileStore[Cache any, Cfg any](namespace []string, format string) (*FileS
 
 func (fs FileStore[C, Cfg]) Load() (C, Cfg, error) {
 	cache, cacheErr := fs.LoadCache()
-	logger.Info("loaded cache", "cache", cache)
+	logger.Info("loaded cache file at ", fs.cacheFilePath())
 	config, configErr := fs.LoadConfig()
 	var err error
 	if cacheErr != nil {
