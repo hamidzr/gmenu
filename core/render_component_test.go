@@ -1,21 +1,21 @@
 package core
 
 import (
-    "testing"
+	"testing"
 
-    "fyne.io/fyne/v2"
-    "fyne.io/fyne/v2/test"
-    "github.com/hamidzr/gmenu/model"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	"github.com/hamidzr/gmenu/model"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGRenderMatchCounterLabel tests the match counter label generation
 func TestGRenderMatchCounterLabel(t *testing.T) {
-    // Force tests to use fyne test app to reduce theme/animation races
-    oldNewApp := newAppFunc
-    newAppFunc = func() fyne.App { return test.NewApp() }
-    defer func() { newAppFunc = oldNewApp }()
+	// Force tests to use fyne test app to reduce theme/animation races
+	oldNewApp := newAppFunc
+	newAppFunc = func() fyne.App { return test.NewApp() }
+	defer func() { newAppFunc = oldNewApp }()
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",

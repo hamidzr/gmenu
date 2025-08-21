@@ -254,11 +254,11 @@ func TestInvalidSearchMethod(t *testing.T) {
 	require.NoError(t, gmenu2.SetupMenu([]string{"test"}, ""))
 
 	// Search should handle edge cases gracefully
-    results := gmenu2.Search("") // empty query
-    assert.NotNil(t, results)
+	results := gmenu2.Search("") // empty query
+	assert.NotNil(t, results)
 
-    results = gmenu2.Search("nonexistent") // no matches
-    assert.NotNil(t, results)
+	results = gmenu2.Search("nonexistent") // no matches
+	assert.NotNil(t, results)
 	assert.Empty(t, results)
 }
 
@@ -390,7 +390,7 @@ func TestFileOperationErrors(t *testing.T) {
 	pidFile, err := createPidFile("test_pid")
 	if err == nil {
 		defer func() {
-			_ = removePidFile("test_pid")
+			_ = RemovePidFile("test_pid")
 		}()
 		assert.NotEmpty(t, pidFile)
 
@@ -401,7 +401,7 @@ func TestFileOperationErrors(t *testing.T) {
 	}
 
 	// Test removePidFile with non-existent file
-	err = removePidFile("nonexistent_pid")
+	err = RemovePidFile("nonexistent_pid")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "does not exist")
 }

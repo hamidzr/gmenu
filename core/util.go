@@ -11,7 +11,7 @@ const (
 	defaultPidFileName = "gmenu"
 )
 
-func removePidFile(name string) error {
+func RemovePidFile(name string) error {
 	if name == "" {
 		name = defaultPidFileName
 	}

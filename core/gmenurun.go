@@ -44,9 +44,7 @@ func (g *GMenu) Quit() {
 	}
 
 	// Ensure UI is hidden before quitting (in case it wasn't already)
-	if g.isShown {
-		g.HideUI()
-	}
+	g.HideUI()
 
 	// Safely quit the Fyne app with error recovery
 	func() {
@@ -58,7 +56,7 @@ func (g *GMenu) Quit() {
 		g.app.Quit()
 	}()
 
-	_ = removePidFile(g.menuID)
+	_ = RemovePidFile(g.menuID)
 }
 
 // Reset resets the gmenu state without exiting.
@@ -67,56 +65,56 @@ func (g *GMenu) Reset(resetInput bool) {
 	logrus.Info("resetting gmenu state")
 
 	// Reset the fuse for a new selection cycle - create new fuse first
-    g.selectionMutex.Lock()
-    g.resetSelectionFuse()
-    g.selectionMutex.Unlock()
+	g.selectionMutex.Lock()
+	g.resetSelectionFuse()
+	g.selectionMutex.Unlock()
 
 	// Reset menu state
-    // Snapshot current menu pointer once for this reset
-    g.menuMutex.RLock()
-    m := g.menu
-    g.menuMutex.RUnlock()
+	// Snapshot current menu pointer once for this reset
+	g.menuMutex.RLock()
+	m := g.menu
+	g.menuMutex.RUnlock()
 
-    if resetInput && m != nil {
-        // reset query through safe paths to avoid data races
-        m.queryMutex.Lock()
-        m.query = ""
-        m.queryMutex.Unlock()
-        g.safeUIUpdate(func() {
-            if g.ui != nil && g.ui.SearchEntry != nil {
-                g.ui.SearchEntry.SetText("")
-            }
-        })
-        m.Search("")
-    }
+	if resetInput && m != nil {
+		// reset query through safe paths to avoid data races
+		m.queryMutex.Lock()
+		m.query = ""
+		m.queryMutex.Unlock()
+		g.safeUIUpdate(func() {
+			if g.ui != nil && g.ui.SearchEntry != nil {
+				g.ui.SearchEntry.SetText("")
+			}
+		})
+		m.Search("")
+	}
 
 	// Reset UI state
-    g.safeUIUpdate(func() {
-        if g.ui != nil && g.ui.SearchEntry != nil {
-            g.ui.SearchEntry.Enable()
-        }
-    })
-    // Reset exit code under selection mutex to avoid races with markSelectionMade()
-    g.selectionMutex.Lock()
-    g.exitCode = model.Unset
-    g.selectionMutex.Unlock()
-    if m != nil {
-        m.itemsMutex.Lock()
-        m.Selected = 0
-        m.itemsMutex.Unlock()
-    }
+	g.safeUIUpdate(func() {
+		if g.ui != nil && g.ui.SearchEntry != nil {
+			g.ui.SearchEntry.Enable()
+		}
+	})
+	// Reset exit code under selection mutex to avoid races with markSelectionMade()
+	g.selectionMutex.Lock()
+	g.exitCode = model.Unset
+	g.selectionMutex.Unlock()
+	if m != nil {
+		m.itemsMutex.Lock()
+		m.Selected = 0
+		m.itemsMutex.Unlock()
+	}
 
 	// Safely render UI components with mutex protection
-    g.uiMutex.Lock()
-    if g.ui != nil && g.ui.ItemsCanvas != nil && m != nil {
-        m.itemsMutex.Lock()
-        filtered := append([]model.MenuItem(nil), m.Filtered...)
-        selected := m.Selected
-        m.itemsMutex.Unlock()
-        g.ui.ItemsCanvas.Render(filtered, selected, g.config.NoNumericSelection, g.handleItemClick)
-        g.ui.MenuLabel.SetText(g.matchCounterLabel())
-    }
-    g.uiMutex.Unlock()
+	g.uiMutex.Lock()
+	if g.ui != nil && g.ui.ItemsCanvas != nil && m != nil {
+		m.itemsMutex.Lock()
+		filtered := append([]model.MenuItem(nil), m.Filtered...)
+		selected := m.Selected
+		m.itemsMutex.Unlock()
+		g.ui.ItemsCanvas.Render(filtered, selected, g.config.NoNumericSelection, g.handleItemClick)
+		g.ui.MenuLabel.SetText(g.matchCounterLabel())
+	}
+	g.uiMutex.Unlock()
 
 	logrus.Info("done resetting gmenu state")
 }
@@ -133,7 +131,7 @@ func (g *GMenu) RunAppForever() error {
 		return fmt.Errorf("failed to create PID file: %w", err)
 	}
 	defer func() {
-		if err := removePidFile(g.menuID); err != nil {
+		if err := RemovePidFile(g.menuID); err != nil {
 			logrus.Errorf("failed to remove PID file: %v", err)
 		}
 	}()
@@ -144,7 +142,7 @@ func (g *GMenu) RunAppForever() error {
 
 // HideUI hides the UI.
 func (g *GMenu) HideUI() {
-    if !g.IsShown() {
+	if !g.IsShown() {
 		return
 	}
 
@@ -153,17 +151,17 @@ func (g *GMenu) HideUI() {
 	g.isHiding = true
 	g.visibilityMutex.Unlock()
 
-    g.safeUIUpdate(func() {
-        if g.ui != nil && g.ui.MainWindow != nil {
-            g.ui.MainWindow.Hide()
-        }
-    })
+	g.safeUIUpdate(func() {
+		if g.ui != nil && g.ui.MainWindow != nil {
+			g.ui.MainWindow.Hide()
+		}
+	})
 
 	// Reset flag and set visibility state
-    g.visibilityMutex.Lock()
-    g.isHiding = false
-    g.isShown = false
-    g.visibilityMutex.Unlock()
+	g.visibilityMutex.Lock()
+	g.isHiding = false
+	g.isShown = false
+	g.visibilityMutex.Unlock()
 }
 
 // HideAndReset atomically hides the UI and resets state for reuse

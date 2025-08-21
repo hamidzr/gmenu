@@ -1,15 +1,15 @@
 package core
 
 import (
-    "context"
-    "testing"
-    "time"
+	"context"
+	"testing"
+	"time"
 
-    "fyne.io/fyne/v2"
-    "fyne.io/fyne/v2/test"
-    "github.com/hamidzr/gmenu/model"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	"github.com/hamidzr/gmenu/model"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestFullApplicationWorkflow tests the complete user workflow
@@ -62,10 +62,10 @@ func TestFullApplicationWorkflow(t *testing.T) {
 	test.Type(gmenu.ui.SearchEntry, "app")
 	time.Sleep(10 * time.Millisecond) // Allow search to process
 
-    // Should filter to items containing "app" (read under lock)
-    gmenu.menu.itemsMutex.Lock()
-    filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
-    gmenu.menu.itemsMutex.Unlock()
+	// Should filter to items containing "app" (read under lock)
+	gmenu.menu.itemsMutex.Lock()
+	filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
+	gmenu.menu.itemsMutex.Unlock()
 	assert.GreaterOrEqual(t, len(filtered), 1) // At least "Apple"
 
 	// Step 4: Navigate with keyboard
@@ -77,9 +77,9 @@ func TestFullApplicationWorkflow(t *testing.T) {
 	// Step 5: Clear search to see all items
 	gmenu.ui.SearchEntry.SetText("")
 	time.Sleep(10 * time.Millisecond)
-    gmenu.menu.itemsMutex.Lock()
-    assert.Len(t, gmenu.menu.Filtered, len(testItems))
-    gmenu.menu.itemsMutex.Unlock()
+	gmenu.menu.itemsMutex.Lock()
+	assert.Len(t, gmenu.menu.Filtered, len(testItems))
+	gmenu.menu.itemsMutex.Unlock()
 
 	// Step 6: Navigate to specific item using numeric key
 	key3Event := &fyne.KeyEvent{Name: fyne.Key3}
@@ -132,21 +132,21 @@ func TestAutoAcceptWorkflow(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Should have exactly one match
-    gmenu.menu.itemsMutex.Lock()
-    filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
-    gmenu.menu.itemsMutex.Unlock()
+	gmenu.menu.itemsMutex.Lock()
+	filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
+	gmenu.menu.itemsMutex.Unlock()
 	assert.Len(t, filtered, 1)
 	assert.Equal(t, "unique_item", filtered[0].Title)
 }
 
 // TestInitialQueryWorkflow tests workflow with pre-filled search
 func TestInitialQueryWorkflow(t *testing.T) {
-    // Initialize test app to avoid Fyne theme issues and force factory override
-    testApp := test.NewApp()
-    defer testApp.Quit()
-    oldNewApp := newAppFunc
-    newAppFunc = func() fyne.App { return testApp }
-    defer func() { newAppFunc = oldNewApp }()
+	// Initialize test app to avoid Fyne theme issues and force factory override
+	testApp := test.NewApp()
+	defer testApp.Quit()
+	oldNewApp := newAppFunc
+	newAppFunc = func() fyne.App { return testApp }
+	defer func() { newAppFunc = oldNewApp }()
 
 	config := &model.Config{
 		Title:                 "Initial Query Test",
@@ -184,9 +184,9 @@ func TestInitialQueryWorkflow(t *testing.T) {
 
 	// Should be filtered to items containing "fruit"
 	time.Sleep(10 * time.Millisecond)
-    gmenu.menu.itemsMutex.Lock()
-    filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
-    gmenu.menu.itemsMutex.Unlock()
+	gmenu.menu.itemsMutex.Lock()
+	filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
+	gmenu.menu.itemsMutex.Unlock()
 	assert.GreaterOrEqual(t, len(filtered), 3) // Should match 3 fruit items
 }
 
@@ -232,9 +232,9 @@ func TestErrorHandling(t *testing.T) {
 	test.Type(gmenu.ui.SearchEntry, "xyz_no_match")
 	time.Sleep(10 * time.Millisecond)
 
-    gmenu.menu.itemsMutex.Lock()
-    filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
-    gmenu.menu.itemsMutex.Unlock()
+	gmenu.menu.itemsMutex.Lock()
+	filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
+	gmenu.menu.itemsMutex.Unlock()
 	assert.Len(t, filtered, 0) // No matches
 }
 
@@ -375,20 +375,20 @@ func TestContextCancellation(t *testing.T) {
 	test.Type(gmenu.ui.SearchEntry, "item")
 	time.Sleep(10 * time.Millisecond)
 
-    gmenu.menu.itemsMutex.Lock()
-    filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
-    gmenu.menu.itemsMutex.Unlock()
+	gmenu.menu.itemsMutex.Lock()
+	filtered := append([]model.MenuItem(nil), gmenu.menu.Filtered...)
+	gmenu.menu.itemsMutex.Unlock()
 	assert.GreaterOrEqual(t, len(filtered), 1)
 }
 
 // TestMemoryManagement tests that resources are properly cleaned up
 func TestMemoryManagement(t *testing.T) {
-    // Initialize test app to avoid Fyne theme issues and force factory override
-    testApp := test.NewApp()
-    defer testApp.Quit()
-    oldNewApp := newAppFunc
-    newAppFunc = func() fyne.App { return testApp }
-    defer func() { newAppFunc = oldNewApp }()
+	// Initialize test app to avoid Fyne theme issues and force factory override
+	testApp := test.NewApp()
+	defer testApp.Quit()
+	oldNewApp := newAppFunc
+	newAppFunc = func() fyne.App { return testApp }
+	defer func() { newAppFunc = oldNewApp }()
 
 	config := &model.Config{
 		Title:                 "Memory Test",

@@ -140,7 +140,7 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 	}
 
 	itemContainer.Layout = layout.NewStackLayout()
-	
+
 	// Make the item clickable if callback is provided
 	if onItemClick != nil {
 		clickableButton := widget.NewButton("", func() {
@@ -150,7 +150,7 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 		// Make button transparent and overlay it on the item
 		return container.NewStack(itemContainer, clickableButton)
 	}
-	
+
 	return itemContainer
 }
 
