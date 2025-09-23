@@ -124,6 +124,7 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 		background.StrokeColor = color.NRGBA{R: 128, G: 128, B: 128, A: 30}
 		background.StrokeWidth = 0.5
 	}
+	baseFill := background.FillColor
 
 	// add light padding for comfortable spacing
 	paddedContent := container.NewWithoutLayout(textContent)
@@ -143,12 +144,21 @@ func RenderItem(item model.MenuItem, idx int, selected bool, noNumericSelection 
 
 	// Make the item clickable if callback is provided
 	if onItemClick != nil {
-		clickableButton := widget.NewButton("", func() {
+		hoverColor := color.NRGBA{R: 0x3d, G: 0x9f, B: 0xff, A: 0x40}
+		tapArea := newHoverableArea(func() {
 			onItemClick(idx)
+		}, func(hovered bool) {
+			if selected {
+				return
+			}
+			if hovered {
+				background.FillColor = hoverColor
+			} else {
+				background.FillColor = baseFill
+			}
+			background.Refresh()
 		})
-		clickableButton.Importance = widget.LowImportance
-		// Make button transparent and overlay it on the item
-		return container.NewStack(itemContainer, clickableButton)
+		return container.NewStack(itemContainer, tapArea)
 	}
 
 	return itemContainer

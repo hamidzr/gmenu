@@ -10,12 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestGRenderMatchCounterLabel tests the match counter label generation
-func TestGRenderMatchCounterLabel(t *testing.T) {
-	// Force tests to use fyne test app to reduce theme/animation races
+func useFyneTestApp(t *testing.T) {
+	t.Helper()
 	oldNewApp := newAppFunc
 	newAppFunc = func() fyne.App { return test.NewApp() }
-	defer func() { newAppFunc = oldNewApp }()
+	t.Cleanup(func() { newAppFunc = oldNewApp })
+}
+
+// TestGRenderMatchCounterLabel tests the match counter label generation
+func TestGRenderMatchCounterLabel(t *testing.T) {
+	useFyneTestApp(t)
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
@@ -85,6 +89,7 @@ func TestGRenderMatchCounterLabel(t *testing.T) {
 
 // TestGRenderLabelWithLargeNumbers tests label generation with large item counts
 func TestGRenderLabelWithLargeNumbers(t *testing.T) {
+	useFyneTestApp(t)
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
@@ -121,6 +126,7 @@ func TestGRenderLabelWithLargeNumbers(t *testing.T) {
 
 // TestGRenderEmptyAndNilStates tests rendering with empty and nil states
 func TestGRenderEmptyAndNilStates(t *testing.T) {
+	useFyneTestApp(t)
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
@@ -155,6 +161,7 @@ func TestGRenderEmptyAndNilStates(t *testing.T) {
 
 // TestGRenderAfterReset tests render state after reset operations
 func TestGRenderAfterReset(t *testing.T) {
+	useFyneTestApp(t)
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
@@ -189,6 +196,7 @@ func TestGRenderAfterReset(t *testing.T) {
 
 // TestGRenderConcurrentAccess tests concurrent access to render functions
 func TestGRenderConcurrentAccess(t *testing.T) {
+	useFyneTestApp(t)
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
@@ -231,6 +239,7 @@ func TestGRenderConcurrentAccess(t *testing.T) {
 
 // TestGRenderWithSpecialCharacters tests rendering with special characters
 func TestGRenderWithSpecialCharacters(t *testing.T) {
+	useFyneTestApp(t)
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
@@ -278,6 +287,7 @@ func TestGRenderWithSpecialCharacters(t *testing.T) {
 
 // TestGRenderStateConsistency tests that render state remains consistent
 func TestGRenderStateConsistency(t *testing.T) {
+	useFyneTestApp(t)
 	config := &model.Config{
 		MenuID:    "test",
 		Title:     "Test Menu",
