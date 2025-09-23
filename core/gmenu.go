@@ -386,7 +386,7 @@ func (g *GMenu) Search(query string) []model.MenuItem {
 	m.Search(query)
 	// snapshot results under items lock for thread-safety
 	m.itemsMutex.Lock()
-	filtered := append([]model.MenuItem(nil), m.Filtered...)
+	filtered := append([]model.MenuItem{}, m.Filtered...)
 	m.itemsMutex.Unlock()
 	return filtered
 }
