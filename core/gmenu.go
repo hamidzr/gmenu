@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -176,6 +177,21 @@ func (g *GMenu) clearCache() error {
 	})
 }
 
+// ensureSelectionExitCode updates the exit code for a completed selection.
+// It preserves explicit cancellations but upgrades pending/optimistic states to success.
+func (g *GMenu) ensureSelectionExitCode(code model.ExitCode) {
+	g.selectionMutex.Lock()
+	switch g.exitCode {
+	case model.Unset:
+		g.exitCode = code
+	case model.UserCanceled:
+		if code == model.NoError {
+			g.exitCode = code
+		}
+	}
+	g.selectionMutex.Unlock()
+}
+
 func (g *GMenu) cacheState(value string) error {
 	return g.withCache(func(cache *store.Cache) error {
 		cache.SetLastInput(g.menu.query)
@@ -225,16 +241,31 @@ func (g *GMenu) initUI() error {
 		isHiding := g.isHiding
 		g.visibilityMutex.RUnlock()
 
-		if !isHiding {
-			// user clicked away or lost focus - cancel the menu and hide immediately
-			// IMPORTANT: Set exit code BEFORE marking selection made to avoid race condition
+		if isHiding {
+			return
+		}
+
+		go func() {
+			// Give legitimate selections a chance to finish before treating focus loss as cancel
+			const focusLossGrace = 40 * time.Millisecond
+			timer := time.NewTimer(focusLossGrace)
+			defer timer.Stop()
+			<-timer.C
+
+			if g.selectionFuse.IsBroken() {
+				return
+			}
+
+			g.selectionMutex.Lock()
 			if g.exitCode == model.Unset {
 				g.exitCode = model.UserCanceled
 			}
+			g.selectionMutex.Unlock()
+
 			g.markSelectionMade()
 			// Complete selection with shared logic
 			g.completeSelection()
-		}
+		}()
 	}
 	itemsCanvas := render.NewItemsCanvas()
 	menuLabel := widget.NewLabel("menulabel")
@@ -289,6 +320,7 @@ func (g *GMenu) handleItemClick(index int) {
 	}
 	g.menu.itemsMutex.Unlock()
 
+	g.ensureSelectionExitCode(model.NoError)
 	// Complete the selection like keyboard Enter
 	g.markSelectionMade()
 	g.completeSelection()

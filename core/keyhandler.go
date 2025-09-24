@@ -167,6 +167,7 @@ func (g *GMenu) setKeyHandlers() {
 			if !g.config.AcceptCustomSelection && len(g.menu.Filtered) == 0 {
 				return
 			}
+			g.ensureSelectionExitCode(model.NoError)
 			g.markSelectionMade()
 			// Complete selection with shared logic
 			g.completeSelection()
@@ -182,6 +183,7 @@ func (g *GMenu) setKeyHandlers() {
 					// only select if the index is within bounds
 					if selectedIndex < len(g.menu.Filtered) {
 						g.menu.Selected = selectedIndex
+						g.ensureSelectionExitCode(model.NoError)
 						g.markSelectionMade()
 						// Complete selection with shared logic
 						g.completeSelection()

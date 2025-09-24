@@ -58,6 +58,7 @@ func (g *GMenu) AttemptAutoSelect() {
 		select {
 		case <-ticker.C:
 			if g.shouldAutoSelect() {
+				g.ensureSelectionExitCode(model.NoError)
 				g.markSelectionMade()
 				return
 			}
