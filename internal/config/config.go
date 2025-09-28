@@ -54,26 +54,14 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 		configFileFound = true
 	}
 
-	// if config file was found, validate it strictly for unexpected keys
+	// if config file was found, validate it strictly for unexpected keys and naming conflicts
 	if configFileFound {
-		// create a separate viper instance just for config file validation
-		configValidator := viper.New()
-		configValidator.SetConfigName("config")
-		configValidator.SetConfigType("yaml")
-		for _, path := range config.GetConfigPaths(menuID) {
-			configValidator.AddConfigPath(path)
-		}
-
-		if err := configValidator.ReadInConfig(); err != nil {
-			return nil, fmt.Errorf("error re-reading config file for validation: %w", err)
-		}
-
-		// validate config file contents strictly - this will fail on unexpected keys
-		var configFileValidation model.Config
-		if err := configValidator.UnmarshalExact(&configFileValidation); err != nil {
-			return nil, fmt.Errorf("config file contains invalid keys: %w", err)
+		if err := validateConfigFileKeys(v.ConfigFileUsed()); err != nil {
+			return nil, err
 		}
 	}
+
+	registerConfigKeyAliases(v)
 
 	// bind CLI flags to viper (highest priority)
 	if err := v.BindPFlags(cmd.Flags()); err != nil {

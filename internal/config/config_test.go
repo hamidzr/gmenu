@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hamidzr/gmenu/model"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
@@ -227,6 +228,63 @@ func TestInitConfigFile(t *testing.T) {
 
 	// Paths should be different for different menu IDs
 	assert.NotEqual(t, configPath, menuConfigPath)
+}
+
+func TestInitConfigAcceptsCamelCase(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+
+	configDir := filepath.Join(tmpDir, ".config", "gmenu")
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+
+	configContent := `
+menuId: "camel-menu"
+initialQuery: "find me"
+autoAccept: true
+minHeight: 480
+`
+
+	configPath := filepath.Join(configDir, "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o644))
+
+	cmd := &cobra.Command{Use: "gmenu"}
+	BindFlags(cmd)
+
+	cfg, err := InitConfig(cmd)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, "camel-menu", cfg.MenuID)
+	assert.Equal(t, "find me", cfg.InitialQuery)
+	assert.True(t, cfg.AutoAccept)
+	assert.Equal(t, float32(480), cfg.MinHeight)
+}
+
+func TestInitConfigRejectsMixedNamingStyles(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+
+	configDir := filepath.Join(tmpDir, ".config", "gmenu")
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+
+	configContent := `
+initial_query: "snake"
+initialQuery: "camel"
+`
+
+	configPath := filepath.Join(configDir, "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o644))
+
+	cmd := &cobra.Command{Use: "gmenu"}
+	BindFlags(cmd)
+
+	cfg, err := InitConfig(cmd)
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+	assert.Contains(t, err.Error(), "initial_query")
+	assert.Contains(t, err.Error(), "initialQuery")
 }
 
 // TestConfigValidation tests configuration validation
