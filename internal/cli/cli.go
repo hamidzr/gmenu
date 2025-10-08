@@ -89,7 +89,9 @@ func run(cfg *model.Config) error {
 	if err := gmenu.SetupMenu([]string{}, cfg.InitialQuery); err != nil {
 		return fmt.Errorf("failed to setup menu: %w", err)
 	}
-	gmenu.ShowUI()
+	if err := gmenu.ShowUI(); err != nil {
+		return fmt.Errorf("failed to show UI: %w", err)
+	}
 	go func() {
 		items := readItems()
 		if len(items) == 0 {

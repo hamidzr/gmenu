@@ -399,11 +399,13 @@ func (g *GMenu) setMenuBasedUI() error {
 }
 
 // ToggleVisibility toggles the visibility of the gmenu window.
-func (g *GMenu) ToggleVisibility() {
+// ToggleVisibility toggles the visibility of the gmenu window.
+func (g *GMenu) ToggleVisibility() error {
 	if g.IsShown() {
 		g.HideUI()
+		return nil
 	} else {
-		g.ShowUI()
+		return g.ShowUI()
 	}
 }
 
@@ -438,25 +440,49 @@ func (g *GMenu) setShown(shown bool) {
 }
 
 // ShowUI and wait for user input.
-func (g *GMenu) ShowUI() {
+// ShowUI and wait for user input.
+func (g *GMenu) ShowUI() error {
+	// Validate UI components before attempting to show
+	if g.ui == nil || g.ui.MainWindow == nil || g.ui.SearchEntry == nil {
+		return fmt.Errorf("UI components not properly initialized")
+	}
+
+	// Track if all operations succeed
+	var uiError error
 
 	// Show window and set focus
 	g.safeUIUpdate(func() {
-		if g.ui == nil || g.ui.MainWindow == nil || g.ui.SearchEntry == nil {
-			return
-		}
+		defer func() {
+			if r := recover(); r != nil {
+				uiError = fmt.Errorf("panic during UI show operation: %v", r)
+			}
+		}()
+		
 		g.ui.MainWindow.Show()
 		g.ui.SearchEntry.Enable()
 		g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
 	})
 
+	if uiError != nil {
+		return uiError
+	}
+
 	// Set focus to the search entry so user can type immediately
 	g.safeUIUpdate(func() {
-		if g.ui != nil && g.ui.MainWindow != nil && g.ui.SearchEntry != nil {
-			g.ui.MainWindow.Canvas().Focus(g.ui.SearchEntry)
-		}
+		defer func() {
+			if r := recover(); r != nil {
+				uiError = fmt.Errorf("panic during focus operation: %v", r)
+			}
+		}()
+		
+		g.ui.MainWindow.Canvas().Focus(g.ui.SearchEntry)
 	})
 
-	// Set visibility state
+	if uiError != nil {
+		return uiError
+	}
+
+	// Only set visibility state if all operations succeeded
 	g.setShown(true)
+	return nil
 }
