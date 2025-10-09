@@ -132,7 +132,7 @@ func runHideShowCycleTest() {
 
 		fmt.Println("All cycles completed! Stopping app in 2 seconds...")
 		time.Sleep(2 * time.Second)
-		gmenu.Quit()
+		gmenu.QuitWithCode(model.NoError)
 	}()
 
 	// Run the app on main goroutine (required by Fyne)
@@ -211,8 +211,6 @@ func runInteractiveTest() {
 		fmt.Println("⏰ 15 seconds elapsed, closing menu...")
 		if gmenu.GetExitCode() == model.Unset {
 			gmenu.QuitWithCode(model.UserCanceled)
-		} else {
-			gmenu.Quit()
 		}
 	}()
 
@@ -229,8 +227,6 @@ func runInteractiveTest() {
 		fmt.Println("Selection made, closing menu...")
 		if gmenu.GetExitCode() == model.Unset {
 			gmenu.QuitWithCode(model.NoError)
-		} else {
-			gmenu.Quit()
 		}
 	}()
 
@@ -316,7 +312,7 @@ func runStressTest() {
 
 		fmt.Println("Stress test completed! Stopping app...")
 		time.Sleep(1 * time.Second)
-		gmenu.Quit()
+		gmenu.QuitWithCode(model.NoError)
 	}()
 
 	// Run the app on main goroutine
