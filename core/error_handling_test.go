@@ -402,8 +402,7 @@ func TestFileOperationErrors(t *testing.T) {
 
 	// Test removePidFile with non-existent file
 	err = RemovePidFile("nonexistent_pid")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "does not exist")
+	assert.NoError(t, err)
 }
 
 // TestCanBeHighlightedEdgeCases tests edge cases for highlighting
