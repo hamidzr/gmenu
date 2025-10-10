@@ -18,10 +18,15 @@ func RemovePidFile(name string) error {
 	dir := os.TempDir()
 	pidFile := fmt.Sprintf("%s/%s.pid", dir, name)
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
-		return fmt.Errorf("pid file does not exist")
+		logrus.Debug("Pid file already absent, skipping remove:", pidFile)
+		return nil
 	}
 	err := os.Remove(pidFile)
 	if err != nil {
+		if os.IsNotExist(err) {
+			logrus.Debug("Pid file disappeared before remove:", pidFile)
+			return nil
+		}
 		logrus.Error("Failed to remove pid file:", err)
 		return err
 	}

@@ -457,7 +457,7 @@ func (g *GMenu) ShowUI() error {
 				uiError = fmt.Errorf("panic during UI show operation: %v", r)
 			}
 		}()
-		
+
 		g.ui.MainWindow.Show()
 		g.ui.SearchEntry.Enable()
 		g.ui.SearchEntry.SetText(g.ui.SearchEntry.Text)
@@ -474,7 +474,7 @@ func (g *GMenu) ShowUI() error {
 				uiError = fmt.Errorf("panic during focus operation: %v", r)
 			}
 		}()
-		
+
 		g.ui.MainWindow.Canvas().Focus(g.ui.SearchEntry)
 	})
 
