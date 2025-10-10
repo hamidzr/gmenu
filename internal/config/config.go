@@ -75,6 +75,7 @@ func InitConfig(cmd *cobra.Command) (*model.Config, error) {
 		"search_method",
 		"preserve_order",
 		"auto_accept",
+		"terminal_mode",
 		"no_numeric_selection",
 		"min_width",
 		"min_height",

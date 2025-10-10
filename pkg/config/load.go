@@ -52,7 +52,6 @@ func GetConfigPaths(menuID string) []string {
 	if configDir, err := os.UserConfigDir(); err == nil {
 		paths = append(paths, filepath.Join(configDir, "gmenu"))
 	}
-	paths = append(paths, ".")
 
 	return paths
 }
