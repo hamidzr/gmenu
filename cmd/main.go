@@ -9,15 +9,13 @@ import (
 )
 
 func main() {
-	// Suppress system debug output
-	_ = os.Setenv("OS_ACTIVITY_MODE", "debug")
-	_ = os.Stderr.Close()
-	os.Stderr, _ = os.Open(os.DevNull)
+	// Suppress noisy macOS subsystem logs without discarding our own output.
+	_ = os.Setenv("OS_ACTIVITY_MODE", "disable")
 
-	cmd := cli.InitCLI()
 	logger.SetupLogger()
+	cmd := cli.InitCLI()
 	if err := cmd.Execute(); err != nil {
-		logrus.Error(err)
+		logrus.WithError(err).Error("gmenu exited with error")
 		os.Exit(1)
 	}
 }
