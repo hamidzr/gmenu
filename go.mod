@@ -3,7 +3,7 @@ module github.com/hamidzr/gmenu
 go 1.24.0
 
 require (
-	fyne.io/fyne/v2 v2.6.3
+	fyne.io/fyne/v2 v2.5.5
 	github.com/frostbyte73/core v0.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/sahilm/fuzzy v0.1.1
@@ -26,7 +26,6 @@ require (
 	github.com/fyne-io/gl-js v0.2.0 // indirect
 	github.com/fyne-io/glfw-js v0.3.0 // indirect
 	github.com/fyne-io/image v0.1.1 // indirect
-	github.com/fyne-io/oksvg v0.2.0 // indirect
 	github.com/gammazero/deque v1.1.0 // indirect
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728 // indirect
@@ -34,8 +33,6 @@ require (
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
-	github.com/hack-pad/go-indexeddb v0.3.2 // indirect
-	github.com/hack-pad/safejs v0.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
@@ -55,6 +52,7 @@ require (
 	github.com/yuin/goldmark v1.7.13 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/image v0.32.0 // indirect
+	golang.org/x/mobile v0.0.0-20251009145931-8baca8bf4eeb // indirect
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
