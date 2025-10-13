@@ -64,6 +64,18 @@ type GMenu struct {
 	// isHiding tracks when UI is being hidden programmatically to avoid focus loss cancellation
 	isHiding        bool
 	visibilityMutex sync.RWMutex
+	// manualVisibility skips automatic Show/Hide logic when true
+	manualVisibility bool
+}
+
+// Option configures behavior for GMenu instances during construction.
+type Option func(*GMenu)
+
+// WithManualVisibility enables manual control over window visibility for embedders.
+func WithManualVisibility() Option {
+	return func(g *GMenu) {
+		g.manualVisibility = true
+	}
 }
 
 // newAppFunc creates a new fyne App. Overridden in tests to use fyne test app.
@@ -77,8 +89,9 @@ var newAppFunc = func() fyne.App { return app.New() }
 func NewGMenu(
 	searchMethod SearchMethod,
 	conf *model.Config,
+	opts ...Option,
 ) (*GMenu, error) {
-	return NewGMenuWithApp(nil, searchMethod, conf)
+	return NewGMenuWithApp(nil, searchMethod, conf, opts...)
 }
 
 // NewGMenuWithApp creates a new GMenu instance with a specific Fyne app (useful for testing).
@@ -86,6 +99,7 @@ func NewGMenuWithApp(
 	fyneApp fyne.App,
 	searchMethod SearchMethod,
 	conf *model.Config,
+	opts ...Option,
 ) (*GMenu, error) {
 	store, err := store.NewFileStore[store.Cache, store.Config]([]string{"gmenu", conf.MenuID}, "yaml")
 	if err != nil {
@@ -111,6 +125,10 @@ func NewGMenuWithApp(
 		// selectionFuse is initialized as zero value (ready to be broken)
 		isShown: false, // initially not shown
 	}
+	for _, opt := range opts {
+		opt(g)
+	}
+
 	if err := g.initUI(); err != nil {
 		return nil, fmt.Errorf("failed to initialize UI: %w", err)
 	}
@@ -442,6 +460,11 @@ func (g *GMenu) setShown(shown bool) {
 // ShowUI and wait for user input.
 // ShowUI and wait for user input.
 func (g *GMenu) ShowUI() error {
+	// if g.manualVisibility {
+	// 	logrus.Debug("manual visibility enabled; ignoring ShowUI() call")
+	// 	return nil
+	// }
+	//
 	// Validate UI components before attempting to show
 	if g.ui == nil || g.ui.MainWindow == nil || g.ui.SearchEntry == nil {
 		return fmt.Errorf("UI components not properly initialized")
@@ -482,7 +505,9 @@ func (g *GMenu) ShowUI() error {
 		return uiError
 	}
 
-	// Only set visibility state if all operations succeeded
-	g.setShown(true)
+	// Only set visibility state if all operations succeeded and manual visibility is disabled
+	if !g.manualVisibility {
+		g.setShown(true)
+	}
 	return nil
 }

@@ -282,3 +282,38 @@ func TestMultipleHideShowCycles(t *testing.T) {
 
 	gmenu.HideUI()
 }
+
+func TestManualVisibilitySkipsAutoShowHide(t *testing.T) {
+	testApp := test.NewApp()
+	defer testApp.Quit()
+
+	config := &model.Config{
+		Title:                 "Manual Visibility Menu",
+		Prompt:                "Search",
+		MenuID:                "manual-visibility",
+		SearchMethod:          "fuzzy",
+		PreserveOrder:         false,
+		InitialQuery:          "",
+		AutoAccept:            false,
+		TerminalMode:          false,
+		NoNumericSelection:    false,
+		MinWidth:              600,
+		MinHeight:             300,
+		MaxWidth:              1920,
+		MaxHeight:             1080,
+		AcceptCustomSelection: true,
+	}
+
+	searchMethod := SearchMethods["fuzzy"]
+	gmenu, err := NewGMenuWithApp(testApp, searchMethod, config, WithManualVisibility())
+	require.NoError(t, err)
+
+	require.NoError(t, gmenu.SetupMenu([]string{"alpha", "beta"}, ""))
+
+	require.NoError(t, gmenu.ShowUI())
+	assert.False(t, gmenu.IsShown(), "IsShown should remain false when manual visibility is enabled")
+
+	gmenu.setShown(true)
+	gmenu.HideUI()
+	assert.True(t, gmenu.IsShown(), "HideUI should be ignored when manual visibility is enabled")
+}

@@ -142,6 +142,11 @@ func (g *GMenu) RunAppForever() error {
 
 // HideUI hides the UI.
 func (g *GMenu) HideUI() {
+	if g.manualVisibility {
+		logrus.Debug("manual visibility enabled; ignoring HideUI() call")
+		return
+	}
+
 	if !g.IsShown() {
 		return
 	}
