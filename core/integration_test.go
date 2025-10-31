@@ -36,7 +36,7 @@ func TestFullApplicationWorkflow(t *testing.T) {
 	}
 
 	searchMethod := SearchMethods["fuzzy"]
-	gmenu, err := NewGMenu(searchMethod, config)
+	gmenu, err := NewGMenuWithApp(testApp, searchMethod, config)
 	require.NoError(t, err)
 
 	testItems := []string{
@@ -55,7 +55,7 @@ func TestFullApplicationWorkflow(t *testing.T) {
 	assert.Equal(t, 0, gmenu.menu.Selected)
 
 	// Step 2: Show UI
-	gmenu.ShowUI()
+	require.NoError(t, gmenu.ShowUI())
 	assert.True(t, gmenu.IsShown())
 
 	// Step 3: Test search functionality
@@ -409,8 +409,9 @@ func TestMemoryManagement(t *testing.T) {
 
 	// Create and destroy multiple instances to test for leaks
 	for i := 0; i < 10; i++ {
+		instanceApp := test.NewApp()
 		searchMethod := SearchMethods["fuzzy"]
-		gmenu, err := NewGMenu(searchMethod, config)
+		gmenu, err := NewGMenuWithApp(instanceApp, searchMethod, config)
 		require.NoError(t, err)
 
 		testItems := make([]string, 1000) // Large dataset
@@ -419,7 +420,7 @@ func TestMemoryManagement(t *testing.T) {
 		}
 
 		require.NoError(t, gmenu.SetupMenu(testItems, ""))
-		gmenu.ShowUI()
+		require.NoError(t, gmenu.ShowUI())
 
 		// Perform some operations
 		test.Type(gmenu.ui.SearchEntry, "large")
@@ -427,6 +428,7 @@ func TestMemoryManagement(t *testing.T) {
 
 		gmenu.HideUI()
 		gmenu.Reset(true)
+		instanceApp.Quit()
 
 		// The instance should be ready for garbage collection
 		gmenu = nil

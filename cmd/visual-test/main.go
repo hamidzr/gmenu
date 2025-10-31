@@ -85,7 +85,10 @@ func runHideShowCycleTest() {
 
 			// Show the menu
 			fmt.Println("Showing GUI...")
-			gmenu.ShowUI()
+			if err := gmenu.ShowUI(); err != nil {
+				fmt.Printf("Error showing GUI: %v\n", err)
+				return
+			}
 
 			// Give time to see the GUI
 			time.Sleep(3 * time.Second)
@@ -218,7 +221,9 @@ func runInteractiveTest() {
 	go func() {
 		time.Sleep(500 * time.Millisecond)
 		fmt.Println("Showing interactive menu...")
-		gmenu.ShowUI()
+		if err := gmenu.ShowUI(); err != nil {
+			fmt.Printf("Error showing interactive menu: %v\n", err)
+		}
 	}()
 
 	// Wait for user selection and handle app lifecycle like CLI does
@@ -277,7 +282,10 @@ func runStressTest() {
 		time.Sleep(1 * time.Second)
 		fmt.Println("Starting stress test...")
 
-		gmenu.ShowUI()
+		if err := gmenu.ShowUI(); err != nil {
+			fmt.Printf("Error showing stress test GUI: %v\n", err)
+			return
+		}
 
 		// Perform rapid operations
 		searches := []string{"A", "B", "C", "", "Apple", "Ban", "", "Cherry", "D", ""}
@@ -303,7 +311,10 @@ func runStressTest() {
 			if i%25 == 0 && i > 0 {
 				gmenu.HideUI()
 				time.Sleep(50 * time.Millisecond)
-				gmenu.ShowUI()
+				if err := gmenu.ShowUI(); err != nil {
+					fmt.Printf("Error re-showing stress test GUI: %v\n", err)
+					return
+				}
 			}
 
 			// Small delay but still stress the system

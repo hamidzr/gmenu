@@ -86,22 +86,33 @@ func run(cfg *model.Config) error {
 		return runTerminalMode(gmenu, cfg)
 	}
 
-	if err := gmenu.SetupMenu([]string{}, cfg.InitialQuery); err != nil {
+	items := readItems()
+	if len(items) == 0 {
+		logrus.Error("No items provided through standard input")
+		gmenu.QuitWithCode(1)
+		return nil
+	}
+
+	if err := gmenu.SetupMenu(items, cfg.InitialQuery); err != nil {
 		return fmt.Errorf("failed to setup menu: %w", err)
 	}
+
+	if cfg.AutoAccept {
+		if gmenu.AttemptAutoSelect() {
+			val, err := gmenu.SelectedValue()
+			if err != nil {
+				return fmt.Errorf("auto-select failed to retrieve value: %w", err)
+			}
+			fmt.Println(val.ComputedTitle())
+			return nil
+		}
+		logrus.Errorf("auto-accept conditions not met (matches: %d)", gmenu.MatchCount())
+		return fmt.Errorf("auto-accept conditions not met")
+	}
+
 	if err := gmenu.ShowUI(); err != nil {
 		return fmt.Errorf("failed to show UI: %w", err)
 	}
-	go func() {
-		items := readItems()
-		if len(items) == 0 {
-			logrus.Error("No items provided through standard input")
-			gmenu.QuitWithCode(1)
-			// signal selection is done by calling markSelectionMade instead of direct Done()
-			return
-		}
-		gmenu.SetItems(items, nil)
-	}()
 	go func() {
 		gmenu.WaitForSelection()
 		if gmenu.GetExitCode() == model.Unset {

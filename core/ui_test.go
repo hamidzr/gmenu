@@ -52,7 +52,7 @@ func TestSearchEntryStateAfterReset(t *testing.T) {
 	assert.False(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be enabled initially")
 
 	// Simulate ShowUI (which initializes the WaitGroup)
-	gmenu.ShowUI()
+	require.NoError(t, gmenu.ShowUI())
 
 	// Simulate user making a selection (this disables the SearchEntry)
 	gmenu.markSelectionMade()
@@ -167,7 +167,7 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled initially")
 
 	// Simulate first show
-	gmenu.ShowUI()
+	require.NoError(t, gmenu.ShowUI())
 	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after ShowUI")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled after ShowUI")
 
@@ -186,7 +186,7 @@ func TestSearchEntryInputAfterHideShowReset(t *testing.T) {
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled after Reset")
 
 	// Show UI again (second time)
-	gmenu.ShowUI()
+	require.NoError(t, gmenu.ShowUI())
 	assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false after second ShowUI")
 	assert.True(t, gmenu.ui.SearchEntry.Disabled() == false, "SearchEntry should be enabled after second ShowUI")
 
@@ -255,7 +255,7 @@ func TestMultipleHideShowCycles(t *testing.T) {
 		t.Logf("Testing cycle %d", i+1)
 
 		// Show UI
-		gmenu.ShowUI()
+		require.NoError(t, gmenu.ShowUI())
 		assert.False(t, gmenu.selectionFuse.IsBroken(), "hasSelection should be false at start of cycle %d", i+1)
 		assert.False(t, gmenu.ui.SearchEntry.Disabled(), "SearchEntry should be enabled at start of cycle %d", i+1)
 

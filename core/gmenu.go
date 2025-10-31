@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -66,6 +67,12 @@ type GMenu struct {
 	visibilityMutex sync.RWMutex
 	// manualVisibility skips automatic Show/Hide logic when true
 	manualVisibility bool
+	// appStarted indicates whether the Fyne driver has fully started.
+	appStarted atomic.Bool
+	// pendingQuit schedules Quit once the driver is ready.
+	pendingQuit atomic.Bool
+	// quitScheduled ensures we only queue one quit operation.
+	quitScheduled atomic.Bool
 }
 
 // Option configures behavior for GMenu instances during construction.
@@ -137,6 +144,24 @@ func NewGMenuWithApp(
 
 func (g *GMenu) GetExitCode() model.ExitCode {
 	return g.exitCode
+}
+
+// HasSingleMatch reports whether the current filtered list has exactly one selectable item.
+func (g *GMenu) HasSingleMatch() bool {
+	g.menu.itemsMutex.Lock()
+	defer g.menu.itemsMutex.Unlock()
+
+	if len(g.menu.Filtered) != 1 {
+		return false
+	}
+	return g.menu.Filtered[0].Title != model.LoadingItem.Title
+}
+
+// MatchCount returns the number of currently filtered items.
+func (g *GMenu) MatchCount() int {
+	g.menu.itemsMutex.Lock()
+	defer g.menu.itemsMutex.Unlock()
+	return len(g.menu.Filtered)
 }
 
 // initValue computes the initial value for the search query
@@ -229,6 +254,18 @@ func (g *GMenu) initUI() error {
 	}
 	if g.app == nil {
 		g.app = newAppFunc()
+	}
+	if lifecycle := g.app.Lifecycle(); lifecycle != nil {
+		lifecycle.SetOnStarted(func() {
+			g.appStarted.Store(true)
+			if g.pendingQuit.Load() {
+				g.tryScheduleQuit()
+			}
+		})
+		lifecycle.SetOnStopped(func() {
+			g.appStarted.Store(false)
+			g.quitScheduled.Store(false)
+		})
 	}
 	g.app.Settings().SetTheme(render.MainTheme{Theme: theme.DefaultTheme()})
 
@@ -366,6 +403,47 @@ func (g *GMenu) safeUIUpdate(updateFunc func()) {
 		}
 	}
 	updateFunc()
+}
+
+// requestQuit triggers the underlying Fyne app to quit once the driver is ready.
+func (g *GMenu) requestQuit() {
+	if g.app == nil {
+		return
+	}
+
+	g.pendingQuit.Store(true)
+	g.tryScheduleQuit()
+}
+
+func (g *GMenu) tryScheduleQuit() {
+	if !g.appStarted.Load() {
+		return
+	}
+	if !g.pendingQuit.Load() {
+		return
+	}
+	if !g.quitScheduled.CompareAndSwap(false, true) {
+		return
+	}
+
+	go func() {
+		const quitDelay = 150 * time.Millisecond
+		time.Sleep(quitDelay)
+
+		driver := g.app.Driver()
+		if driver != nil {
+			if runner, ok := driver.(interface{ RunOnMain(func()) }); ok {
+				runner.RunOnMain(func() {
+					g.app.Quit()
+				})
+				g.pendingQuit.Store(false)
+				return
+			}
+		}
+
+		g.app.Quit()
+		g.pendingQuit.Store(false)
+	}()
 }
 
 // withCache executes an operation on the cache and saves it back

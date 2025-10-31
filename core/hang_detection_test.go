@@ -59,7 +59,7 @@ func TestDetectGUIHang(t *testing.T) {
 	fmt.Println("2. Showing GUI with apple items...")
 
 	// Show the GUI - this should display the menu with items
-	gmenu.ShowUI()
+	require.NoError(t, gmenu.ShowUI())
 
 	fmt.Println("3. GUI should be visible now with apple items...")
 	fmt.Println("4. Starting responsiveness monitoring...")

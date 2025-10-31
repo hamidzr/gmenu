@@ -53,7 +53,7 @@ func (g *GMenu) Quit() {
 				logrus.Warn("Recovered from panic during app quit", "panic", r)
 			}
 		}()
-		g.app.Quit()
+		g.requestQuit()
 	}()
 
 	_ = RemovePidFile(g.menuID)
@@ -122,6 +122,10 @@ func (g *GMenu) Reset(resetInput bool) {
 func (g *GMenu) RunAppForever() error {
 	if g.isRunning {
 		panic("Run called multiple times")
+	}
+
+	if g.selectionFuse.IsBroken() && g.exitCode != model.Unset {
+		return nil
 	}
 	g.isRunning = true
 

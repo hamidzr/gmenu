@@ -36,7 +36,7 @@ func TestVisibilityStateManagement(t *testing.T) {
 
 	// Test show/hide cycles
 	for i := 0; i < 3; i++ {
-		gmenu.ShowUI()
+		require.NoError(t, gmenu.ShowUI())
 		assert.True(t, gmenu.IsShown())
 
 		gmenu.HideUI()
@@ -44,10 +44,10 @@ func TestVisibilityStateManagement(t *testing.T) {
 	}
 
 	// Test toggle functionality
-	gmenu.ToggleVisibility() // should show
+	require.NoError(t, gmenu.ToggleVisibility()) // should show
 	assert.True(t, gmenu.IsShown())
 
-	gmenu.ToggleVisibility() // should hide
+	require.NoError(t, gmenu.ToggleVisibility()) // should hide
 	assert.False(t, gmenu.IsShown())
 
 	// Test multiple hide calls (should be safe)
@@ -56,8 +56,8 @@ func TestVisibilityStateManagement(t *testing.T) {
 	assert.False(t, gmenu.IsShown())
 
 	// Test multiple show calls (should be safe)
-	gmenu.ShowUI()
-	gmenu.ShowUI()
+	require.NoError(t, gmenu.ShowUI())
+	require.NoError(t, gmenu.ShowUI())
 	assert.True(t, gmenu.IsShown())
 }
 
@@ -93,7 +93,9 @@ func TestConcurrentVisibilityAccess(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < iterations; j++ {
-				gmenu.ShowUI()
+				if err := gmenu.ShowUI(); err != nil {
+					t.Errorf("ShowUI failed: %v", err)
+				}
 			}
 		}()
 	}
@@ -386,7 +388,13 @@ func TestContextCancellationHandling(t *testing.T) {
 	// Operations should still be safe after cancellation
 	assert.NotPanics(t, func() {
 		gmenu.Search("test")
-		gmenu.ShowUI()
+	})
+
+	if err := gmenu.ShowUI(); err != nil {
+		t.Fatalf("ShowUI failed after context cancellation: %v", err)
+	}
+
+	assert.NotPanics(t, func() {
 		gmenu.HideUI()
 	})
 }
@@ -412,7 +420,7 @@ func TestResetStateConsistency(t *testing.T) {
 	require.NoError(t, gmenu.SetupMenu([]string{"item1", "item2", "item3"}, ""))
 
 	// Modify state
-	gmenu.ShowUI()
+	require.NoError(t, gmenu.ShowUI())
 	gmenu.Search("item1")
 	gmenu.markSelectionMade()
 

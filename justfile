@@ -18,6 +18,9 @@ get-deps:
 test:
 	gotestsum --format=short -- -timeout=30s ./...
 
+test-race:
+	gotestsum --format=short -- -race -timeout=30s ./...
+
 # Run visual GUI tests (shows actual GUI windows)
 test-visual:
 	./run_visual_tests.sh

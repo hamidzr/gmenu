@@ -69,7 +69,9 @@ func TestVisualGUIHideShowCycle(t *testing.T) {
 
 		// Show the menu
 		t.Log("Showing GUI...")
-		gmenu.ShowUI()
+		if err := gmenu.ShowUI(); err != nil {
+			t.Fatalf("ShowUI failed in cycle %d: %v", cycle+1, err)
+		}
 		assert.True(t, gmenu.IsShown())
 
 		// Give user time to see the GUI
@@ -185,7 +187,9 @@ func TestVisualGUILongRunning(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	t.Log("Showing GUI for 10 seconds...")
-	gmenu.ShowUI()
+	if err := gmenu.ShowUI(); err != nil {
+		t.Fatalf("ShowUI failed: %v", err)
+	}
 	assert.True(t, gmenu.IsShown())
 
 	// Perform various operations over 10 seconds
@@ -276,7 +280,9 @@ func TestVisualGUIStressTest(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	t.Log("Starting stress test - GUI will be visible for 5 seconds with rapid operations...")
-	gmenu.ShowUI()
+	if err := gmenu.ShowUI(); err != nil {
+		t.Fatalf("ShowUI failed during stress test: %v", err)
+	}
 	assert.True(t, gmenu.IsShown())
 
 	// Perform rapid operations
@@ -391,7 +397,9 @@ func TestVisualGUIInteractive(t *testing.T) {
 	t.Log("The window will stay open for 15 seconds so you can interact with it")
 	t.Log("You can type to search, use arrow keys to navigate, press ESC to close")
 
-	gmenu.ShowUI()
+	if err := gmenu.ShowUI(); err != nil {
+		t.Fatalf("ShowUI failed during interactive test: %v", err)
+	}
 	assert.True(t, gmenu.IsShown())
 
 	// Keep the GUI open for 15 seconds for manual interaction

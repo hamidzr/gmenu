@@ -126,7 +126,10 @@ func TestHideShowSelectionCycle(t *testing.T) {
 
 		for cycle := 0; cycle < 5; cycle++ {
 			// Step 1: Show menu
-			gmenu.ShowUI()
+			if err := gmenu.ShowUI(); err != nil {
+				assert.Failf(t, "ShowUI failed", "cycle %d: %v", cycle, err)
+				return
+			}
 			assert.True(t, gmenu.IsShown(), "Menu should be shown in cycle %d", cycle)
 
 			// Step 2: Update with new items
@@ -211,7 +214,10 @@ func TestConcurrentHideShowSelection(t *testing.T) {
 			go func(id int) {
 				defer wg.Done()
 				for j := 0; j < iterations; j++ {
-					gmenu.ShowUI()
+					if err := gmenu.ShowUI(); err != nil {
+						t.Errorf("ShowUI failed in goroutine %d iteration %d: %v", id, j, err)
+						return
+					}
 					time.Sleep(time.Microsecond)
 					gmenu.HideUI()
 					time.Sleep(time.Microsecond)
@@ -302,7 +308,10 @@ func TestLongRunningOperationsWithTimeout(t *testing.T) {
 			gmenu.Search("")
 
 			// UI operations
-			gmenu.ShowUI()
+			if err := gmenu.ShowUI(); err != nil {
+				t.Errorf("ShowUI failed during long running operations iteration %d: %v", i, err)
+				return
+			}
 			gmenu.HideUI()
 
 			// State changes
@@ -345,7 +354,10 @@ func TestResourceCleanupPreventsHangs(t *testing.T) {
 			require.NoError(t, gmenu.SetupMenu([]string{"item1", "item2"}, ""))
 
 			// Perform operations that allocate resources
-			gmenu.ShowUI()
+			if err := gmenu.ShowUI(); err != nil {
+				t.Errorf("ShowUI failed during resource cleanup test %d: %v", instance, err)
+				return
+			}
 			gmenu.Search("item")
 			gmenu.markSelectionMade()
 			gmenu.HideUI()
@@ -386,7 +398,10 @@ func TestContextCancellationPreventsHangs(t *testing.T) {
 			case <-ctx.Done():
 				return
 			default:
-				gmenu.ShowUI()
+				if err := gmenu.ShowUI(); err != nil {
+					t.Errorf("ShowUI failed during context cancellation test: %v", err)
+					return
+				}
 				gmenu.Search("test")
 				gmenu.HideUI()
 				time.Sleep(time.Microsecond)
@@ -444,7 +459,10 @@ func TestMutexDeadlockPrevention(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				for j := 0; j < 50; j++ {
-					gmenu.ShowUI()              // Uses visibility mutex
+					if err := gmenu.ShowUI(); err != nil {
+						t.Errorf("ShowUI failed during mutex test iteration %d: %v", j, err)
+						return
+					}
 					gmenu.safeUIUpdate(func() { // Uses UI mutex
 						// UI operation
 					})
@@ -506,7 +524,10 @@ func TestRapidOperationsCycle(t *testing.T) {
 		// Perform rapid operations that might cause issues
 		for i := 0; i < 100; i++ {
 			// Rapid hide/show/selection cycle
-			gmenu.ShowUI()
+			if err := gmenu.ShowUI(); err != nil {
+				t.Errorf("ShowUI failed during rapid operations iteration %d: %v", i, err)
+				return
+			}
 			gmenu.Search("item" + string(rune('1'+i%3)))
 			gmenu.markSelectionMade()
 			gmenu.HideUI()

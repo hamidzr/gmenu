@@ -18,7 +18,11 @@ func (g *GMenu) SetItems(items []string, serializables []model.GmenuSerializable
 	}
 	g.menu.ItemsChan <- menuItems
 	if g.config.AutoAccept {
-		go g.AttemptAutoSelect()
+		go func() {
+			if g.AttemptAutoSelect() {
+				g.completeSelection()
+			}
+		}()
 	}
 }
 
@@ -38,9 +42,15 @@ func (g *GMenu) addItems(items []string, tail bool) {
 }
 
 // AttemptAutoSelect attempts to auto select if conditions are met.
-func (g *GMenu) AttemptAutoSelect() {
+// It returns true when a selection was made.
+func (g *GMenu) AttemptAutoSelect() bool {
 	if !g.config.AutoAccept {
-		return
+		return false
+	}
+
+	// Fast path: check once before starting timers.
+	if g.tryAutoSelectNow() {
+		return true
 	}
 
 	const (
@@ -57,15 +67,24 @@ func (g *GMenu) AttemptAutoSelect() {
 	for {
 		select {
 		case <-ticker.C:
-			if g.shouldAutoSelect() {
-				g.ensureSelectionExitCode(model.NoError)
-				g.markSelectionMade()
-				return
+			if g.tryAutoSelectNow() {
+				return true
 			}
 		case <-ctx.Done():
-			return
+			return false
 		}
 	}
+}
+
+// tryAutoSelectNow performs a single auto-select attempt and returns true if selection occurred.
+func (g *GMenu) tryAutoSelectNow() bool {
+	if g.shouldAutoSelect() {
+		g.ensureSelectionExitCode(model.NoError)
+		g.markSelectionMade()
+		g.completeSelection()
+		return true
+	}
+	return false
 }
 
 // shouldAutoSelect checks if auto-selection conditions are met
