@@ -2,3 +2,4 @@
 bin/
 .claude
 .serena/
+*.pprof

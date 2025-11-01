@@ -2,7 +2,7 @@
 
 # Build the main binary
 build:
-	go build -o bin/gmenu -v ./cmd/main.go
+	go build -o bin/gmenu -v ./cmd
 
 # Build for multiple platforms (Darwin amd64/arm64)
 build-all:
@@ -36,7 +36,11 @@ fmt:
 
 # Development example
 dev:
-	tree -L 5 | go run ./cmd/main.go
+	tree -L 5 | go run ./cmd
+
+# Run with CPU profiling enabled (writes cpu.pprof)
+profile:
+	tree -L 5 | go run -tags=pprof ./cmd
 
 # Clean build artifacts
 clean:

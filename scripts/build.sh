@@ -20,7 +20,7 @@ for target in "${targets[@]}"; do
   echo "Building for $os/$arch..."
 
   # Enable CGO and set the target OS and architecture
-  env CGO_ENABLED=1 GOOS=$os GOARCH=$arch go build -o $output_name -v ./cmd/main.go
+  env CGO_ENABLED=1 GOOS=$os GOARCH=$arch go build -o $output_name -v ./cmd
 done
 
 echo "Build complete."

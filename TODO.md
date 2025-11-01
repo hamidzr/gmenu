@@ -2,6 +2,7 @@
 
 ## TODO
 
+- remove os.exit; doesn't let defers run
 - if there is no empty config file and an id is given gmenu doesn't come up eg no config.yaml found
 - test with races
 

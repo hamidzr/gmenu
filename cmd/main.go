@@ -5,10 +5,11 @@ import (
 
 	"github.com/hamidzr/gmenu/internal/cli"
 	"github.com/hamidzr/gmenu/internal/logger"
+	"github.com/hamidzr/gmenu/model"
 	"github.com/sirupsen/logrus"
 )
 
-func main() {
+func run() model.ExitCode {
 	// Suppress noisy macOS subsystem logs without discarding our own output.
 	_ = os.Setenv("OS_ACTIVITY_MODE", "disable")
 
@@ -16,6 +17,14 @@ func main() {
 	cmd := cli.InitCLI()
 	if err := cmd.Execute(); err != nil {
 		logrus.WithError(err).Error("gmenu exited with error")
-		os.Exit(1)
+		return model.UnknownError
 	}
+	return model.NoError
+}
+
+func main() {
+	cleanup := startProfiling()
+	exitCode := run()
+	cleanup()
+	os.Exit(int(exitCode))
 }
