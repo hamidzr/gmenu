@@ -1,8 +1,6 @@
 package core
 
 import (
-	"time"
-
 	"fyne.io/fyne/v2"
 	"github.com/hamidzr/gmenu/model"
 )
@@ -53,12 +51,8 @@ func (g *GMenu) startListenDynamicUpdatesForMenu(m *menu) {
 	g.uiMutex.Unlock()
 	// Dynamic resize disabled in tests to reduce UI races
 	go func() { // handle new characters in the search bar and new items loaded.
-		// 60 FPS throttling for UI updates
-		const targetFPS = 60
-		renderTicker := time.NewTicker(time.Second / targetFPS)
-		defer renderTicker.Stop()
-
 		var pendingRender bool
+		renderRequests := make(chan struct{}, 1)
 
 		renderUI := func() {
 			if !pendingRender {
@@ -99,12 +93,23 @@ func (g *GMenu) startListenDynamicUpdatesForMenu(m *menu) {
 			})
 		}
 
+		scheduleRender := func() {
+			if pendingRender {
+				return
+			}
+			pendingRender = true
+			select {
+			case renderRequests <- struct{}{}:
+			default:
+			}
+		}
+
 		for {
 			select {
 			case query := <-queryChan:
 				if m != nil {
 					m.Search(query)
-					pendingRender = true
+					scheduleRender()
 				}
 			case items := <-m.ItemsChan:
 				if m != nil {
@@ -128,9 +133,9 @@ func (g *GMenu) startListenDynamicUpdatesForMenu(m *menu) {
 
 					// Re-run search with current query (Search handles locking)
 					m.Search(currentQuery)
-					pendingRender = true
+					scheduleRender()
 				}
-			case <-renderTicker.C:
+			case <-renderRequests:
 				renderUI()
 			case <-m.ctx.Done():
 				return
