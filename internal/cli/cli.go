@@ -106,8 +106,8 @@ func run(cfg *model.Config) error {
 			fmt.Println(val.ComputedTitle())
 			return nil
 		}
-		logrus.Errorf("auto-accept conditions not met (matches: %d)", gmenu.MatchCount())
-		return fmt.Errorf("auto-accept conditions not met")
+		logrus.WithField("matches", gmenu.MatchCount()).
+			Debug("auto-accept conditions not met; falling back to interactive mode")
 	}
 
 	if err := gmenu.ShowUI(); err != nil {
