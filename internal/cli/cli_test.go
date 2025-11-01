@@ -221,6 +221,22 @@ func TestCLIFlagTypes(t *testing.T) {
 	}
 }
 
+func TestUnknownArguments(t *testing.T) {
+	cmd := InitCLI()
+	cmd.SetArgs([]string{"bogus"})
+
+	out := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	cmd.SetOut(out)
+	cmd.SetErr(errBuf)
+
+	err := cmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown argument(s): bogus")
+	assert.Contains(t, errBuf.String(), "unknown argument(s): bogus")
+	assert.Empty(t, out.String())
+}
+
 // TestCLISubcommands tests if there are any subcommands
 func TestCLISubcommands(t *testing.T) {
 	cmd := InitCLI()

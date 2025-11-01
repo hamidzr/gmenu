@@ -38,6 +38,11 @@ func InitCLI() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				msg := fmt.Sprintf("unknown argument(s): %s", strings.Join(args, " "))
+				cmd.PrintErrln(msg)
+				return model.NewExitError(model.UnknownError, errors.New(msg))
+			}
 			// check if user wants to initialize config
 			initConfig, _ := cmd.Flags().GetBool("init-config")
 			if initConfig {
