@@ -16,8 +16,13 @@ func run() model.ExitCode {
 	logger.SetupLogger()
 	cmd := cli.InitCLI()
 	if err := cmd.Execute(); err != nil {
-		logrus.WithError(err).Error("gmenu exited with error")
-		return model.UnknownError
+		exitCode, cause := model.ExitCodeFromError(err)
+		if cause != nil {
+			logrus.WithError(cause).Error("gmenu exited with error")
+		} else {
+			logrus.WithField("exit_code", exitCode).Error("gmenu exited with error")
+		}
+		return exitCode
 	}
 	return model.NoError
 }

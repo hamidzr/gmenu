@@ -39,7 +39,8 @@ func TestCLIFlags(t *testing.T) {
 // TestReadItemsFromStdin tests reading items from stdin
 func TestReadItemsFromStdin(t *testing.T) {
 	// Test with no stdin (normal terminal)
-	items := readItems()
+	items, err := readItems()
+	require.NoError(t, err)
 	assert.Empty(t, items, "Should return empty slice when no stdin")
 
 	// Test with simulated stdin would require more complex setup
@@ -197,7 +198,8 @@ func TestCLIWithStdinSimulation(t *testing.T) {
 	assert.NotNil(t, cmd.RunE, "CLI should have a run function")
 
 	// Test that readItems() function exists and is callable
-	items := readItems()
+	items, err := readItems()
+	require.NoError(t, err)
 	assert.NotNil(t, items, "readItems should return a slice (even if empty)")
 }
 

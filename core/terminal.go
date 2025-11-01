@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,15 +12,22 @@ import (
 	"golang.org/x/term"
 )
 
+var (
+	// ErrTerminalInterrupted indicates the input loop was interrupted by a signal.
+	ErrTerminalInterrupted = errors.New("terminal input interrupted")
+	// ErrTerminalCancelled indicates the user cancelled input (e.g. via Ctrl+C).
+	ErrTerminalCancelled = errors.New("terminal input cancelled")
+)
+
 // ReadUserInputLive reads user input live from the terminal
 // keeps a local repr of the text user put in and maintaint a line of output
 // that shows the user's input so far
-func ReadUserInputLive(cfg *model.Config, queryChan chan<- string) string {
+func ReadUserInputLive(cfg *model.Config, queryChan chan<- string) (string, error) {
 	// Set up raw terminal mode
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		fmt.Println("Failed to set raw terminal mode:", err)
-		return ""
+		return "", err
 	}
 	defer func() {
 		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
@@ -27,69 +35,81 @@ func ReadUserInputLive(cfg *model.Config, queryChan chan<- string) string {
 		}
 	}()
 
-	// Create a new reader from stdin
 	reader := bufio.NewReader(os.Stdin)
 	input := []byte(cfg.InitialQuery)
 
-	// Display initial prompt with initial query
 	fmt.Printf("\r%s%s", cfg.Prompt, string(input))
-	// Send initial query
 	queryChan <- string(input)
+	defer close(queryChan)
 
-	// Set up channel for handling signals
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
 
-	// Create a channel to signal when Enter is pressed
-	enterPressed := make(chan bool, 1)
-	inputCh := make(chan string, 1)
+	enterPressed := make(chan struct{}, 1)
+	resultCh := make(chan string, 1)
+	errCh := make(chan error, 1)
 
-	// Start goroutine to read input
 	go func() {
 		for {
 			char, err := reader.ReadByte()
 			if err != nil {
 				fmt.Println("\nError reading input:", err)
-				enterPressed <- true
+				select {
+				case errCh <- fmt.Errorf("reading input: %w", err):
+				default:
+				}
+				select {
+				case enterPressed <- struct{}{}:
+				default:
+				}
 				return
 			}
 
-			if char == '\r' || char == '\n' {
-				// Enter pressed
-				inputCh <- string(input)
-				enterPressed <- true
+			switch {
+			case char == '\r' || char == '\n':
+				resultCh <- string(input)
+				select {
+				case enterPressed <- struct{}{}:
+				default:
+				}
 				return
-			} else if char == 127 || char == 8 {
-				// Backspace/Delete pressed
+			case char == 127 || char == 8:
 				if len(input) > 0 {
 					input = input[:len(input)-1]
 					queryChan <- string(input)
 				}
-			} else if char == 3 {
-				// Ctrl+C pressed
+			case char == 3:
 				fmt.Printf("\n%sInput cancelled\n", cfg.Prompt)
-				inputCh <- ""
-				enterPressed <- true
+				select {
+				case errCh <- ErrTerminalCancelled:
+				default:
+				}
+				select {
+				case enterPressed <- struct{}{}:
+				default:
+				}
 				return
-			} else if char >= 32 && char <= 126 {
-				// Printable ASCII characters
+			case char >= 32 && char <= 126:
 				input = append(input, char)
 				queryChan <- string(input)
 			}
 		}
 	}()
 
-	// Wait for either a signal or enter press
 	select {
-	case <-sigCh:
-		fmt.Printf("\n%sInput cancelled\n", cfg.Prompt)
-		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
-			fmt.Printf("Failed to restore terminal: %v\n", err)
-		}
-		os.Exit(0) // Exit immediately on signal
+	case sig := <-sigCh:
+		fmt.Printf("\n%sInput cancelled (%s)\n", cfg.Prompt, sig.String())
+		return "", ErrTerminalInterrupted
 	case <-enterPressed:
 		fmt.Println()
-		return <-inputCh
+		select {
+		case err := <-errCh:
+			return "", err
+		case res := <-resultCh:
+			return res, nil
+		default:
+			return "", nil
+		}
 	}
-	return ""
 }

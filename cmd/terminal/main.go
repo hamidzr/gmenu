@@ -33,8 +33,11 @@ func main() {
 		}
 	}()
 
-	result := core.ReadUserInputLive(cfg, queryChan)
-	close(queryChan)
+	result, err := core.ReadUserInputLive(cfg, queryChan)
+	if err != nil {
+		fmt.Printf("\nInput ended: %v\n", err)
+		return
+	}
 	if result != "" {
 		fmt.Printf("\nFinal input: %s\n", result)
 	}

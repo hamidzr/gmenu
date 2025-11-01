@@ -10,16 +10,28 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	exitCode := model.NoError
+	if err := run(os.Args); err != nil {
+		var cause error
+		exitCode, cause = model.ExitCodeFromError(err)
+		if cause != nil {
+			fmt.Fprintf(os.Stderr, "visual test failed: %v\n", cause)
+		}
+	}
+	os.Exit(int(exitCode))
+}
+
+func run(args []string) error {
+	if len(args) < 2 {
 		fmt.Println("Usage: go run cmd/visual-test/main.go <test-type>")
 		fmt.Println("Available tests:")
 		fmt.Println("  cycles     - Show hide/show/selection cycles")
 		fmt.Println("  interactive - Interactive test with many items")
 		fmt.Println("  stress     - Rapid operations stress test")
-		os.Exit(1)
+		return model.NewExitError(model.UnknownError, nil)
 	}
 
-	testType := os.Args[1]
+	testType := args[1]
 
 	switch testType {
 	case "cycles":
@@ -30,8 +42,10 @@ func main() {
 		runStressTest()
 	default:
 		fmt.Printf("Unknown test type: %s\n", testType)
-		os.Exit(1)
+		return model.NewExitError(model.UnknownError, nil)
 	}
+
+	return nil
 }
 
 func runHideShowCycleTest() {
