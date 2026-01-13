@@ -63,6 +63,7 @@ const AppState = struct {
     model: menu.Model,
     table_view: objc.Object,
     text_field: objc.Object,
+    match_label: objc.Object,
     handler: objc.Object,
     config: appconfig.Config,
     pid_path: ?[]const u8,
@@ -98,10 +99,21 @@ fn updateSelection(state: *AppState) void {
     state.table_view.msgSend(void, "scrollRowToVisible:", .{@as(c_long, @intCast(row))});
 }
 
+fn updateMatchLabel(state: *AppState) void {
+    var buf: [32]u8 = undefined;
+    const label_z = std.fmt.bufPrintZ(
+        &buf,
+        "[{d}/{d}]",
+        .{ state.model.filtered.items.len, state.model.items.len },
+    ) catch return;
+    state.match_label.msgSend(void, "setStringValue:", .{nsString(label_z)});
+}
+
 fn applyFilter(state: *AppState, query: []const u8) void {
     state.model.applyFilter(query, state.config.search);
     state.table_view.msgSend(void, "reloadData", .{});
     updateSelection(state);
+    updateMatchLabel(state);
     if (state.config.auto_accept and state.model.filtered.items.len == 1) {
         acceptSelection(state);
     }
@@ -669,9 +681,21 @@ pub fn run(config: appconfig.Config) !void {
 
     const content_view = window.msgSend(objc.Object, "contentView", .{});
 
+    var match_label_width = 100.0;
+    var search_width = list_width - match_label_width;
+    if (search_width < 0) {
+        search_width = list_width;
+        match_label_width = 0;
+    }
+
     const field_rect = NSRect{
         .origin = .{ .x = padding, .y = window_height - padding - field_height },
-        .size = .{ .width = list_width, .height = field_height },
+        .size = .{ .width = search_width, .height = field_height },
+    };
+
+    const match_rect = NSRect{
+        .origin = .{ .x = padding + search_width, .y = window_height - padding - field_height },
+        .size = .{ .width = match_label_width, .height = field_height },
     };
 
     const list_rect = NSRect{
@@ -691,6 +715,15 @@ pub fn run(config: appconfig.Config) !void {
     text_field.msgSend(void, "setDelegate:", .{handler});
     text_field.msgSend(void, "setTarget:", .{handler});
     text_field.msgSend(void, "setAction:", .{objc.sel("onSubmit:")});
+
+    const NSTextField = objc.getClass("NSTextField").?;
+    const match_label = NSTextField.msgSend(objc.Object, "alloc", .{})
+        .msgSend(objc.Object, "initWithFrame:", .{match_rect});
+    match_label.msgSend(void, "setBezeled:", .{false});
+    match_label.msgSend(void, "setDrawsBackground:", .{false});
+    match_label.msgSend(void, "setEditable:", .{false});
+    match_label.msgSend(void, "setSelectable:", .{false});
+    match_label.msgSend(void, "setAlignment:", .{@as(c_int, 2)});
 
     const table_frame = NSRect{
         .origin = .{ .x = 0, .y = 0 },
@@ -742,6 +775,9 @@ pub fn run(config: appconfig.Config) !void {
 
     content_view.msgSend(void, "addSubview:", .{scroll_view});
     content_view.msgSend(void, "addSubview:", .{text_field});
+    if (match_label_width > 0) {
+        content_view.msgSend(void, "addSubview:", .{match_label});
+    }
 
     var update_queue: UpdateQueue = undefined;
     var update_queue_ptr: ?*UpdateQueue = null;
@@ -754,6 +790,7 @@ pub fn run(config: appconfig.Config) !void {
         .model = try menu.Model.init(allocator, items),
         .table_view = table_view,
         .text_field = text_field,
+        .match_label = match_label,
         .handler = handler,
         .config = config,
         .pid_path = pid_path,
