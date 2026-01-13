@@ -104,7 +104,7 @@ fn updateMatchLabel(state: *AppState) void {
     const label_z = std.fmt.bufPrintZ(
         &buf,
         "[{d}/{d}]",
-        .{ state.model.filtered.items.len, state.model.items.len },
+        .{ state.model.match_count, state.model.items.len },
     ) catch return;
     state.match_label.msgSend(void, "setStringValue:", .{nsString(label_z)});
 }
@@ -358,7 +358,7 @@ fn tableViewObjectValue(
         if (columnIsScore(column_obj)) {
             const item_index = state.model.filtered.items[row_index];
             const score = state.model.scores[item_index];
-            if (score == 0) return nsString("").value;
+            if (score <= 0) return nsString("").value;
             var buf: [32]u8 = undefined;
             const score_z = std.fmt.bufPrintZ(&buf, "{d}", .{score}) catch return nsString("").value;
             return nsString(score_z).value;

@@ -364,12 +364,20 @@ fn applySearchMethod(config: *appconfig.Config, value: []const u8) !void {
         config.search.method = .direct;
         return;
     }
-    if (std.ascii.eqlIgnoreCase(value, "fuzzy") or std.ascii.eqlIgnoreCase(value, "default")) {
+    if (std.ascii.eqlIgnoreCase(value, "fuzzy")) {
         config.search.method = .fuzzy;
         return;
     }
-    if (std.ascii.eqlIgnoreCase(value, "fuzzy1") or std.ascii.eqlIgnoreCase(value, "fuzzy3")) {
-        config.search.method = .fuzzy;
+    if (std.ascii.eqlIgnoreCase(value, "fuzzy1")) {
+        config.search.method = .fuzzy1;
+        return;
+    }
+    if (std.ascii.eqlIgnoreCase(value, "fuzzy3")) {
+        config.search.method = .fuzzy3;
+        return;
+    }
+    if (std.ascii.eqlIgnoreCase(value, "default")) {
+        config.search.method = .default;
         return;
     }
     return error.InvalidSearchMethod;
