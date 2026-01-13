@@ -27,3 +27,8 @@ printf "alpha\nbravo\ncharlie\n" | zig build run
 ```
 
 If you run without stdin, zmenu exits with an error.
+
+### Config + CLI
+Supported flags: `--menu-id/-m`, `--initial-query/-q`, `--search-method/-s`, `--preserve-order/-o`, `--auto-accept`, `--no-numeric-selection`, `--title/-t`, `--prompt/-p`.
+Supported env: `GMENU_MENU_ID`, `GMENU_INITIAL_QUERY`, `GMENU_SEARCH_METHOD`, `GMENU_PRESERVE_ORDER`, `GMENU_AUTO_ACCEPT`, `GMENU_NO_NUMERIC_SELECTION`, `GMENU_ACCEPT_CUSTOM_SELECTION`, `GMENU_TITLE`, `GMENU_PROMPT`.
+Config file: searches `config.yaml` in `$XDG_CONFIG_HOME/gmenu[/<menu_id>]` (macOS: `~/Library/Application Support/gmenu`) and `~/.gmenu[/<menu_id>]`.

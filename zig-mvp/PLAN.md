@@ -24,6 +24,7 @@ Milestone 1 MVP from `GMENU_V1_PLAN.md`:
 - `src/config.zig` defaults for window/text/search options.
 - `src/pid.zig` pid file guard for single-instance behavior.
 - `src/cache.zig` cache load/save for last query + selection.
+- `src/cli.zig` CLI + env + config file merging.
 
 Planned follow-on modules: config/env parsing, cache helpers, CLI flags, and theming.
 
