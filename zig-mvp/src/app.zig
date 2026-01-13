@@ -4,6 +4,7 @@ const appconfig = @import("config.zig");
 const menu = @import("menu.zig");
 const cache = @import("cache.zig");
 const pid = @import("pid.zig");
+const exit_codes = @import("exit_codes.zig");
 
 const NSApplicationActivationPolicyRegular: i64 = 0;
 const NSWindowStyleMaskBorderless: u64 = 0;
@@ -399,9 +400,9 @@ fn cancelOperation(target: objc.c.id, sel: objc.c.SEL, sender: objc.c.id) callco
     _ = sel;
     _ = sender;
     if (g_state) |state| {
-        quit(state, 1);
+        quit(state, exit_codes.user_canceled);
     }
-    std.process.exit(1);
+    std.process.exit(exit_codes.user_canceled);
 }
 
 fn onFocusLossTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(.c) void {
@@ -409,9 +410,9 @@ fn onFocusLossTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callco
     _ = sel;
     _ = timer;
     if (g_state) |state| {
-        quit(state, 1);
+        quit(state, exit_codes.user_canceled);
     }
-    std.process.exit(1);
+    std.process.exit(exit_codes.user_canceled);
 }
 
 fn onUpdateTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(.c) void {
@@ -616,13 +617,13 @@ pub fn run(config: appconfig.Config) !void {
     if (!config.follow_stdin) {
         items = readItems(allocator, config.show_icons) catch {
             std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
-            std.process.exit(1);
+            std.process.exit(exit_codes.unknown_error);
         };
     }
 
     const pid_path = pid.create(allocator, config.menu_id) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: another instance is running\n", .{}) catch {};
-        std.process.exit(1);
+        std.process.exit(exit_codes.unknown_error);
     };
 
     var initial_query: []const u8 = config.initial_query;

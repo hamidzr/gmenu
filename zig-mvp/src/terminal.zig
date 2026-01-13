@@ -2,28 +2,29 @@ const std = @import("std");
 const appconfig = @import("config.zig");
 const pid = @import("pid.zig");
 const menu = @import("menu.zig");
+const exit_codes = @import("exit_codes.zig");
 
 pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
     const items = readItems(allocator) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
-        std.process.exit(1);
+        std.process.exit(exit_codes.unknown_error);
     };
 
     const pid_path = pid.create(allocator, config.menu_id) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: another instance is running\n", .{}) catch {};
-        std.process.exit(1);
+        std.process.exit(exit_codes.unknown_error);
     };
     defer pid.remove(pid_path);
 
     var tty = std.fs.openFileAbsolute("/dev/tty", .{}) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: unable to open tty\n", .{}) catch {};
-        std.process.exit(1);
+        std.process.exit(exit_codes.unknown_error);
     };
     defer tty.close();
 
     const original_term = enableRawMode(tty.handle) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: unable to enter raw mode\n", .{}) catch {};
-        std.process.exit(1);
+        std.process.exit(exit_codes.unknown_error);
     };
     defer std.posix.tcsetattr(tty.handle, .NOW, original_term) catch {};
 
@@ -41,7 +42,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
 
     while (true) {
         const ch = reader.readByte() catch {
-            exit_code = 1;
+            exit_code = exit_codes.unknown_error;
             break;
         };
 
@@ -58,7 +59,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
             },
             3 => {
                 tty.deprecatedWriter().print("\n{s}Input cancelled\n", .{config.placeholder}) catch {};
-                exit_code = 2;
+                exit_code = exit_codes.user_canceled;
                 break;
             },
             else => {
