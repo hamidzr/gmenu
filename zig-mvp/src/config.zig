@@ -28,8 +28,8 @@ pub const Config = struct {
 
 pub fn defaults() Config {
     return .{
-        .title = "zmenu",
-        .placeholder = "Type to filter",
+        .title = "gmenu",
+        .placeholder = "Search",
         .menu_id = "",
         .initial_query = "",
         .search = .{
@@ -41,13 +41,13 @@ pub fn defaults() Config {
         .follow_stdin = false,
         .auto_accept = false,
         .accept_custom_selection = true,
-        .window_width = 520,
-        .window_height = 360,
+        .window_width = 600,
+        .window_height = 300,
         .max_width = 1920,
         .max_height = 1080,
         .field_height = 24,
         .padding = 8,
-        .no_numeric_selection = false,
+        .no_numeric_selection = true,
         .numeric_column_width = 28,
         .show_icons = false,
         .icon_column_width = 48,

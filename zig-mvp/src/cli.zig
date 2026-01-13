@@ -256,6 +256,11 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             config.auto_accept = true;
             continue;
         }
+        if (std.mem.startsWith(u8, arg, "--no-numeric-selection=")) {
+            const value = arg["--no-numeric-selection=".len..];
+            config.no_numeric_selection = try parseBool(value);
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--no-numeric-selection")) {
             config.no_numeric_selection = true;
             continue;
@@ -359,7 +364,11 @@ fn applySearchMethod(config: *appconfig.Config, value: []const u8) !void {
         config.search.method = .direct;
         return;
     }
-    if (std.ascii.eqlIgnoreCase(value, "fuzzy")) {
+    if (std.ascii.eqlIgnoreCase(value, "fuzzy") or std.ascii.eqlIgnoreCase(value, "default")) {
+        config.search.method = .fuzzy;
+        return;
+    }
+    if (std.ascii.eqlIgnoreCase(value, "fuzzy1") or std.ascii.eqlIgnoreCase(value, "fuzzy3")) {
         config.search.method = .fuzzy;
         return;
     }
@@ -429,7 +438,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\follow_stdin: false
         \\auto_accept: false
         \\accept_custom_selection: true
-        \\no_numeric_selection: false
+        \\no_numeric_selection: true
         \\show_icons: false
         \\show_score: false
         \\min_width: {d}
