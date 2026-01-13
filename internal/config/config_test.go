@@ -93,7 +93,7 @@ func TestConfigDefaults(t *testing.T) {
 	assert.False(t, defaults.PreserveOrder)
 	assert.False(t, defaults.AutoAccept)
 	assert.False(t, defaults.TerminalMode)
-	assert.False(t, defaults.NoNumericSelection)
+	assert.True(t, defaults.NoNumericSelection)
 	assert.Equal(t, float32(600), defaults.MinWidth)
 	assert.Equal(t, float32(300), defaults.MinHeight)
 	assert.Equal(t, float32(1920), defaults.MaxWidth)

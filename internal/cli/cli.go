@@ -189,8 +189,12 @@ func runTerminalMode(gmenu *core.GMenu, cfg *model.Config) error {
 			// Filter and display matching items
 			matchCount := 0
 			for idx, match := range matcher(items, query) {
-				logrus.Infof("%d. %s", idx+1, match)
 				matchCount++
+				if cfg.NoNumericSelection {
+					logrus.Infof("%s", match)
+					continue
+				}
+				logrus.Infof("%d. %s", idx+1, match)
 			}
 
 			if matchCount == 0 {

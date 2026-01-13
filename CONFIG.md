@@ -84,7 +84,7 @@ Use `gmenu --help` to see all available flags.
 | Initial Query | `--initial-query`, `-q` | `GMENU_INITIAL_QUERY` | `initial_query` | `""` | Pre-filled search query |
 | Auto Accept | `--auto-accept` | `GMENU_AUTO_ACCEPT` | `auto_accept` | `false` | Auto-select if only one match |
 | Terminal Mode | `--terminal` | `GMENU_TERMINAL_MODE` | `terminal_mode` | `false` | Run in terminal-only mode |
-| No Numeric Selection | `--no-numeric-selection` | `GMENU_NO_NUMERIC_SELECTION` | `no_numeric_selection` | `false` | Disable numeric shortcuts |
+| No Numeric Selection | `--no-numeric-selection` | `GMENU_NO_NUMERIC_SELECTION` | `no_numeric_selection` | `true` | Disable numeric shortcuts |
 | Min Width | `--min-width` | `GMENU_MIN_WIDTH` | `min_width` | `600` | Minimum window width |
 | Min Height | `--min-height` | `GMENU_MIN_HEIGHT` | `min_height` | `300` | Minimum window height |
 | Max Width | `--max-width` | `GMENU_MAX_WIDTH` | `max_width` | `1920` | Maximum window width |

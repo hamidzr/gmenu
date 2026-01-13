@@ -84,7 +84,7 @@ Defaults from model.DefaultConfig(). CLI flags from internal/config/model.go.
 | initial_query | --initial-query, -q | GMENU_INITIAL_QUERY | "" | Pre-filled search text |
 | auto_accept | --auto-accept | GMENU_AUTO_ACCEPT | false | Auto-select single match |
 | terminal_mode | --terminal | GMENU_TERMINAL_MODE | false | Terminal-only mode |
-| no_numeric_selection | --no-numeric-selection | GMENU_NO_NUMERIC_SELECTION | false | Disable numeric shortcuts + hints |
+| no_numeric_selection | --no-numeric-selection | GMENU_NO_NUMERIC_SELECTION | true | Disable numeric shortcuts + hints |
 | min_width | --min-width | GMENU_MIN_WIDTH | 600 | Min window width |
 | min_height | --min-height | GMENU_MIN_HEIGHT | 300 | Min window height |
 | max_width | --max-width | GMENU_MAX_WIDTH | 1920 | Max window width |
