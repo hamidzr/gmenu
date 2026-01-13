@@ -2,6 +2,34 @@ const std = @import("std");
 const builtin = @import("builtin");
 const appconfig = @import("config.zig");
 
+const ConfigKeyVariant = struct {
+    canonical: []const u8,
+    camel: []const u8,
+};
+
+const config_key_variants = [_]ConfigKeyVariant{
+    .{ .canonical = "title", .camel = "" },
+    .{ .canonical = "prompt", .camel = "" },
+    .{ .canonical = "menu_id", .camel = "menuId" },
+    .{ .canonical = "search_method", .camel = "searchMethod" },
+    .{ .canonical = "preserve_order", .camel = "preserveOrder" },
+    .{ .canonical = "initial_query", .camel = "initialQuery" },
+    .{ .canonical = "auto_accept", .camel = "autoAccept" },
+    .{ .canonical = "terminal_mode", .camel = "terminalMode" },
+    .{ .canonical = "follow_stdin", .camel = "followStdin" },
+    .{ .canonical = "no_numeric_selection", .camel = "noNumericSelection" },
+    .{ .canonical = "show_icons", .camel = "showIcons" },
+    .{ .canonical = "show_score", .camel = "showScore" },
+    .{ .canonical = "limit", .camel = "" },
+    .{ .canonical = "min_width", .camel = "minWidth" },
+    .{ .canonical = "min_height", .camel = "minHeight" },
+    .{ .canonical = "max_width", .camel = "maxWidth" },
+    .{ .canonical = "max_height", .camel = "maxHeight" },
+    .{ .canonical = "row_height", .camel = "rowHeight" },
+    .{ .canonical = "alternate_rows", .camel = "alternateRows" },
+    .{ .canonical = "accept_custom_selection", .camel = "acceptCustomSelection" },
+};
+
 pub fn parse(allocator: std.mem.Allocator) !appconfig.Config {
     var config = appconfig.defaults();
 
@@ -51,6 +79,7 @@ fn loadConfigFile(allocator: std.mem.Allocator, menu_id: [:0]const u8, config: *
     defer file.close();
 
     const contents = try file.readToEndAlloc(allocator, 64 * 1024);
+    var seen_keys: [config_key_variants.len]?[]const u8 = [_]?[]const u8{null} ** config_key_variants.len;
     var iter = std.mem.splitScalar(u8, contents, '\n');
     while (iter.next()) |line| {
         var trimmed = std.mem.trim(u8, line, " \t\r");
@@ -66,8 +95,23 @@ fn loadConfigFile(allocator: std.mem.Allocator, menu_id: [:0]const u8, config: *
         value = stripQuotes(value);
         if (key.len == 0) continue;
 
+        const canonical_index = canonicalKeyIndex(key) orelse return error.InvalidConfigKey;
+        if (seen_keys[canonical_index]) |previous| {
+            if (!std.mem.eql(u8, previous, key)) return error.ConfigKeyStyleConflict;
+        } else {
+            seen_keys[canonical_index] = key;
+        }
+
         try applyConfigKV(allocator, config, key, value);
     }
+}
+
+fn canonicalKeyIndex(key: []const u8) ?usize {
+    for (config_key_variants, 0..) |variant, idx| {
+        if (std.mem.eql(u8, key, variant.canonical)) return idx;
+        if (variant.camel.len > 0 and std.mem.eql(u8, key, variant.camel)) return idx;
+    }
+    return null;
 }
 
 fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
