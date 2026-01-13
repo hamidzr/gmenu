@@ -9,6 +9,7 @@ Native macOS AppKit MVP for the gmenu replacement (zmenu).
 - Enter prints the selected (default top) item to stdout and exits 0; Esc cancels with a non-zero exit code.
 - Up/Down/Tab move the selection within the filtered list.
 - Double-clicking a row accepts that item.
+- Keys 1-9 accept the corresponding item when numeric selection is enabled.
 
 ## Requirements
 - macOS

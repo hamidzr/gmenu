@@ -28,6 +28,8 @@ const AppState = struct {
     config: appconfig.Config,
 };
 
+const digit_labels = [_][:0]const u8{ "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
 var g_state: ?*AppState = null;
 
 fn nsString(str: [:0]const u8) objc.Object {
@@ -137,18 +139,22 @@ fn controlTextViewDoCommandBySelector(
     return false;
 }
 
-fn onSubmit(target: objc.c.id, sel: objc.c.SEL, sender: objc.c.id) callconv(.c) void {
-    _ = target;
-    _ = sel;
-    _ = sender;
-
-    const state = g_state orelse return;
+fn acceptSelection(state: *AppState) void {
     const item = state.model.selectedItem() orelse {
         std.process.exit(1);
     };
 
     std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
     std.process.exit(0);
+}
+
+fn onSubmit(target: objc.c.id, sel: objc.c.SEL, sender: objc.c.id) callconv(.c) void {
+    _ = target;
+    _ = sel;
+    _ = sender;
+
+    const state = g_state orelse return;
+    acceptSelection(state);
 }
 
 fn numberOfRowsInTableView(target: objc.c.id, sel: objc.c.SEL, table: objc.c.id) callconv(.c) c_long {
@@ -158,6 +164,14 @@ fn numberOfRowsInTableView(target: objc.c.id, sel: objc.c.SEL, table: objc.c.id)
 
     const state = g_state orelse return 0;
     return @intCast(state.model.filtered.items.len);
+}
+
+fn columnIsIndex(column: objc.Object) bool {
+    const identifier = column.msgSend(objc.Object, "identifier", .{});
+    const utf8_ptr = identifier.msgSend(?[*:0]const u8, "UTF8String", .{});
+    if (utf8_ptr == null) return false;
+    const name = std.mem.sliceTo(utf8_ptr.?, 0);
+    return std.mem.eql(u8, name, "index");
 }
 
 fn tableViewObjectValue(
@@ -170,13 +184,22 @@ fn tableViewObjectValue(
     _ = target;
     _ = sel;
     _ = table;
-    _ = column;
 
     const state = g_state orelse return null;
     if (row < 0) return null;
 
     const row_index: usize = @intCast(row);
     if (row_index >= state.model.filtered.items.len) return null;
+
+    if (!state.config.no_numeric_selection and column != null) {
+        const column_obj = objc.Object.fromId(column);
+        if (columnIsIndex(column_obj)) {
+            if (row_index < digit_labels.len) {
+                return nsString(digit_labels[row_index]).value;
+            }
+            return nsString("").value;
+        }
+    }
 
     const item_index = state.model.filtered.items[row_index];
     const item = state.model.items[item_index];
@@ -212,6 +235,39 @@ fn cancelOperation(target: objc.c.id, sel: objc.c.SEL, sender: objc.c.id) callco
     _ = sel;
     _ = sender;
     std.process.exit(1);
+}
+
+fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) void {
+    _ = sel;
+    if (target == null) return;
+    if (event == null) return;
+
+    const obj = objc.Object.fromId(target);
+    const state = g_state;
+
+    if (state != null and !state.?.config.no_numeric_selection) {
+        const event_obj = objc.Object.fromId(event);
+        const chars = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
+        const utf8_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
+        if (utf8_ptr != null) {
+            const text = std.mem.sliceTo(utf8_ptr.?, 0);
+            if (text.len == 1) {
+                const ch = text[0];
+                if (ch >= '1' and ch <= '9') {
+                    const index: usize = @intCast(ch - '1');
+                    if (index < state.?.model.filtered.items.len) {
+                        state.?.model.selected = @intCast(index);
+                        updateSelection(state.?);
+                        acceptSelection(state.?);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    const NSTextField = objc.getClass("NSTextField").?;
+    obj.msgSendSuper(NSTextField, void, "keyDown:", .{event});
 }
 
 fn windowCanBecomeKey(target: objc.c.id, sel: objc.c.SEL) callconv(.c) bool {
@@ -270,6 +326,9 @@ fn searchFieldClass() objc.Class {
     if (!cls.addMethod("cancelOperation:", cancelOperation)) {
         @panic("failed to add cancelOperation: method");
     }
+    if (!cls.addMethod("keyDown:", keyDown)) {
+        @panic("failed to add keyDown: method");
+    }
     objc.registerClassPair(cls);
     return cls;
 }
@@ -323,6 +382,8 @@ pub fn run(config: appconfig.Config) !void {
     const padding = config.padding;
     const list_width = window_width - (padding * 2.0);
     const list_height = window_height - field_height - (padding * 3.0);
+    const numeric_width = if (config.no_numeric_selection) 0 else config.numeric_column_width;
+    const item_width = list_width - numeric_width;
 
     const window_rect = NSRect{
         .origin = .{ .x = 0, .y = 0 },
@@ -382,9 +443,15 @@ pub fn run(config: appconfig.Config) !void {
     table_view.msgSend(void, "setDoubleAction:", .{objc.sel("onSubmit:")});
 
     const NSTableColumn = objc.getClass("NSTableColumn").?;
+    if (!config.no_numeric_selection) {
+        const index_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
+            .msgSend(objc.Object, "initWithIdentifier:", .{nsString("index")});
+        index_column.msgSend(void, "setWidth:", .{numeric_width});
+        table_view.msgSend(void, "addTableColumn:", .{index_column});
+    }
     const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithIdentifier:", .{nsString("items")});
-    table_column.msgSend(void, "setWidth:", .{list_width});
+    table_column.msgSend(void, "setWidth:", .{item_width});
     table_view.msgSend(void, "addTableColumn:", .{table_column});
 
     const NSScrollView = objc.getClass("NSScrollView").?;

@@ -8,6 +8,8 @@ pub const Config = struct {
     window_height: f64,
     field_height: f64,
     padding: f64,
+    no_numeric_selection: bool,
+    numeric_column_width: f64,
 };
 
 pub fn defaults() Config {
@@ -23,5 +25,7 @@ pub fn defaults() Config {
         .window_height = 360,
         .field_height = 24,
         .padding = 8,
+        .no_numeric_selection = false,
+        .numeric_column_width = 28,
     };
 }
