@@ -6,6 +6,7 @@ const menu = @import("menu.zig");
 const NSApplicationActivationPolicyRegular: i64 = 0;
 const NSWindowStyleMaskBorderless: u64 = 0;
 const NSBackingStoreBuffered: u64 = 2;
+const NSEventModifierFlagControl: u64 = 1 << 18;
 
 const NSPoint = extern struct {
     x: f64,
@@ -25,6 +26,8 @@ const NSRect = extern struct {
 const AppState = struct {
     model: menu.Model,
     table_view: objc.Object,
+    text_field: objc.Object,
+    handler: objc.Object,
     config: appconfig.Config,
 };
 
@@ -53,6 +56,9 @@ fn applyFilter(state: *AppState, query: []const u8) void {
     state.model.applyFilter(query, state.config.search);
     state.table_view.msgSend(void, "reloadData", .{});
     updateSelection(state);
+    if (state.config.auto_accept and state.model.filtered.items.len == 1) {
+        acceptSelection(state);
+    }
 }
 
 fn moveSelection(state: *AppState, delta: isize) void {
@@ -139,11 +145,30 @@ fn controlTextViewDoCommandBySelector(
     return false;
 }
 
-fn acceptSelection(state: *AppState) void {
-    const item = state.model.selectedItem() orelse {
-        std.process.exit(1);
-    };
+fn currentQuery(state: *AppState) []const u8 {
+    const text = state.text_field.msgSend(objc.Object, "stringValue", .{});
+    const utf8_ptr = text.msgSend(?[*:0]const u8, "UTF8String", .{});
+    if (utf8_ptr == null) return "";
+    return std.mem.sliceTo(utf8_ptr.?, 0);
+}
 
+fn acceptSelection(state: *AppState) void {
+    if (state.model.filtered.items.len == 0) {
+        if (!state.config.accept_custom_selection) {
+            return;
+        }
+        const query = currentQuery(state);
+        std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{query}) catch {};
+        std.process.exit(0);
+    }
+
+    if (state.model.selectedItem()) |item| {
+        std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
+        std.process.exit(0);
+    }
+
+    const item_index = state.model.filtered.items[0];
+    const item = state.model.items[item_index];
     std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
     std.process.exit(0);
 }
@@ -237,6 +262,35 @@ fn cancelOperation(target: objc.c.id, sel: objc.c.SEL, sender: objc.c.id) callco
     std.process.exit(1);
 }
 
+fn onFocusLossTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(.c) void {
+    _ = target;
+    _ = sel;
+    _ = timer;
+    std.process.exit(1);
+}
+
+fn scheduleFocusLossCancel() void {
+    const state = g_state orelse return;
+    const NSTimer = objc.getClass("NSTimer").?;
+    _ = NSTimer.msgSend(objc.Object, "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:", .{
+        0.04,
+        state.handler,
+        objc.sel("onFocusLossTimer:"),
+        @as(objc.c.id, null),
+        false,
+    });
+}
+
+fn resignKeyWindow(target: objc.c.id, sel: objc.c.SEL) callconv(.c) void {
+    _ = sel;
+    if (target == null) return;
+
+    const obj = objc.Object.fromId(target);
+    const NSWindow = objc.getClass("NSWindow").?;
+    obj.msgSendSuper(NSWindow, void, "resignKeyWindow", .{});
+    scheduleFocusLossCancel();
+}
+
 fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) void {
     _ = sel;
     if (target == null) return;
@@ -245,7 +299,7 @@ fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) vo
     const obj = objc.Object.fromId(target);
     const state = g_state;
 
-    if (state != null and !state.?.config.no_numeric_selection) {
+    if (state != null) {
         const event_obj = objc.Object.fromId(event);
         const chars = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
         const utf8_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
@@ -253,7 +307,14 @@ fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) vo
             const text = std.mem.sliceTo(utf8_ptr.?, 0);
             if (text.len == 1) {
                 const ch = text[0];
-                if (ch >= '1' and ch <= '9') {
+                const modifiers = event_obj.msgSend(c_ulong, "modifierFlags", .{});
+                if ((modifiers & NSEventModifierFlagControl) != 0 and (ch == 'l' or ch == 'L')) {
+                    state.?.text_field.msgSend(void, "setStringValue:", .{nsString("")});
+                    applyFilter(state.?, "");
+                    return;
+                }
+
+                if (!state.?.config.no_numeric_selection and ch >= '1' and ch <= '9') {
                     const index: usize = @intCast(ch - '1');
                     if (index < state.?.model.filtered.items.len) {
                         state.?.model.selected = @intCast(index);
@@ -292,6 +353,9 @@ fn inputHandlerClass() objc.Class {
     }
     if (!cls.addMethod("control:textView:doCommandBySelector:", controlTextViewDoCommandBySelector)) {
         @panic("failed to add control:textView:doCommandBySelector: method");
+    }
+    if (!cls.addMethod("onFocusLossTimer:", onFocusLossTimer)) {
+        @panic("failed to add onFocusLossTimer: method");
     }
     if (!cls.addMethod("onSubmit:", onSubmit)) {
         @panic("failed to add onSubmit: method");
@@ -343,6 +407,9 @@ fn windowClass() objc.Class {
     }
     if (!cls.addMethod("canBecomeMainWindow", windowCanBecomeMain)) {
         @panic("failed to add canBecomeMainWindow method");
+    }
+    if (!cls.addMethod("resignKeyWindow", resignKeyWindow)) {
+        @panic("failed to add resignKeyWindow method");
     }
     objc.registerClassPair(cls);
     return cls;
@@ -467,6 +534,8 @@ pub fn run(config: appconfig.Config) !void {
     var state = AppState{
         .model = try menu.Model.init(allocator, items),
         .table_view = table_view,
+        .text_field = text_field,
+        .handler = handler,
         .config = config,
     };
     defer state.model.deinit(allocator);
