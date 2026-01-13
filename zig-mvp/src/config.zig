@@ -17,6 +17,8 @@ pub const Config = struct {
     padding: f64,
     no_numeric_selection: bool,
     numeric_column_width: f64,
+    show_icons: bool,
+    icon_column_width: f64,
     show_score: bool,
     score_column_width: f64,
 };
@@ -43,6 +45,8 @@ pub fn defaults() Config {
         .padding = 8,
         .no_numeric_selection = false,
         .numeric_column_width = 28,
+        .show_icons = false,
+        .icon_column_width = 48,
         .show_score = false,
         .score_column_width = 60,
     };

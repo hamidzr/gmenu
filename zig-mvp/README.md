@@ -29,8 +29,9 @@ printf "alpha\nbravo\ncharlie\n" | zig build run
 If you run without stdin, zmenu exits with an error.
 
 ### Config + CLI
-Supported flags: `--menu-id/-m`, `--initial-query/-q`, `--search-method/-s`, `--preserve-order/-o`, `--auto-accept`, `--terminal`, `--no-numeric-selection`, `--show-score`, `--title/-t`, `--prompt/-p`, `--min-width`, `--min-height`, `--max-width`, `--max-height`, `--init-config`.
-Supported env: `GMENU_MENU_ID`, `GMENU_INITIAL_QUERY`, `GMENU_SEARCH_METHOD`, `GMENU_PRESERVE_ORDER`, `GMENU_AUTO_ACCEPT`, `GMENU_TERMINAL_MODE`, `GMENU_NO_NUMERIC_SELECTION`, `GMENU_SHOW_SCORE`, `GMENU_ACCEPT_CUSTOM_SELECTION`, `GMENU_TITLE`, `GMENU_PROMPT`, `GMENU_MIN_WIDTH`, `GMENU_MIN_HEIGHT`, `GMENU_MAX_WIDTH`, `GMENU_MAX_HEIGHT`.
+Supported flags: `--menu-id/-m`, `--initial-query/-q`, `--search-method/-s`, `--preserve-order/-o`, `--auto-accept`, `--terminal`, `--no-numeric-selection`, `--show-icons`, `--show-score`, `--title/-t`, `--prompt/-p`, `--min-width`, `--min-height`, `--max-width`, `--max-height`, `--init-config`.
+Supported env: `GMENU_MENU_ID`, `GMENU_INITIAL_QUERY`, `GMENU_SEARCH_METHOD`, `GMENU_PRESERVE_ORDER`, `GMENU_AUTO_ACCEPT`, `GMENU_TERMINAL_MODE`, `GMENU_NO_NUMERIC_SELECTION`, `GMENU_SHOW_ICONS`, `GMENU_SHOW_SCORE`, `GMENU_ACCEPT_CUSTOM_SELECTION`, `GMENU_TITLE`, `GMENU_PROMPT`, `GMENU_MIN_WIDTH`, `GMENU_MIN_HEIGHT`, `GMENU_MAX_WIDTH`, `GMENU_MAX_HEIGHT`.
 Config file: searches `config.yaml` in `$XDG_CONFIG_HOME/gmenu[/<menu_id>]` (macOS: `~/Library/Application Support/gmenu`) and `~/.gmenu[/<menu_id>]`. Use `--init-config` to write a default config to the primary location.
 
 Terminal mode is a simple prompt/response flow (non-live) that reads the query from `/dev/tty` and returns the top match.
+When `--show-icons` is enabled, input lines can prefix `[app]`, `[file]`, `[folder]`, or `[info]` to show a text hint column.

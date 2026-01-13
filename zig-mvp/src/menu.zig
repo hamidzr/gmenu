@@ -4,7 +4,50 @@ const search = @import("search.zig");
 pub const MenuItem = struct {
     label: [:0]const u8,
     index: usize,
+    icon: IconKind,
 };
+
+pub const IconKind = enum {
+    none,
+    app,
+    file,
+    folder,
+    info,
+};
+
+pub fn parseItem(allocator: std.mem.Allocator, line: []const u8, index: usize, parse_icon: bool) !MenuItem {
+    var icon: IconKind = .none;
+    var label = line;
+
+    if (parse_icon and line.len >= 3 and line[0] == '[') {
+        if (std.mem.indexOfScalar(u8, line, ']')) |close_idx| {
+            const raw = line[1..close_idx];
+            if (iconFromName(raw)) |kind| {
+                icon = kind;
+                label = std.mem.trimLeft(u8, line[close_idx + 1 ..], " \t");
+            }
+        }
+    }
+
+    const label_z = try allocator.dupeZ(u8, label);
+    return .{ .label = label_z, .index = index, .icon = icon };
+}
+
+fn iconFromName(name: []const u8) ?IconKind {
+    if (std.ascii.eqlIgnoreCase(name, "app") or std.ascii.eqlIgnoreCase(name, "application")) {
+        return .app;
+    }
+    if (std.ascii.eqlIgnoreCase(name, "file")) {
+        return .file;
+    }
+    if (std.ascii.eqlIgnoreCase(name, "folder") or std.ascii.eqlIgnoreCase(name, "dir") or std.ascii.eqlIgnoreCase(name, "directory")) {
+        return .folder;
+    }
+    if (std.ascii.eqlIgnoreCase(name, "info")) {
+        return .info;
+    }
+    return null;
+}
 
 pub const Model = struct {
     items: []MenuItem,

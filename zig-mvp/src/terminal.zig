@@ -3,14 +3,10 @@ const appconfig = @import("config.zig");
 const cache = @import("cache.zig");
 const pid = @import("pid.zig");
 const search = @import("search.zig");
-
-const MenuItem = struct {
-    label: [:0]const u8,
-    index: usize,
-};
+const menu = @import("menu.zig");
 
 pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
-    const items = readItems(allocator) catch {
+    const items = readItems(allocator, config.show_icons) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
         std.process.exit(1);
     };
@@ -63,12 +59,12 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
     std.process.exit(0);
 }
 
-fn readItems(allocator: std.mem.Allocator) ![]MenuItem {
+fn readItems(allocator: std.mem.Allocator, parse_icons: bool) ![]menu.MenuItem {
     const stdin = std.fs.File.stdin();
     const input = try stdin.readToEndAlloc(allocator, 16 * 1024 * 1024);
     if (input.len == 0) return error.NoInput;
 
-    var items = std.ArrayList(MenuItem).empty;
+    var items = std.ArrayList(menu.MenuItem).empty;
     errdefer items.deinit(allocator);
 
     var iter = std.mem.splitScalar(u8, input, '\n');
@@ -79,8 +75,8 @@ fn readItems(allocator: std.mem.Allocator) ![]MenuItem {
         }
         if (trimmed.len == 0) continue;
 
-        const label = try allocator.dupeZ(u8, trimmed);
-        try items.append(allocator, .{ .label = label, .index = items.items.len });
+        const item = try menu.parseItem(allocator, trimmed, items.items.len, parse_icons);
+        try items.append(allocator, item);
     }
 
     if (items.items.len == 0) return error.NoInput;

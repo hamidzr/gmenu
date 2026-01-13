@@ -144,6 +144,11 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
+    if (envValue(allocator, "GMENU_SHOW_ICONS")) |value| {
+        config.show_icons = try parseBool(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
     if (envValue(allocator, "GMENU_SHOW_SCORE")) |value| {
         config.show_score = try parseBool(value);
     } else |err| {
@@ -226,6 +231,10 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             config.no_numeric_selection = true;
             continue;
         }
+        if (std.mem.eql(u8, arg, "--show-icons")) {
+            config.show_icons = true;
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--show-score")) {
             config.show_score = true;
             continue;
@@ -272,6 +281,10 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
     }
     if (eqKey(key, "no_numeric_selection") or eqKey(key, "noNumericSelection")) {
         config.no_numeric_selection = try parseBool(value);
+        return;
+    }
+    if (eqKey(key, "show_icons") or eqKey(key, "showIcons")) {
+        config.show_icons = try parseBool(value);
         return;
     }
     if (eqKey(key, "show_score") or eqKey(key, "showScore")) {
@@ -375,6 +388,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\auto_accept: false
         \\accept_custom_selection: true
         \\no_numeric_selection: false
+        \\show_icons: false
         \\show_score: false
         \\min_width: {d}
         \\min_height: {d}

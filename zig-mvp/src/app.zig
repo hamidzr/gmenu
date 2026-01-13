@@ -77,7 +77,7 @@ fn moveSelection(state: *AppState, delta: isize) void {
     updateSelection(state);
 }
 
-fn readItems(allocator: std.mem.Allocator) ![]menu.MenuItem {
+fn readItems(allocator: std.mem.Allocator, parse_icons: bool) ![]menu.MenuItem {
     const stdin = std.fs.File.stdin();
     const input = try stdin.readToEndAlloc(allocator, 16 * 1024 * 1024);
     if (input.len == 0) return error.NoInput;
@@ -93,8 +93,8 @@ fn readItems(allocator: std.mem.Allocator) ![]menu.MenuItem {
         }
         if (trimmed.len == 0) continue;
 
-        const label = try allocator.dupeZ(u8, trimmed);
-        try items.append(allocator, .{ .label = label, .index = items.items.len });
+        const item = try menu.parseItem(allocator, trimmed, items.items.len, parse_icons);
+        try items.append(allocator, item);
     }
 
     if (items.items.len == 0) return error.NoInput;
@@ -222,12 +222,30 @@ fn columnIsIndex(column: objc.Object) bool {
     return std.mem.eql(u8, name, "index");
 }
 
+fn columnIsIcon(column: objc.Object) bool {
+    const identifier = column.msgSend(objc.Object, "identifier", .{});
+    const utf8_ptr = identifier.msgSend(?[*:0]const u8, "UTF8String", .{});
+    if (utf8_ptr == null) return false;
+    const name = std.mem.sliceTo(utf8_ptr.?, 0);
+    return std.mem.eql(u8, name, "icon");
+}
+
 fn columnIsScore(column: objc.Object) bool {
     const identifier = column.msgSend(objc.Object, "identifier", .{});
     const utf8_ptr = identifier.msgSend(?[*:0]const u8, "UTF8String", .{});
     if (utf8_ptr == null) return false;
     const name = std.mem.sliceTo(utf8_ptr.?, 0);
     return std.mem.eql(u8, name, "score");
+}
+
+fn iconLabel(kind: menu.IconKind) [:0]const u8 {
+    return switch (kind) {
+        .app => "APP",
+        .file => "FILE",
+        .folder => "DIR",
+        .info => "INFO",
+        else => "",
+    };
 }
 
 fn tableViewObjectValue(
@@ -254,6 +272,15 @@ fn tableViewObjectValue(
                 return nsString(digit_labels[row_index]).value;
             }
             return nsString("").value;
+        }
+    }
+    if (state.config.show_icons and column != null) {
+        const column_obj = objc.Object.fromId(column);
+        if (columnIsIcon(column_obj)) {
+            const item_index = state.model.filtered.items[row_index];
+            const label = iconLabel(state.model.items[item_index].icon);
+            if (label.len == 0) return nsString("").value;
+            return nsString(label).value;
         }
     }
     if (state.config.show_score and column != null) {
@@ -478,7 +505,7 @@ pub fn run(config: appconfig.Config) !void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    const items = readItems(allocator) catch {
+    const items = readItems(allocator, config.show_icons) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
         std.process.exit(1);
     };
@@ -522,7 +549,8 @@ pub fn run(config: appconfig.Config) !void {
     const list_height = window_height - field_height - (padding * 3.0);
     const numeric_width = if (config.no_numeric_selection) 0 else config.numeric_column_width;
     const score_width = if (config.show_score) config.score_column_width else 0;
-    var item_width = list_width - numeric_width - score_width;
+    const icon_width = if (config.show_icons) config.icon_column_width else 0;
+    var item_width = list_width - numeric_width - icon_width - score_width;
     if (item_width < 0) item_width = 0;
 
     const window_rect = NSRect{
@@ -589,16 +617,22 @@ pub fn run(config: appconfig.Config) !void {
         index_column.msgSend(void, "setWidth:", .{numeric_width});
         table_view.msgSend(void, "addTableColumn:", .{index_column});
     }
+    if (config.show_icons) {
+        const icon_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
+            .msgSend(objc.Object, "initWithIdentifier:", .{nsString("icon")});
+        icon_column.msgSend(void, "setWidth:", .{icon_width});
+        table_view.msgSend(void, "addTableColumn:", .{icon_column});
+    }
+    const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
+        .msgSend(objc.Object, "initWithIdentifier:", .{nsString("items")});
+    table_column.msgSend(void, "setWidth:", .{item_width});
+    table_view.msgSend(void, "addTableColumn:", .{table_column});
     if (config.show_score) {
         const score_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("score")});
         score_column.msgSend(void, "setWidth:", .{score_width});
         table_view.msgSend(void, "addTableColumn:", .{score_column});
     }
-    const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
-        .msgSend(objc.Object, "initWithIdentifier:", .{nsString("items")});
-    table_column.msgSend(void, "setWidth:", .{item_width});
-    table_view.msgSend(void, "addTableColumn:", .{table_column});
 
     const NSScrollView = objc.getClass("NSScrollView").?;
     const scroll_view = NSScrollView.msgSend(objc.Object, "alloc", .{})
