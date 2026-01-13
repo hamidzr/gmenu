@@ -1,8 +1,10 @@
 # zmenu Plan
 
 ## Goal
-- POC: native macOS AppKit window with a single text input; on Enter, print input to stdout.
-- Use Zig + zig-objc with the smallest long-term-friendly scaffold.
+Milestone 0 MVP from `GMENU_V1_PLAN.md`:
+- Read stdin items into memory and show them in a native AppKit list UI.
+- Provide a search field that filters items with a simple case-insensitive substring match.
+- Enter prints the top filtered item to stdout and exits 0; Esc cancels with a non-zero exit.
 
 ## Current gmenu observations (for eventual replacement)
 - CLI wiring is in internal/cli/cli.go: reads stdin items, resolves config, and launches GUI/terminal mode.
@@ -12,18 +14,20 @@
 - Item rendering is in render/items.go: numbered list, selected highlight, alternating row colors, optional icon, and score metadata.
 - Menu/search state lives in core/menu.go: search method, filtered list, selection index, dynamic updates via ItemsChan.
 
-## POC Implementation steps
-1. Create Zig project layout in zig-mvp for the zmenu app (build.zig, build.zig.zon, src/main.zig).
-2. Add zig-objc dependency and link AppKit + Foundation frameworks.
-3. Build a minimal AppKit window (NSApplication, NSWindow).
-4. Add an NSTextField with target/action; implement an Objective-C method on a Zig-defined class to print to stdout.
-5. Add README with build/run instructions and notes.
+## M0 Implementation steps
+1. Read stdin items (one per line) into memory; exit with a non-zero error if stdin is empty.
+2. Build AppKit UI: window + search NSTextField + list view (NSTableView in a scroll view).
+3. Wire live filtering on text change using a case-insensitive substring match.
+4. Enter prints the top filtered item and exits 0; Esc cancels with a non-zero exit code.
 
 ## Validation
-- zig build run shows a native window, accepts text, and prints input to stdout when Enter is pressed.
+- `zig build run` with stdin opens a window, shows the list, and filters as you type.
+- Pressing Enter prints the top filtered item to stdout and exits 0.
+- Pressing Esc exits with a non-zero code.
+- Running without stdin exits with an error.
 
-## Follow-on for gmenu replacement (out of scope for this POC)
-- Menu list UI (items canvas + selection highlight + icons + scores).
+## Follow-on for gmenu replacement (out of scope for M0)
+- Menu list selection + output to stdout for explicit selection.
 - Keyboard nav and shortcuts mirroring current behavior.
-- Search/filter pipeline, state caching, and config parity.
-- CLI wiring for stdin + terminal mode parity.
+- Search/filter pipeline parity, state caching, and config handling.
+- CLI wiring for terminal mode parity.

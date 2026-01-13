@@ -1,10 +1,12 @@
 # zmenu
 
-Native macOS AppKit proof-of-concept for the gmenu replacement (zmenu).
+Native macOS AppKit MVP for the gmenu replacement (zmenu).
 
 ## What it does
-- Opens a native window with a single text field.
-- Press Enter to print the current text to stdout.
+- Reads menu items from stdin (one per line). If stdin is empty, it exits with a non-zero code.
+- Opens a native window with a search field and a list of items.
+- Typing filters the list with a case-insensitive substring match.
+- Enter prints the top filtered item to stdout and exits 0; Esc cancels with a non-zero exit code.
 
 ## Requirements
 - macOS
@@ -12,8 +14,10 @@ Native macOS AppKit proof-of-concept for the gmenu replacement (zmenu).
 - Xcode Command Line Tools (for AppKit headers)
 
 ## Run
+Provide stdin, then launch the app:
+
 ```bash
-zig build run
+printf "alpha\nbravo\ncharlie\n" | zig build run
 ```
 
-If you want to see stdout, launch from a Terminal.
+If you run without stdin, zmenu exits with an error.
