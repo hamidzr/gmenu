@@ -11,6 +11,7 @@ pub const Model = struct {
     labels: []const []const u8,
     matches: std.ArrayList(search.Match),
     filtered: std.ArrayList(usize),
+    scores: []u32,
     selected: isize,
 
     pub fn init(allocator: std.mem.Allocator, items: []MenuItem) !Model {
@@ -25,11 +26,15 @@ pub const Model = struct {
         var filtered = std.ArrayList(usize).empty;
         try filtered.ensureTotalCapacity(allocator, items.len);
 
+        const scores = try allocator.alloc(u32, items.len);
+        @memset(scores, 0);
+
         return .{
             .items = items,
             .labels = labels,
             .matches = matches,
             .filtered = filtered,
+            .scores = scores,
             .selected = -1,
         };
     }
@@ -38,10 +43,17 @@ pub const Model = struct {
         self.matches.deinit(allocator);
         self.filtered.deinit(allocator);
         allocator.free(self.labels);
+        allocator.free(self.scores);
     }
 
     pub fn applyFilter(self: *Model, query: []const u8, opts: search.Options) void {
+        @memset(self.scores, 0);
         search.filterIndices(self.labels, query, opts, &self.matches, &self.filtered);
+        for (self.matches.items) |match| {
+            if (match.index < self.scores.len) {
+                self.scores[match.index] = match.score;
+            }
+        }
         if (self.filtered.items.len == 0) {
             self.selected = -1;
         } else {

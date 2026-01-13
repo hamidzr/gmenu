@@ -222,6 +222,14 @@ fn columnIsIndex(column: objc.Object) bool {
     return std.mem.eql(u8, name, "index");
 }
 
+fn columnIsScore(column: objc.Object) bool {
+    const identifier = column.msgSend(objc.Object, "identifier", .{});
+    const utf8_ptr = identifier.msgSend(?[*:0]const u8, "UTF8String", .{});
+    if (utf8_ptr == null) return false;
+    const name = std.mem.sliceTo(utf8_ptr.?, 0);
+    return std.mem.eql(u8, name, "score");
+}
+
 fn tableViewObjectValue(
     target: objc.c.id,
     sel: objc.c.SEL,
@@ -246,6 +254,17 @@ fn tableViewObjectValue(
                 return nsString(digit_labels[row_index]).value;
             }
             return nsString("").value;
+        }
+    }
+    if (state.config.show_score and column != null) {
+        const column_obj = objc.Object.fromId(column);
+        if (columnIsScore(column_obj)) {
+            const item_index = state.model.filtered.items[row_index];
+            const score = state.model.scores[item_index];
+            if (score == 0) return nsString("").value;
+            var buf: [32]u8 = undefined;
+            const score_z = std.fmt.bufPrintZ(&buf, "{d}", .{score}) catch return nsString("").value;
+            return nsString(score_z).value;
         }
     }
 
@@ -502,7 +521,9 @@ pub fn run(config: appconfig.Config) !void {
     const list_width = window_width - (padding * 2.0);
     const list_height = window_height - field_height - (padding * 3.0);
     const numeric_width = if (config.no_numeric_selection) 0 else config.numeric_column_width;
-    const item_width = list_width - numeric_width;
+    const score_width = if (config.show_score) config.score_column_width else 0;
+    var item_width = list_width - numeric_width - score_width;
+    if (item_width < 0) item_width = 0;
 
     const window_rect = NSRect{
         .origin = .{ .x = 0, .y = 0 },
@@ -567,6 +588,12 @@ pub fn run(config: appconfig.Config) !void {
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("index")});
         index_column.msgSend(void, "setWidth:", .{numeric_width});
         table_view.msgSend(void, "addTableColumn:", .{index_column});
+    }
+    if (config.show_score) {
+        const score_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
+            .msgSend(objc.Object, "initWithIdentifier:", .{nsString("score")});
+        score_column.msgSend(void, "setWidth:", .{score_width});
+        table_view.msgSend(void, "addTableColumn:", .{score_column});
     }
     const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithIdentifier:", .{nsString("items")});
