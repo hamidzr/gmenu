@@ -8,6 +8,3 @@ run:
 
 clean:
 	rm -rf zig-out .zig-cache bin
-
-zip:
-	zip -r ../zmenu.zip .
