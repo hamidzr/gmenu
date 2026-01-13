@@ -5,7 +5,7 @@ Native macOS AppKit MVP for the gmenu replacement (zmenu).
 ## What it does
 - Reads menu items from stdin (one per line). If stdin is empty, it exits with a non-zero code.
 - Opens a native window with a search field and a list of items.
-- Typing filters the list with a case-insensitive substring match.
+- Typing filters the list with a tokenized, case-insensitive fuzzy match (results capped at 10).
 - Enter prints the top filtered item to stdout and exits 0; Esc cancels with a non-zero exit code.
 
 ## Requirements

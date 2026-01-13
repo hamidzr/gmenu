@@ -1,9 +1,10 @@
 # zmenu Plan
 
 ## Goal
-Milestone 0 MVP from `GMENU_V1_PLAN.md`:
+Milestone 1 MVP from `GMENU_V1_PLAN.md`:
 - Read stdin items into memory and show them in a native AppKit list UI.
-- Provide a search field that filters items with a simple case-insensitive substring match.
+- Provide a search field that filters items with a tokenized fuzzy match (case-insensitive).
+- Preserve-order option and result limit behavior (limit=10).
 - Enter prints the top filtered item to stdout and exits 0; Esc cancels with a non-zero exit.
 
 ## Current gmenu observations (for eventual replacement)
@@ -14,19 +15,21 @@ Milestone 0 MVP from `GMENU_V1_PLAN.md`:
 - Item rendering is in render/items.go: numbered list, selected highlight, alternating row colors, optional icon, and score metadata.
 - Menu/search state lives in core/menu.go: search method, filtered list, selection index, dynamic updates via ItemsChan.
 
-## M0 Implementation steps
+## M1 Implementation steps
 1. Read stdin items (one per line) into memory; exit with a non-zero error if stdin is empty.
 2. Build AppKit UI: window + search NSTextField + list view (NSTableView in a scroll view).
-3. Wire live filtering on text change using a case-insensitive substring match.
-4. Enter prints the top filtered item and exits 0; Esc cancels with a non-zero exit code.
+3. Wire live filtering on text change using a tokenized fuzzy match.
+4. Enforce preserve-order behavior and a hard limit of 10 results.
+5. Enter prints the top filtered item and exits 0; Esc cancels with a non-zero exit code.
 
 ## Validation
 - `zig build run` with stdin opens a window, shows the list, and filters as you type.
 - Pressing Enter prints the top filtered item to stdout and exits 0.
 - Pressing Esc exits with a non-zero code.
 - Running without stdin exits with an error.
+- `zig test src/search.zig` passes.
 
-## Follow-on for gmenu replacement (out of scope for M0)
+## Follow-on for gmenu replacement (out of scope for M1)
 - Menu list selection + output to stdout for explicit selection.
 - Keyboard nav and shortcuts mirroring current behavior.
 - Search/filter pipeline parity, state caching, and config handling.

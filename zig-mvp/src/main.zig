@@ -1,5 +1,6 @@
 const std = @import("std");
 const objc = @import("objc");
+const search = @import("search.zig");
 
 const NSApplicationActivationPolicyRegular: i64 = 0;
 const NSWindowStyleMaskBorderless: u64 = 0;
@@ -20,14 +21,21 @@ const NSRect = extern struct {
     size: NSSize,
 };
 
+const search_options = search.Options{
+    .method = .fuzzy,
+    .preserve_order = false,
+    .limit = 10,
+};
+
 const MenuItem = struct {
     label: [:0]const u8,
     index: usize,
 };
 
 const AppState = struct {
-    allocator: std.mem.Allocator,
     items: []MenuItem,
+    labels: []const []const u8,
+    matches: std.ArrayList(search.Match),
     filtered: std.ArrayList(usize),
     table_view: objc.Object,
 };
@@ -39,33 +47,8 @@ fn nsString(str: [:0]const u8) objc.Object {
     return NSString.msgSend(objc.Object, "stringWithUTF8String:", .{str});
 }
 
-fn containsInsensitive(haystack: []const u8, needle: []const u8) bool {
-    if (needle.len == 0) return true;
-    if (needle.len > haystack.len) return false;
-
-    var i: usize = 0;
-    while (i + needle.len <= haystack.len) : (i += 1) {
-        var j: usize = 0;
-        while (j < needle.len) : (j += 1) {
-            if (std.ascii.toLower(haystack[i + j]) != std.ascii.toLower(needle[j])) {
-                break;
-            }
-        }
-        if (j == needle.len) return true;
-    }
-
-    return false;
-}
-
 fn applyFilter(state: *AppState, query: []const u8) void {
-    state.filtered.clearRetainingCapacity();
-    for (state.items, 0..) |item, idx| {
-        const label = item.label[0..item.label.len];
-        if (containsInsensitive(label, query)) {
-            state.filtered.appendAssumeCapacity(idx);
-        }
-    }
-
+    search.filterIndices(state.labels, query, search_options, &state.matches, &state.filtered);
     state.table_view.msgSend(void, "reloadData", .{});
 }
 
@@ -258,6 +241,14 @@ pub fn main() !void {
         std.process.exit(1);
     };
 
+    const labels = try allocator.alloc([]const u8, items.len);
+    for (items, 0..) |item, idx| {
+        labels[idx] = item.label[0..item.label.len];
+    }
+
+    var matches = std.ArrayList(search.Match).empty;
+    try matches.ensureTotalCapacity(allocator, items.len);
+
     var filtered = std.ArrayList(usize).empty;
     try filtered.ensureTotalCapacity(allocator, items.len);
     for (items, 0..) |_, idx| {
@@ -349,8 +340,9 @@ pub fn main() !void {
     content_view.msgSend(void, "addSubview:", .{text_field});
 
     var state = AppState{
-        .allocator = allocator,
         .items = items,
+        .labels = labels,
+        .matches = matches,
         .filtered = filtered,
         .table_view = table_view,
     };
