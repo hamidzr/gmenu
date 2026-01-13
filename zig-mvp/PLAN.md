@@ -26,6 +26,7 @@ Milestone 1 MVP from `GMENU_V1_PLAN.md`:
 - `src/cache.zig` cache load/save for last query + selection.
 - `src/cli.zig` CLI + env + config file merging.
 - `src/terminal.zig` terminal-mode prompt flow.
+Dynamic updates are supported via `--follow-stdin` (polls stdin and appends items).
 
 Planned follow-on modules: config/env parsing, cache helpers, CLI flags, and theming.
 

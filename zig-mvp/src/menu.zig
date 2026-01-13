@@ -104,6 +104,30 @@ pub const Model = struct {
         }
     }
 
+    pub fn appendItems(self: *Model, allocator: std.mem.Allocator, new_items: []const MenuItem) !void {
+        if (new_items.len == 0) return;
+
+        const old_len = self.items.len;
+        const new_len = old_len + new_items.len;
+
+        self.items = try allocator.realloc(self.items, new_len);
+        self.labels = try allocator.realloc(self.labels, new_len);
+        self.scores = try allocator.realloc(self.scores, new_len);
+
+        var i: usize = 0;
+        while (i < new_items.len) : (i += 1) {
+            const idx = old_len + i;
+            var item = new_items[i];
+            item.index = idx;
+            self.items[idx] = item;
+            self.labels[idx] = item.label[0..item.label.len];
+            self.scores[idx] = 0;
+        }
+
+        try self.matches.ensureTotalCapacity(allocator, new_len);
+        try self.filtered.ensureTotalCapacity(allocator, new_len);
+    }
+
     pub fn moveSelection(self: *Model, delta: isize) void {
         if (self.filtered.items.len == 0) {
             self.selected = -1;

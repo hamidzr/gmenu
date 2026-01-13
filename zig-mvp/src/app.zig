@@ -25,6 +25,40 @@ const NSRect = extern struct {
     size: NSSize,
 };
 
+const UpdateQueue = struct {
+    allocator: std.mem.Allocator,
+    mutex: std.Thread.Mutex = .{},
+    items: std.ArrayList([]const u8),
+
+    pub fn init(allocator: std.mem.Allocator) UpdateQueue {
+        return .{
+            .allocator = allocator,
+            .items = std.ArrayList([]const u8).init(allocator),
+        };
+    }
+
+    pub fn pushOwned(self: *UpdateQueue, line: []const u8) void {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        self.items.append(line) catch self.allocator.free(line);
+    }
+
+    pub fn drain(self: *UpdateQueue) []const []const u8 {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        if (self.items.items.len == 0) {
+            return &[_][]const u8{};
+        }
+        const out = self.allocator.alloc([]const u8, self.items.items.len) catch {
+            self.items.clearRetainingCapacity();
+            return &[_][]const u8{};
+        };
+        @memcpy(out, self.items.items);
+        self.items.clearRetainingCapacity();
+        return out;
+    }
+};
+
 const AppState = struct {
     model: menu.Model,
     table_view: objc.Object,
@@ -33,6 +67,7 @@ const AppState = struct {
     config: appconfig.Config,
     pid_path: ?[]const u8,
     allocator: std.mem.Allocator,
+    update_queue: ?*UpdateQueue,
 };
 
 const digit_labels = [_][:0]const u8{ "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -100,6 +135,29 @@ fn readItems(allocator: std.mem.Allocator, parse_icons: bool) ![]menu.MenuItem {
     if (items.items.len == 0) return error.NoInput;
 
     return items.toOwnedSlice(allocator);
+}
+
+fn followStdinThread(queue: *UpdateQueue) void {
+    var reader = std.fs.File.stdin().deprecatedReader();
+    while (true) {
+        const line_opt = reader.readUntilDelimiterOrEofAlloc(queue.allocator, '\n', 64 * 1024) catch return;
+        if (line_opt == null) return;
+        var line = line_opt.?;
+        var trimmed = std.mem.trimRight(u8, line, "\r\n");
+        if (trimmed.len == 0) {
+            queue.allocator.free(line);
+            continue;
+        }
+        if (trimmed.len != line.len) {
+            const copy = queue.allocator.dupe(u8, trimmed) catch {
+                queue.allocator.free(line);
+                continue;
+            };
+            queue.allocator.free(line);
+            line = copy;
+        }
+        queue.pushOwned(line);
+    }
 }
 
 fn controlTextDidChange(target: objc.c.id, sel: objc.c.SEL, notification: objc.c.id) callconv(.c) void {
@@ -344,6 +402,40 @@ fn onFocusLossTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callco
     std.process.exit(1);
 }
 
+fn onUpdateTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(.c) void {
+    _ = target;
+    _ = sel;
+    _ = timer;
+
+    const state = g_state orelse return;
+    const queue = state.update_queue orelse return;
+    const lines = queue.drain();
+    if (lines.len == 0) return;
+
+    var new_items = std.ArrayList(menu.MenuItem).empty;
+    defer new_items.deinit(state.allocator);
+    new_items.ensureTotalCapacity(state.allocator, lines.len) catch {
+        for (lines) |line| queue.allocator.free(line);
+        queue.allocator.free(lines);
+        return;
+    };
+
+    const start = state.model.items.len;
+    for (lines, 0..) |line, idx| {
+        const item = menu.parseItem(state.allocator, line, start + idx, state.config.show_icons) catch {
+            queue.allocator.free(line);
+            continue;
+        };
+        new_items.appendAssumeCapacity(item);
+        queue.allocator.free(line);
+    }
+    queue.allocator.free(lines);
+
+    if (new_items.items.len == 0) return;
+    state.model.appendItems(state.allocator, new_items.items) catch return;
+    applyFilter(state, currentQuery(state));
+}
+
 fn scheduleFocusLossCancel() void {
     const state = g_state orelse return;
     const NSTimer = objc.getClass("NSTimer").?;
@@ -432,6 +524,9 @@ fn inputHandlerClass() objc.Class {
     if (!cls.addMethod("onFocusLossTimer:", onFocusLossTimer)) {
         @panic("failed to add onFocusLossTimer: method");
     }
+    if (!cls.addMethod("onUpdateTimer:", onUpdateTimer)) {
+        @panic("failed to add onUpdateTimer: method");
+    }
     if (!cls.addMethod("onSubmit:", onSubmit)) {
         @panic("failed to add onSubmit: method");
     }
@@ -505,10 +600,13 @@ pub fn run(config: appconfig.Config) !void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    const items = readItems(allocator, config.show_icons) catch {
-        std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
-        std.process.exit(1);
-    };
+    var items: []menu.MenuItem = &[_]menu.MenuItem{};
+    if (!config.follow_stdin) {
+        items = readItems(allocator, config.show_icons) catch {
+            std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
+            std.process.exit(1);
+        };
+    }
 
     const pid_path = pid.create(allocator, config.menu_id) catch |err| {
         _ = err;
@@ -646,6 +744,13 @@ pub fn run(config: appconfig.Config) !void {
     content_view.msgSend(void, "addSubview:", .{scroll_view});
     content_view.msgSend(void, "addSubview:", .{text_field});
 
+    var update_queue: UpdateQueue = undefined;
+    var update_queue_ptr: ?*UpdateQueue = null;
+    if (config.follow_stdin) {
+        update_queue = UpdateQueue.init(std.heap.c_allocator);
+        update_queue_ptr = &update_queue;
+    }
+
     var state = AppState{
         .model = try menu.Model.init(allocator, items),
         .table_view = table_view,
@@ -654,9 +759,22 @@ pub fn run(config: appconfig.Config) !void {
         .config = config,
         .pid_path = pid_path,
         .allocator = allocator,
+        .update_queue = update_queue_ptr,
     };
     defer state.model.deinit(allocator);
     g_state = &state;
+
+    if (config.follow_stdin and update_queue_ptr != null) {
+        _ = std.Thread.spawn(.{}, followStdinThread, .{update_queue_ptr.?}) catch {};
+        const NSTimer = objc.getClass("NSTimer").?;
+        _ = NSTimer.msgSend(objc.Object, "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:", .{
+            0.2,
+            handler,
+            objc.sel("onUpdateTimer:"),
+            @as(objc.c.id, null),
+            true,
+        });
+    }
 
     const data_source = makeDataSource();
     table_view.msgSend(void, "setDataSource:", .{data_source});
