@@ -33,14 +33,14 @@ const UpdateQueue = struct {
     pub fn init(allocator: std.mem.Allocator) UpdateQueue {
         return .{
             .allocator = allocator,
-            .items = std.ArrayList([]const u8).init(allocator),
+            .items = std.ArrayList([]const u8).empty,
         };
     }
 
     pub fn pushOwned(self: *UpdateQueue, line: []const u8) void {
         self.mutex.lock();
         defer self.mutex.unlock();
-        self.items.append(line) catch self.allocator.free(line);
+        self.items.append(self.allocator, line) catch self.allocator.free(line);
     }
 
     pub fn drain(self: *UpdateQueue) []const []const u8 {
@@ -143,7 +143,7 @@ fn followStdinThread(queue: *UpdateQueue) void {
         const line_opt = reader.readUntilDelimiterOrEofAlloc(queue.allocator, '\n', 64 * 1024) catch return;
         if (line_opt == null) return;
         var line = line_opt.?;
-        var trimmed = std.mem.trimRight(u8, line, "\r\n");
+        const trimmed = std.mem.trimRight(u8, line, "\r\n");
         if (trimmed.len == 0) {
             queue.allocator.free(line);
             continue;
@@ -194,19 +194,19 @@ fn controlTextViewDoCommandBySelector(
 
     const state = g_state orelse return false;
 
-    if (command == objc.sel("moveUp:")) {
+    if (command == objc.sel("moveUp:").value) {
         moveSelection(state, -1);
         return true;
     }
-    if (command == objc.sel("moveDown:")) {
+    if (command == objc.sel("moveDown:").value) {
         moveSelection(state, 1);
         return true;
     }
-    if (command == objc.sel("insertTab:")) {
+    if (command == objc.sel("insertTab:").value) {
         moveSelection(state, 1);
         return true;
     }
-    if (command == objc.sel("insertBacktab:")) {
+    if (command == objc.sel("insertBacktab:").value) {
         moveSelection(state, -1);
         return true;
     }
@@ -608,8 +608,7 @@ pub fn run(config: appconfig.Config) !void {
         };
     }
 
-    const pid_path = pid.create(allocator, config.menu_id) catch |err| {
-        _ = err;
+    const pid_path = pid.create(allocator, config.menu_id) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: another instance is running\n", .{}) catch {};
         std.process.exit(1);
     };

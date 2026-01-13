@@ -51,7 +51,7 @@ fn iconFromName(name: []const u8) ?IconKind {
 
 pub const Model = struct {
     items: []MenuItem,
-    labels: []const []const u8,
+    labels: [][]const u8,
     matches: std.ArrayList(search.Match),
     filtered: std.ArrayList(usize),
     scores: []u32,

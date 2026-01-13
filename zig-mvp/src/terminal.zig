@@ -11,14 +11,13 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
         std.process.exit(1);
     };
 
-    const pid_path = pid.create(allocator, config.menu_id) catch |err| {
-        _ = err;
+    const pid_path = pid.create(allocator, config.menu_id) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: another instance is running\n", .{}) catch {};
         std.process.exit(1);
     };
     defer pid.remove(pid_path);
 
-    var query = config.initial_query;
+    var query: []const u8 = config.initial_query;
     if (query.len == 0 and config.menu_id.len > 0) {
         if (cache.load(allocator, config.menu_id)) |cached| {
             if (cached) |state| {
