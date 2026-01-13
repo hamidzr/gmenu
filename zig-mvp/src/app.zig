@@ -607,6 +607,8 @@ pub fn run(config: appconfig.Config) !void {
     table_view.msgSend(void, "setHeaderView:", .{@as(objc.c.id, null)});
     table_view.msgSend(void, "setAllowsMultipleSelection:", .{false});
     table_view.msgSend(void, "setAllowsEmptySelection:", .{true});
+    table_view.msgSend(void, "setRowHeight:", .{config.row_height});
+    table_view.msgSend(void, "setUsesAlternatingRowBackgroundColors:", .{config.alternate_rows});
     table_view.msgSend(void, "setTarget:", .{handler});
     table_view.msgSend(void, "setDoubleAction:", .{objc.sel("onSubmit:")});
 

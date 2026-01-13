@@ -118,6 +118,16 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
+    if (envValue(allocator, "GMENU_ROW_HEIGHT")) |value| {
+        config.row_height = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_ALTERNATE_ROWS")) |value| {
+        config.alternate_rows = try parseBool(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
 
     if (envValue(allocator, "GMENU_SEARCH_METHOD")) |value| {
         try applySearchMethod(config, value);
@@ -219,6 +229,16 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             config.max_height = try std.fmt.parseFloat(f64, args[i]);
             continue;
         }
+        if (std.mem.eql(u8, arg, "--row-height")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.row_height = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--alternate-rows")) {
+            config.alternate_rows = true;
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--preserve-order") or std.mem.eql(u8, arg, "-o")) {
             config.search.preserve_order = true;
             continue;
@@ -311,6 +331,14 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
         config.max_height = try std.fmt.parseFloat(f64, value);
         return;
     }
+    if (eqKey(key, "row_height") or eqKey(key, "rowHeight")) {
+        config.row_height = try std.fmt.parseFloat(f64, value);
+        return;
+    }
+    if (eqKey(key, "alternate_rows") or eqKey(key, "alternateRows")) {
+        config.alternate_rows = try parseBool(value);
+        return;
+    }
 }
 
 fn applySearchMethod(config: *appconfig.Config, value: []const u8) !void {
@@ -394,6 +422,8 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\min_height: {d}
         \\max_width: {d}
         \\max_height: {d}
+        \\row_height: {d}
+        \\alternate_rows: true
         \\
     ,
         .{
@@ -403,6 +433,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
             @as(i64, @intFromFloat(defaults.window_height)),
             @as(i64, @intFromFloat(defaults.max_width)),
             @as(i64, @intFromFloat(defaults.max_height)),
+            @as(i64, @intFromFloat(defaults.row_height)),
         },
     );
 

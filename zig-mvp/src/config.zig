@@ -21,6 +21,8 @@ pub const Config = struct {
     icon_column_width: f64,
     show_score: bool,
     score_column_width: f64,
+    row_height: f64,
+    alternate_rows: bool,
 };
 
 pub fn defaults() Config {
@@ -49,5 +51,7 @@ pub fn defaults() Config {
         .icon_column_width = 48,
         .show_score = false,
         .score_column_width = 60,
+        .row_height = 22,
+        .alternate_rows = true,
     };
 }
