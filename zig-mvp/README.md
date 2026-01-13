@@ -11,6 +11,7 @@ Native macOS AppKit MVP for the gmenu replacement (zmenu).
 - Double-clicking a row accepts that item.
 - Keys 1-9 accept the corresponding item when numeric selection is enabled.
 - Ctrl+L clears the query.
+- A pid file in the temp dir prevents multiple instances per menu id.
 
 ## Requirements
 - macOS

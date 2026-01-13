@@ -3,6 +3,8 @@ const search = @import("search.zig");
 pub const Config = struct {
     title: [:0]const u8,
     placeholder: [:0]const u8,
+    menu_id: [:0]const u8,
+    initial_query: [:0]const u8,
     search: search.Options,
     auto_accept: bool,
     accept_custom_selection: bool,
@@ -18,6 +20,8 @@ pub fn defaults() Config {
     return .{
         .title = "zmenu",
         .placeholder = "Type to filter",
+        .menu_id = "",
+        .initial_query = "",
         .search = .{
             .method = .fuzzy,
             .preserve_order = false,

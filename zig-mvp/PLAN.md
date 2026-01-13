@@ -22,8 +22,9 @@ Milestone 1 MVP from `GMENU_V1_PLAN.md`:
 - `src/menu.zig` menu model, filtered indices, and selection state.
 - `src/search.zig` search pipeline + tests.
 - `src/config.zig` defaults for window/text/search options.
+- `src/pid.zig` pid file guard for single-instance behavior.
 
-Planned follow-on modules: config/env parsing, cache + PID helpers, CLI flags, and theming.
+Planned follow-on modules: config/env parsing, cache helpers, CLI flags, and theming.
 
 ## M1 Implementation steps
 1. Read stdin items (one per line) into memory; exit with a non-zero error if stdin is empty.

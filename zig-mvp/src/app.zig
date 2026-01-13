@@ -2,6 +2,7 @@ const std = @import("std");
 const objc = @import("objc");
 const appconfig = @import("config.zig");
 const menu = @import("menu.zig");
+const pid = @import("pid.zig");
 
 const NSApplicationActivationPolicyRegular: i64 = 0;
 const NSWindowStyleMaskBorderless: u64 = 0;
@@ -29,6 +30,7 @@ const AppState = struct {
     text_field: objc.Object,
     handler: objc.Object,
     config: appconfig.Config,
+    pid_path: ?[]const u8,
 };
 
 const digit_labels = [_][:0]const u8{ "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -38,6 +40,13 @@ var g_state: ?*AppState = null;
 fn nsString(str: [:0]const u8) objc.Object {
     const NSString = objc.getClass("NSString").?;
     return NSString.msgSend(objc.Object, "stringWithUTF8String:", .{str});
+}
+
+fn quit(state: *AppState, code: u8) void {
+    if (state.pid_path) |path| {
+        pid.remove(path);
+    }
+    std.process.exit(code);
 }
 
 fn updateSelection(state: *AppState) void {
@@ -159,18 +168,18 @@ fn acceptSelection(state: *AppState) void {
         }
         const query = currentQuery(state);
         std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{query}) catch {};
-        std.process.exit(0);
+        quit(state, 0);
     }
 
     if (state.model.selectedItem()) |item| {
         std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
-        std.process.exit(0);
+        quit(state, 0);
     }
 
     const item_index = state.model.filtered.items[0];
     const item = state.model.items[item_index];
     std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
-    std.process.exit(0);
+    quit(state, 0);
 }
 
 fn onSubmit(target: objc.c.id, sel: objc.c.SEL, sender: objc.c.id) callconv(.c) void {
@@ -259,6 +268,9 @@ fn cancelOperation(target: objc.c.id, sel: objc.c.SEL, sender: objc.c.id) callco
     _ = target;
     _ = sel;
     _ = sender;
+    if (g_state) |state| {
+        quit(state, 1);
+    }
     std.process.exit(1);
 }
 
@@ -266,6 +278,9 @@ fn onFocusLossTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callco
     _ = target;
     _ = sel;
     _ = timer;
+    if (g_state) |state| {
+        quit(state, 1);
+    }
     std.process.exit(1);
 }
 
@@ -435,6 +450,12 @@ pub fn run(config: appconfig.Config) !void {
         std.process.exit(1);
     };
 
+    const pid_path = pid.create(allocator, config.menu_id) catch |err| {
+        _ = err;
+        std.fs.File.stderr().deprecatedWriter().print("zmenu: another instance is running\n", .{}) catch {};
+        std.process.exit(1);
+    };
+
     var pool = objc.AutoreleasePool.init();
     defer pool.deinit();
 
@@ -537,6 +558,7 @@ pub fn run(config: appconfig.Config) !void {
         .text_field = text_field,
         .handler = handler,
         .config = config,
+        .pid_path = pid_path,
     };
     defer state.model.deinit(allocator);
     g_state = &state;
