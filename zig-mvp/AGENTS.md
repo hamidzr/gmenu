@@ -13,7 +13,7 @@
 - `just build`: alias for `zig build`.
 - `just run`: alias for `zig build run`.
 - `just clean`: remove `zig-out/`, `.zig-cache/`, and `bin/`.
-- `just zip`: package the repo into `../zig-mvp.zip`.
+- `just zip`: package the repo into `../zmenu.zip`.
 
 ## Coding Style & Naming Conventions
 - Use Zig standard formatting (`zig fmt src/*.zig`) and 4-space indentation.

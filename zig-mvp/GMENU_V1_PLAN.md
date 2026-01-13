@@ -3,6 +3,8 @@
 Purpose: capture the current Go gmenu feature set and configuration surface, then
 propose a prioritized split and milestones for a Zig/AppKit v1 rewrite.
 
+Note: the Zig MVP app/binary name is zmenu.
+
 Sources (local):
 - README.md, CONFIG.md, gmenu.yaml.example
 - model/config.go, internal/config/model.go, internal/config/config.go
@@ -133,6 +135,20 @@ Milestone 0: Minimum UI + input loop
 - Read stdin items and show them in a basic list UI.
 - Basic search algorithm (simple contains match is enough for v0).
 - Exit codes and Esc to cancel (basic key handling).
+
+### Milestone 0 implementation plan (zmenu MVP)
+- Align project naming: ensure the Zig package and executable name are `zmenu`
+  and docs/reference commands reflect it.
+- Add a minimal model for menu items (`label`, `index`) and load stdin lines into
+  memory on startup; if stdin is empty, exit with a non-zero error code.
+- Build the UI shell: AppKit window + search `NSTextField` + a simple list view
+  (e.g., `NSTableView` or stack of `NSTextField`s) that can render N items.
+- Wire live filtering: on text change, filter items by case-insensitive
+  substring match; refresh the list view with the filtered items.
+- Implement minimal key handling: Esc cancels (non-zero exit), Enter is ignored
+  for now (selection output lands in Milestone 1).
+- Validation checklist: `zig build run` opens a window, typing filters the list,
+  Esc exits with a non-zero code, and an empty-stdin run exits with an error.
 
 Milestone 1: Search + core model parity
 - MenuItem model and search pipeline (direct + fuzzy tokenized).

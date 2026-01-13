@@ -1,7 +1,7 @@
 .{
-    .name = .zig_mvp,
+    .name = .zmenu,
     .version = "0.0.0",
-    .fingerprint = 0x2b9c4d1f04c8195e,
+    .fingerprint = 0x2901eafc6ace330b,
     .minimum_zig_version = "0.15.2",
     .dependencies = .{
         .zig_objc = .{

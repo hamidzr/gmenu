@@ -1,6 +1,6 @@
-# zig-mvp
+# zmenu
 
-Native macOS AppKit proof-of-concept for gmenu replacement.
+Native macOS AppKit proof-of-concept for the gmenu replacement (zmenu).
 
 ## What it does
 - Opens a native window with a single text field.

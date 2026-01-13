@@ -1,4 +1,4 @@
-# zig-mvp justfile
+# zmenu justfile
 
 build:
 	zig build
@@ -10,4 +10,4 @@ clean:
 	rm -rf zig-out .zig-cache bin
 
 zip:
-	zip -r ../zig-mvp.zip .
+	zip -r ../zmenu.zip .

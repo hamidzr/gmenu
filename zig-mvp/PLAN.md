@@ -1,4 +1,4 @@
-# zig-mvp Plan
+# zmenu Plan
 
 ## Goal
 - POC: native macOS AppKit window with a single text input; on Enter, print input to stdout.
@@ -13,7 +13,7 @@
 - Menu/search state lives in core/menu.go: search method, filtered list, selection index, dynamic updates via ItemsChan.
 
 ## POC Implementation steps
-1. Create Zig project layout in zig-mvp (build.zig, build.zig.zon, src/main.zig).
+1. Create Zig project layout in zig-mvp for the zmenu app (build.zig, build.zig.zon, src/main.zig).
 2. Add zig-objc dependency and link AppKit + Foundation frameworks.
 3. Build a minimal AppKit window (NSApplication, NSWindow).
 4. Add an NSTextField with target/action; implement an Objective-C method on a Zig-defined class to print to stdout.
