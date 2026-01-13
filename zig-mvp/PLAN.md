@@ -5,7 +5,8 @@ Milestone 1 MVP from `GMENU_V1_PLAN.md`:
 - Read stdin items into memory and show them in a native AppKit list UI.
 - Provide a search field that filters items with a tokenized fuzzy match (case-insensitive).
 - Preserve-order option and result limit behavior (limit=10).
-- Enter prints the top filtered item to stdout and exits 0; Esc cancels with a non-zero exit.
+- Enter prints the selected (default top) item to stdout and exits 0.
+- Up/Down/Tab move the selection; Esc cancels with a non-zero exit.
 
 ## Current gmenu observations (for eventual replacement)
 - CLI wiring is in internal/cli/cli.go: reads stdin items, resolves config, and launches GUI/terminal mode.
@@ -14,6 +15,15 @@ Milestone 1 MVP from `GMENU_V1_PLAN.md`:
 - Search entry behavior is in render/input.go: intercepts key events, supports Ctrl+L clear, and handles focus loss.
 - Item rendering is in render/items.go: numbered list, selected highlight, alternating row colors, optional icon, and score metadata.
 - Menu/search state lives in core/menu.go: search method, filtered list, selection index, dynamic updates via ItemsChan.
+
+## Current zmenu structure
+- `src/main.zig` entry point that delegates to the AppKit runner.
+- `src/app.zig` AppKit wiring, callbacks, window/layout, and event handling.
+- `src/menu.zig` menu model, filtered indices, and selection state.
+- `src/search.zig` search pipeline + tests.
+- `src/config.zig` defaults for window/text/search options.
+
+Planned follow-on modules: config/env parsing, cache + PID helpers, CLI flags, and theming.
 
 ## M1 Implementation steps
 1. Read stdin items (one per line) into memory; exit with a non-zero error if stdin is empty.
