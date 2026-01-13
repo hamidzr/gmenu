@@ -364,7 +364,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
     var file = try std.fs.createFileAbsolute(path, .{ .truncate = true });
     defer file.close();
 
-    try file.writer().print(
+    try file.deprecatedWriter().print(
         \\# gmenu config
         \\title: {s}
         \\prompt: {s}

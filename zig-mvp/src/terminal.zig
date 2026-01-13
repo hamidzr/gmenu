@@ -92,7 +92,7 @@ fn readQueryFromTTY(allocator: std.mem.Allocator, prompt: [:0]const u8) ![]const
     var tty = try std.fs.openFileAbsolute("/dev/tty", .{});
     defer tty.close();
 
-    try tty.writer().print("{s}", .{prompt});
+    try tty.deprecatedWriter().print("{s}", .{prompt});
     const line_opt = try tty.deprecatedReader().readUntilDelimiterOrEofAlloc(allocator, '\n', 4096);
     if (line_opt == null) return "";
     const line = line_opt.?;

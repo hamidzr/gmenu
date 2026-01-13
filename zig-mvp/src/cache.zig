@@ -48,7 +48,7 @@ pub fn save(allocator: std.mem.Allocator, menu_id: []const u8, state: State) !vo
     var file = try std.fs.createFileAbsolute(path, .{ .truncate = true });
     defer file.close();
 
-    try file.writer().print(
+    try file.deprecatedWriter().print(
         "last_query: {s}\nlast_selection: {s}\n",
         .{ state.last_query, state.last_selection },
     );
