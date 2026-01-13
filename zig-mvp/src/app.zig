@@ -682,8 +682,8 @@ pub fn run(config: appconfig.Config) !void {
 
     const content_view = window.msgSend(objc.Object, "contentView", .{});
 
-    var match_label_width = 100.0;
-    var search_width = list_width - match_label_width;
+    var match_label_width: f64 = 100.0;
+    var search_width: f64 = list_width - match_label_width;
     if (search_width < 0) {
         search_width = list_width;
         match_label_width = 0;

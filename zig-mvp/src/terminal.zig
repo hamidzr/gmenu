@@ -28,15 +28,15 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
     };
     defer std.posix.tcsetattr(tty.handle, .NOW, original_term) catch {};
 
-    var input = std.ArrayList(u8).init(allocator);
-    defer input.deinit();
+    var input = std.ArrayList(u8).empty;
+    defer input.deinit(allocator);
     if (config.initial_query.len > 0) {
-        try input.appendSlice(config.initial_query);
+        try input.appendSlice(allocator, config.initial_query);
     }
 
     try renderMatches(&tty, config.placeholder, input.items, items, config.no_numeric_selection);
 
-    const reader = tty.reader();
+    var reader = tty.deprecatedReader();
     var final_query: []const u8 = input.items;
     var exit_code: ?u8 = null;
 
@@ -64,7 +64,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
             },
             else => {
                 if (ch >= 32 and ch <= 126) {
-                    try input.append(ch);
+                    try input.append(allocator, ch);
                     try renderMatches(&tty, config.placeholder, input.items, items, config.no_numeric_selection);
                 }
             },
@@ -100,7 +100,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
 }
 
 fn enableRawMode(fd: std.posix.fd_t) !std.posix.termios {
-    var term = try std.posix.tcgetattr(fd);
+    const term = try std.posix.tcgetattr(fd);
     var raw = term;
 
     raw.iflag.BRKINT = false;
