@@ -1,6 +1,7 @@
 const std = @import("std");
 const app = @import("app.zig");
 const cli = @import("cli.zig");
+const terminal = @import("terminal.zig");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -12,5 +13,9 @@ pub fn main() !void {
         std.process.exit(1);
     };
 
-    try app.run(config);
+    if (config.terminal_mode) {
+        try terminal.run(config, allocator);
+    } else {
+        try app.run(config);
+    }
 }

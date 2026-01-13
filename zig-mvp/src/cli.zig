@@ -92,6 +92,12 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
 
+    if (envValue(allocator, "GMENU_TERMINAL_MODE")) |value| {
+        config.terminal_mode = try parseBool(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+
     if (envValue(allocator, "GMENU_MIN_WIDTH")) |value| {
         config.window_width = try std.fmt.parseFloat(f64, value);
     } else |err| {
@@ -175,6 +181,10 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             try applySearchMethod(config, args[i]);
             continue;
         }
+        if (std.mem.eql(u8, arg, "--terminal")) {
+            config.terminal_mode = true;
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--min-width")) {
             i += 1;
             if (i >= args.len) return error.MissingValue;
@@ -233,6 +243,10 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
     }
     if (eqKey(key, "search_method") or eqKey(key, "searchMethod")) {
         try applySearchMethod(config, value);
+        return;
+    }
+    if (eqKey(key, "terminal_mode") or eqKey(key, "terminalMode")) {
+        config.terminal_mode = try parseBool(value);
         return;
     }
     if (eqKey(key, "preserve_order") or eqKey(key, "preserveOrder")) {
@@ -344,6 +358,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\search_method: fuzzy
         \\preserve_order: false
         \\initial_query: ""
+        \\terminal_mode: false
         \\auto_accept: false
         \\accept_custom_selection: true
         \\no_numeric_selection: false
