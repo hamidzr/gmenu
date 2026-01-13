@@ -489,8 +489,14 @@ pub fn run(config: appconfig.Config) !void {
     _ = app.msgSend(bool, "setActivationPolicy:", .{NSApplicationActivationPolicyRegular});
 
     const style: u64 = NSWindowStyleMaskBorderless;
-    const window_width = config.window_width;
-    const window_height = config.window_height;
+    var window_width = config.window_width;
+    var window_height = config.window_height;
+    if (config.max_width > 0 and window_width > config.max_width) {
+        window_width = config.max_width;
+    }
+    if (config.max_height > 0 and window_height > config.max_height) {
+        window_height = config.max_height;
+    }
     const field_height = config.field_height;
     const padding = config.padding;
     const list_width = window_width - (padding * 2.0);

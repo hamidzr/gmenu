@@ -12,6 +12,12 @@ pub fn parse(allocator: std.mem.Allocator) !appconfig.Config {
         config.menu_id = menu_id;
     }
 
+    if (hasFlag(args, "--init-config")) {
+        const path = try writeDefaultConfig(allocator, config.menu_id);
+        std.fs.File.stdout().deprecatedWriter().print("zmenu: wrote config to {s}\n", .{path}) catch {};
+        std.process.exit(0);
+    }
+
     try loadConfigFile(allocator, config.menu_id, &config);
     try applyEnv(allocator, &config);
     try applyArgs(allocator, args, &config);
@@ -86,6 +92,27 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
 
+    if (envValue(allocator, "GMENU_MIN_WIDTH")) |value| {
+        config.window_width = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_MIN_HEIGHT")) |value| {
+        config.window_height = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_MAX_WIDTH")) |value| {
+        config.max_width = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_MAX_HEIGHT")) |value| {
+        config.max_height = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+
     if (envValue(allocator, "GMENU_SEARCH_METHOD")) |value| {
         try applySearchMethod(config, value);
     } else |err| {
@@ -146,6 +173,30 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             i += 1;
             if (i >= args.len) return error.MissingValue;
             try applySearchMethod(config, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--min-width")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.window_width = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--min-height")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.window_height = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--max-width")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.max_width = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--max-height")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.max_height = try std.fmt.parseFloat(f64, args[i]);
             continue;
         }
         if (std.mem.eql(u8, arg, "--preserve-order") or std.mem.eql(u8, arg, "-o")) {
@@ -212,6 +263,14 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
         config.window_height = try std.fmt.parseFloat(f64, value);
         return;
     }
+    if (eqKey(key, "max_width") or eqKey(key, "maxWidth")) {
+        config.max_width = try std.fmt.parseFloat(f64, value);
+        return;
+    }
+    if (eqKey(key, "max_height") or eqKey(key, "maxHeight")) {
+        config.max_height = try std.fmt.parseFloat(f64, value);
+        return;
+    }
 }
 
 fn applySearchMethod(config: *appconfig.Config, value: []const u8) !void {
@@ -267,6 +326,82 @@ fn findArgValue(args: []const [:0]const u8, long_flag: []const u8, short_flag: [
         }
     }
     return null;
+}
+
+fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]const u8 {
+    const path = try defaultConfigPath(allocator, menu_id);
+    const dir = std.fs.path.dirname(path) orelse return error.InvalidPath;
+    try makePathAbsolute(dir);
+
+    const defaults = appconfig.defaults();
+    var file = try std.fs.createFileAbsolute(path, .{ .truncate = true });
+    defer file.close();
+
+    try file.writer().print(
+        \\# gmenu config
+        \\title: {s}
+        \\prompt: {s}
+        \\search_method: fuzzy
+        \\preserve_order: false
+        \\initial_query: ""
+        \\auto_accept: false
+        \\accept_custom_selection: true
+        \\no_numeric_selection: false
+        \\min_width: {d}
+        \\min_height: {d}
+        \\max_width: {d}
+        \\max_height: {d}
+        \\
+    ,
+        .{
+            defaults.title,
+            defaults.placeholder,
+            @as(i64, @intFromFloat(defaults.window_width)),
+            @as(i64, @intFromFloat(defaults.window_height)),
+            @as(i64, @intFromFloat(defaults.max_width)),
+            @as(i64, @intFromFloat(defaults.max_height)),
+        },
+    );
+
+    return path;
+}
+
+fn defaultConfigPath(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]const u8 {
+    const home = std.process.getEnvVarOwned(allocator, "HOME") catch |err| switch (err) {
+        error.EnvironmentVariableNotFound => return error.MissingHome,
+        else => return err,
+    };
+
+    const config_home = if (std.process.getEnvVarOwned(allocator, "XDG_CONFIG_HOME")) |dir| dir else |err| blk: {
+        if (err != error.EnvironmentVariableNotFound) return err;
+        if (builtin.os.tag == .macos) break :blk try std.fs.path.join(allocator, &.{ home, "Library", "Application Support" });
+        break :blk try std.fs.path.join(allocator, &.{ home, ".config" });
+    };
+
+    const gmenu_config = try std.fs.path.join(allocator, &.{ config_home, "gmenu" });
+    if (menu_id.len > 0) {
+        return std.fs.path.join(allocator, &.{ gmenu_config, menu_id, "config.yaml" });
+    }
+    return std.fs.path.join(allocator, &.{ gmenu_config, "config.yaml" });
+}
+
+fn makePathAbsolute(path: []const u8) !void {
+    if (!std.fs.path.isAbsolute(path)) {
+        return std.fs.cwd().makePath(path);
+    }
+    var root = try std.fs.openDirAbsolute("/", .{});
+    defer root.close();
+    const trimmed = std.mem.trimLeft(u8, path, "/");
+    if (trimmed.len == 0) return;
+    try root.makePath(trimmed);
+}
+
+fn hasFlag(args: []const [:0]const u8, flag: []const u8) bool {
+    var i: usize = 1;
+    while (i < args.len) : (i += 1) {
+        if (std.mem.eql(u8, args[i], flag)) return true;
+    }
+    return false;
 }
 
 fn findConfigPath(allocator: std.mem.Allocator, menu_id: [:0]const u8) !?[]const u8 {
