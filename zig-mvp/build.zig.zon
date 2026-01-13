@@ -1,0 +1,19 @@
+.{
+    .name = .zig_mvp,
+    .version = "0.0.0",
+    .fingerprint = 0x2b9c4d1f04c8195e,
+    .minimum_zig_version = "0.15.2",
+    .dependencies = .{
+        .zig_objc = .{
+            .url = "https://github.com/mitchellh/zig-objc/archive/49dae46e413647545cc5c1f3e7798e9c761976b0.tar.gz",
+            .hash = "zig_objc-0.0.0-Ir_Sp5wTAQDuSB-PaIBSxNPhnQFT-H8UGd5kBAdnUaD4",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+        "PLAN.md",
+    },
+}

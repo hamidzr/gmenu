@@ -1,0 +1,13 @@
+# zig-mvp justfile
+
+build:
+	zig build
+
+run:
+	zig build run
+
+clean:
+	rm -rf zig-out .zig-cache bin
+
+zip:
+	zip -r ../zig-mvp.zip .
