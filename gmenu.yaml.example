@@ -16,7 +16,7 @@ preserve_order: false
 initial_query: ""
 auto_accept: false
 terminal_mode: false
-no_numeric_selection: false
+no_numeric_selection: true
 
 # Window dimensions
 min_width: 600

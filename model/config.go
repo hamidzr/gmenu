@@ -34,7 +34,7 @@ func DefaultConfig() *Config {
 		InitialQuery:          "",
 		AutoAccept:            false,
 		TerminalMode:          false,
-		NoNumericSelection:    false,
+		NoNumericSelection:    true,
 		MinWidth:              600,
 		MinHeight:             300,
 		MaxWidth:              1920,
