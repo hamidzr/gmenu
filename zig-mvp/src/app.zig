@@ -2,6 +2,7 @@ const std = @import("std");
 const objc = @import("objc");
 const appconfig = @import("config.zig");
 const menu = @import("menu.zig");
+const cache = @import("cache.zig");
 const pid = @import("pid.zig");
 
 const NSApplicationActivationPolicyRegular: i64 = 0;
@@ -31,6 +32,7 @@ const AppState = struct {
     handler: objc.Object,
     config: appconfig.Config,
     pid_path: ?[]const u8,
+    allocator: std.mem.Allocator,
 };
 
 const digit_labels = [_][:0]const u8{ "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -161,23 +163,35 @@ fn currentQuery(state: *AppState) []const u8 {
     return std.mem.sliceTo(utf8_ptr.?, 0);
 }
 
+fn saveCache(state: *AppState, selection: []const u8) void {
+    if (state.config.menu_id.len == 0) return;
+    const query = currentQuery(state);
+    cache.save(state.allocator, state.config.menu_id, .{
+        .last_query = query,
+        .last_selection = selection,
+    }) catch {};
+}
+
 fn acceptSelection(state: *AppState) void {
     if (state.model.filtered.items.len == 0) {
         if (!state.config.accept_custom_selection) {
             return;
         }
         const query = currentQuery(state);
+        saveCache(state, query);
         std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{query}) catch {};
         quit(state, 0);
     }
 
     if (state.model.selectedItem()) |item| {
+        saveCache(state, item.label);
         std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
         quit(state, 0);
     }
 
     const item_index = state.model.filtered.items[0];
     const item = state.model.items[item_index];
+    saveCache(state, item.label);
     std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
     quit(state, 0);
 }
@@ -456,6 +470,17 @@ pub fn run(config: appconfig.Config) !void {
         std.process.exit(1);
     };
 
+    var initial_query: []const u8 = config.initial_query;
+    if (initial_query.len == 0 and config.menu_id.len > 0) {
+        if (cache.load(allocator, config.menu_id)) |cached| {
+            if (cached) |state| {
+                if (state.last_query.len > 0) {
+                    initial_query = state.last_query;
+                }
+            }
+        } else |_| {}
+    }
+
     var pool = objc.AutoreleasePool.init();
     defer pool.deinit();
 
@@ -559,6 +584,7 @@ pub fn run(config: appconfig.Config) !void {
         .handler = handler,
         .config = config,
         .pid_path = pid_path,
+        .allocator = allocator,
     };
     defer state.model.deinit(allocator);
     g_state = &state;
@@ -567,7 +593,13 @@ pub fn run(config: appconfig.Config) !void {
     table_view.msgSend(void, "setDataSource:", .{data_source});
     table_view.msgSend(void, "setDelegate:", .{data_source});
 
-    applyFilter(&state, "");
+    if (initial_query.len > 0) {
+        const initial_query_z = try allocator.dupeZ(u8, initial_query);
+        text_field.msgSend(void, "setStringValue:", .{nsString(initial_query_z)});
+        applyFilter(&state, initial_query);
+    } else {
+        applyFilter(&state, "");
+    }
 
     app.msgSend(void, "activateIgnoringOtherApps:", .{true});
     window.msgSend(void, "makeKeyAndOrderFront:", .{@as(objc.c.id, null)});
