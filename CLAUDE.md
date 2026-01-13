@@ -68,7 +68,7 @@ just clean
    - `gmenurun.go`: Application execution and runtime logic
    - `grender.go`: Core rendering coordination
    - `menu.go`: Menu state management and selection logic
-   - `search.go`: Search functionality with fuzzy/exact/regex methods
+   - `search.go`: Search functionality with direct and fuzzy variants (fuzzy, fuzzy1, fuzzy3, default)
    - `keyhandler.go`: Keyboard input handling
    - `terminal.go`: Terminal mode implementation
    - `util.go`: Utility functions

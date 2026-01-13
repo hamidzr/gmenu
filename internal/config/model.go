@@ -23,8 +23,8 @@ func BindFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().Bool("no-numeric-selection", defaults.NoNumericSelection, "Disable numeric selection")
 	cmd.PersistentFlags().Float32("min-width", defaults.MinWidth, "Minimum window width")
 	cmd.PersistentFlags().Float32("min-height", defaults.MinHeight, "Minimum window height")
-	cmd.PersistentFlags().Float32("max-width", defaults.MaxWidth, "Maximum window width (0 for auto-calculated)")
-	cmd.PersistentFlags().Float32("max-height", defaults.MaxHeight, "Maximum window height (0 for auto-calculated)")
+	cmd.PersistentFlags().Float32("max-width", defaults.MaxWidth, "Maximum window width")
+	cmd.PersistentFlags().Float32("max-height", defaults.MaxHeight, "Maximum window height")
 	cmd.PersistentFlags().Bool("init-config", false, "Generate and save default config file")
 }
 

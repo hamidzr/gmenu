@@ -43,9 +43,12 @@ gmenu uses a hierarchical configuration system:
 2. Environment variables (`GMENU_` prefix)
 3. YAML config files (lowest priority)
 
-Config files are located at:
-- `~/.config/gmenu/config.yaml`
-- `~/.gmenu/config.yaml`
+Config files are located at (first match wins):
+- `~/.config/gmenu/<menu-id>/config.yaml` or `~/.config/gmenu/config.yaml`
+- `~/.gmenu/<menu-id>/config.yaml` or `~/.gmenu/config.yaml`
+- `$XDG_CONFIG_HOME/gmenu/<menu-id>/config.yaml` or `$XDG_CONFIG_HOME/gmenu/config.yaml` (macOS: `~/Library/Application Support/gmenu/...`)
+
+See `CONFIG.md` for the full search order and menu ID details.
 
 ### Menu IDs
 

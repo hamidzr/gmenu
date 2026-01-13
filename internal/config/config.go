@@ -130,8 +130,8 @@ func InitConfigFile(menuID string) (string, error) {
 	header := `# gmenu configuration file
 # Generated automatically - customize as needed
 #
-# Search method options: fuzzy, exact, regex
-# Window dimensions: set to 0 for auto-calculated max dimensions
+# Search method options: direct, fuzzy, fuzzy1, fuzzy3, default
+# Window dimensions: set min_width/min_height and optional max_width/max_height
 #
 
 `
