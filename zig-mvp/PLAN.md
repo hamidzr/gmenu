@@ -4,7 +4,7 @@
 Parity with the Go gmenu feature set captured in `GMENU_V1_PLAN.md`.
 
 Status: Milestones 1-5 are complete (GUI, search, interaction, persistence, config/CLI, and nice-to-haves).
-Documentation and a basic visual snapshot helper are also in place.
+Documentation and a basic visual snapshot helper are also in place, along with IPC helpers for dynamic updates.
 
 ## Current gmenu observations (for eventual replacement)
 - CLI wiring is in internal/cli/cli.go: reads stdin items, resolves config, and launches GUI/terminal mode.
@@ -24,8 +24,10 @@ Documentation and a basic visual snapshot helper are also in place.
 - `src/cache.zig` cache load/save for last query + selection + timestamp.
 - `src/cli.zig` CLI + env + config file merging.
 - `src/terminal.zig` terminal-mode prompt flow.
-Dynamic updates are supported via `--follow-stdin` (polls stdin and appends items), with set/prepend/append
-helpers available on the menu model.
+- `src/ipc.zig` IPC schema + socket helpers.
+- `src/zmenuctl.zig` CLI client for dynamic updates.
+Dynamic updates are supported via `--follow-stdin` (polls stdin and appends items) and a local IPC socket
+(`zmenuctl`), with set/prepend/append helpers on the menu model.
 
 ## Validation
 - `zig build run` with stdin opens a window, shows the list, and filters as you type.
@@ -34,8 +36,9 @@ helpers available on the menu model.
 - Running without stdin exits with an error.
 - `zig build test` runs search tests.
 - `just visual` captures a snapshot (requires Accessibility + Screen Recording permissions).
+- `zmenuctl` can set/append/prepend items over a Unix socket (see `IPC_PROTOCOL.md`).
 
 ## Follow-on ideas (if needed)
 - Release packaging + notarization for macOS.
 - Richer theming (fonts, selection colors, row separators).
-- Expand dynamic update protocol beyond follow-stdin.
+- Expand dynamic update protocol beyond the current IPC schema.
