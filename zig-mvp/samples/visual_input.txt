@@ -1,0 +1,15 @@
+alpha
+alpine
+application
+beta
+bravo
+charlie
+delta
+echo
+foxtrot
+golf
+hotel
+india
+juliet
+kilo
+lima

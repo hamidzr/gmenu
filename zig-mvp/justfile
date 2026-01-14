@@ -8,3 +8,6 @@ run:
 
 clean:
 	rm -rf zig-out .zig-cache bin
+
+visual:
+	scripts/visual_test.sh

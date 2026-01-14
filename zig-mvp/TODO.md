@@ -101,4 +101,4 @@
 - [x] Reconcile config file name inconsistency (docs: gmenu.yaml vs code: config.yaml)
 - [x] Update default window size docs (docs: 800/400 vs code: 600/300)
 - [x] Document migration path from Go gmenu to Zig zmenu
-- [ ] Add visual regression tests for GUI changes
+- [x] Add visual regression tests for GUI changes

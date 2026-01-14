@@ -28,6 +28,11 @@ printf "alpha\nbravo\ncharlie\n" | zig build run
 
 If you run without stdin, zmenu exits with an error.
 
+### Visual regression
+`just visual` captures a snapshot of the UI using `scripts/visual_test.sh`. The first run writes
+`samples/visual_baseline.png`; set `UPDATE_SNAPSHOT=1` to refresh the baseline. The script relies
+on macOS Accessibility + Screen Recording permissions to capture the window.
+
 ### Config + CLI
 Supported flags: `--menu-id/-m`, `--initial-query/-q`, `--search-method/-s`, `--preserve-order/-o`, `--auto-accept`, `--terminal`, `--follow-stdin`, `--no-numeric-selection`, `--show-icons`, `--show-score`, `--title/-t`, `--prompt/-p`, `--min-width`, `--min-height`, `--max-width`, `--max-height`, `--row-height`, `--alternate-rows`, `--background-color`, `--list-background-color`, `--field-background-color`, `--init-config`.
 Supported env: `GMENU_MENU_ID`, `GMENU_INITIAL_QUERY`, `GMENU_SEARCH_METHOD`, `GMENU_PRESERVE_ORDER`, `GMENU_AUTO_ACCEPT`, `GMENU_TERMINAL_MODE`, `GMENU_FOLLOW_STDIN`, `GMENU_NO_NUMERIC_SELECTION`, `GMENU_SHOW_ICONS`, `GMENU_SHOW_SCORE`, `GMENU_ACCEPT_CUSTOM_SELECTION`, `GMENU_TITLE`, `GMENU_PROMPT`, `GMENU_MIN_WIDTH`, `GMENU_MIN_HEIGHT`, `GMENU_MAX_WIDTH`, `GMENU_MAX_HEIGHT`, `GMENU_ROW_HEIGHT`, `GMENU_ALTERNATE_ROWS`, `GMENU_BACKGROUND_COLOR`, `GMENU_LIST_BACKGROUND_COLOR`, `GMENU_FIELD_BACKGROUND_COLOR`.
