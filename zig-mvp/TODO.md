@@ -47,9 +47,9 @@
 - [ ] Focus loss behavior (grace period + cancel)
   - [ ] Add windowDidResignKey: delegate
   - [ ] Timer for grace period before exit
-- [ ] Select-all on focus (optional)
-  - [ ] Add becomeFirstResponder override
-  - [ ] Call selectText: on text field
+- [x] Select-all on focus (optional)
+  - [x] Add becomeFirstResponder override
+  - [x] Call selectText: on text field
 
 ## Milestone 3: 📋 TODO - Persistence & Single-Instance
 - [ ] Menu ID system for namespacing
@@ -98,7 +98,7 @@
   - [ ] ItemsChan for live updates
 
 ## Documentation & Testing
-- [ ] Add `zig build test` step to build.zig
+- [x] Add `zig build test` step to build.zig
 - [ ] Document search method differences (docs mention "exact"/"regex", code has "direct"/"fuzzy"/"fuzzy1"/"fuzzy3")
 - [ ] Reconcile config file name inconsistency (docs: gmenu.yaml vs code: config.yaml)
 - [ ] Update default window size docs (docs: 800/400 vs code: 600/300)

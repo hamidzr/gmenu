@@ -35,4 +35,18 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    const search_module = b.createModule(.{
+        .root_source_file = b.path("src/search.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const search_tests = b.addTest(.{
+        .name = "search",
+        .root_module = search_module,
+    });
+    const run_search_tests = b.addRunArtifact(search_tests);
+
+    const test_step = b.step("test", "Run tests");
+    test_step.dependOn(&run_search_tests.step);
 }

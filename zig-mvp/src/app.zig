@@ -511,6 +511,19 @@ fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) vo
     obj.msgSendSuper(NSTextField, void, "keyDown:", .{event});
 }
 
+fn becomeFirstResponder(target: objc.c.id, sel: objc.c.SEL) callconv(.c) bool {
+    _ = sel;
+    if (target == null) return false;
+
+    const obj = objc.Object.fromId(target);
+    const NSTextField = objc.getClass("NSTextField").?;
+    const accepted = obj.msgSendSuper(NSTextField, bool, "becomeFirstResponder", .{});
+    if (accepted) {
+        obj.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
+    }
+    return accepted;
+}
+
 fn windowCanBecomeKey(target: objc.c.id, sel: objc.c.SEL) callconv(.c) bool {
     _ = target;
     _ = sel;
@@ -575,6 +588,9 @@ fn searchFieldClass() objc.Class {
     }
     if (!cls.addMethod("keyDown:", keyDown)) {
         @panic("failed to add keyDown: method");
+    }
+    if (!cls.addMethod("becomeFirstResponder", becomeFirstResponder)) {
+        @panic("failed to add becomeFirstResponder method");
     }
     objc.registerClassPair(cls);
     return cls;
