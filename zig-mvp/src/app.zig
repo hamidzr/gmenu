@@ -84,6 +84,7 @@ const AppState = struct {
     ipc_path: ?[]const u8,
     allocator: std.mem.Allocator,
     update_queue: ?*UpdateQueue,
+    had_focus: bool,
 };
 
 const digit_labels = [_][:0]const u8{ "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -635,7 +636,7 @@ fn scheduleFocusLossCancel() void {
     const state = g_state orelse return;
     const NSTimer = objc.getClass("NSTimer").?;
     _ = NSTimer.msgSend(objc.Object, "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:", .{
-        0.04,
+        @as(f64, 0.04),
         state.handler,
         objc.sel("onFocusLossTimer:"),
         @as(objc.c.id, null),
@@ -650,6 +651,9 @@ fn resignKeyWindow(target: objc.c.id, sel: objc.c.SEL) callconv(.c) void {
     const obj = objc.Object.fromId(target);
     const NSWindow = objc.getClass("NSWindow").?;
     obj.msgSendSuper(NSWindow, void, "resignKeyWindow", .{});
+    if (g_state) |state| {
+        if (!state.had_focus) return;
+    }
     scheduleFocusLossCancel();
 }
 
@@ -701,6 +705,9 @@ fn becomeFirstResponder(target: objc.c.id, sel: objc.c.SEL) callconv(.c) bool {
     const NSTextField = objc.getClass("NSTextField").?;
     const accepted = obj.msgSendSuper(NSTextField, bool, "becomeFirstResponder", .{});
     if (accepted) {
+        if (g_state) |state| {
+            state.had_focus = true;
+        }
         obj.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
     }
     return accepted;
@@ -1017,6 +1024,7 @@ pub fn run(config: appconfig.Config) !void {
         .allocator = allocator,
         .update_queue = update_queue_ptr,
         .ipc_path = ipc_path,
+        .had_focus = false,
     };
     defer state.model.deinit(allocator);
     g_state = &state;
@@ -1027,7 +1035,7 @@ pub fn run(config: appconfig.Config) !void {
     if (update_queue_ptr != null) {
         const NSTimer = objc.getClass("NSTimer").?;
         _ = NSTimer.msgSend(objc.Object, "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:", .{
-            0.2,
+            @as(f64, 0.2),
             handler,
             objc.sel("onUpdateTimer:"),
             @as(objc.c.id, null),

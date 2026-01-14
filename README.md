@@ -21,7 +21,8 @@ cd gmenu
 just build
 ```
 
-The binary will be available at `bin/gmenu`.
+The binary will be available at `bin/gmenu` and installed into your Go bin dir
+(`$GOBIN` or `$GOPATH/bin`) for PATH usage.
 
 ## Usage
 
