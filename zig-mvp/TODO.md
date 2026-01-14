@@ -1,6 +1,13 @@
 # zmenu (Zig MVP) Tasks
 
 ## TODO
+- [ ] Parity: add in-process SetItems/AppendItems/PrependItems API (non-IPC) for embedders
+- [ ] Parity: optional dedupe on dynamic updates (match Go ItemsChan behavior)
+- [ ] Parity: show "Loading" placeholder when input list is empty (non-follow-stdin)
+- [ ] Parity: auto-accept timing window (~200ms) to allow dynamic updates before selecting
+- [ ] Parity: restrict cached initial query to safe highlightable chars (match Go alnum-only behavior)
+- [ ] Parity: align terminal SIGINT handling (Go returns NoError on SIGINT; Zig currently only handles Ctrl+C)
+- [ ] Parity: add reuse/embedding APIs (reset/hide/toggle/manual visibility) or document as unsupported
 
 ## Milestone 1: ✅ COMPLETE - Search + Core Model Parity
 - [x] Read stdin items into memory
