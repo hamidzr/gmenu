@@ -39,6 +39,11 @@ pub fn parse(allocator: std.mem.Allocator) !appconfig.Config {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
+    if (hasFlag(args, "--help") or hasFlag(args, "-h")) {
+        printHelp();
+        std.process.exit(0);
+    }
+
     if (try resolveMenuID(allocator, args)) |menu_id| {
         config.menu_id = menu_id;
     }
@@ -54,6 +59,39 @@ pub fn parse(allocator: std.mem.Allocator) !appconfig.Config {
     try applyArgs(allocator, args, &config);
 
     return config;
+}
+
+fn printHelp() void {
+    std.fs.File.stdout().deprecatedWriter().print(
+        \\zmenu (zig gmenu) usage:
+        \\  zmenu [flags]
+        \\
+        \\Flags:
+        \\  -h, --help                  Show this help text
+        \\  -m, --menu-id <id>           Menu ID namespace
+        \\  -q, --initial-query <text>   Pre-filled search query
+        \\  -t, --title <text>           Window title
+        \\  -p, --prompt <text>          Prompt text
+        \\  -s, --search-method <name>   direct|fuzzy|fuzzy1|fuzzy3|default
+        \\  -o, --preserve-order         Preserve match order
+        \\      --auto-accept            Auto accept when single match
+        \\      --terminal               Terminal mode
+        \\      --follow-stdin           Keep running and append stdin
+        \\      --no-numeric-selection   Disable numeric shortcuts
+        \\      --show-icons             Show icon hint column
+        \\      --show-score             Show score column
+        \\      --min-width <px>         Minimum window width
+        \\      --min-height <px>        Minimum window height
+        \\      --max-width <px>         Maximum window width
+        \\      --max-height <px>        Maximum window height
+        \\      --row-height <px>        Table row height
+        \\      --alternate-rows         Zebra striping
+        \\      --background-color <hex> Window background (#RRGGBB or #RRGGBBAA)
+        \\      --list-background-color <hex> List background
+        \\      --field-background-color <hex> Input background
+        \\      --init-config            Write default config and exit
+        \\
+    , .{}) catch {};
 }
 
 fn resolveMenuID(allocator: std.mem.Allocator, args: []const [:0]const u8) !?[:0]const u8 {
