@@ -1,12 +1,10 @@
 # zmenu Plan
 
 ## Goal
-Milestone 1 MVP from `GMENU_V1_PLAN.md`:
-- Read stdin items into memory and show them in a native AppKit list UI.
-- Provide a search field that filters items with a tokenized fuzzy match (case-insensitive).
-- Preserve-order option and result limit behavior (limit=10).
-- Enter prints the selected (default top) item to stdout and exits 0.
-- Up/Down/Tab move the selection; Esc cancels with a non-zero exit.
+Parity with the Go gmenu feature set captured in `GMENU_V1_PLAN.md`.
+
+Status: Milestones 1-5 are complete (GUI, search, interaction, persistence, config/CLI, and nice-to-haves).
+Documentation and a basic visual snapshot helper are also in place.
 
 ## Current gmenu observations (for eventual replacement)
 - CLI wiring is in internal/cli/cli.go: reads stdin items, resolves config, and launches GUI/terminal mode.
@@ -21,31 +19,23 @@ Milestone 1 MVP from `GMENU_V1_PLAN.md`:
 - `src/app.zig` AppKit wiring, callbacks, window/layout, and event handling.
 - `src/menu.zig` menu model, filtered indices, and selection state.
 - `src/search.zig` search pipeline + tests.
-- `src/config.zig` defaults for window/text/search options.
+- `src/config.zig` defaults for window/text/search/theme options.
 - `src/pid.zig` pid file guard for single-instance behavior.
-- `src/cache.zig` cache load/save for last query + selection.
+- `src/cache.zig` cache load/save for last query + selection + timestamp.
 - `src/cli.zig` CLI + env + config file merging.
 - `src/terminal.zig` terminal-mode prompt flow.
-Dynamic updates are supported via `--follow-stdin` (polls stdin and appends items).
-
-Planned follow-on modules: config/env parsing, cache helpers, CLI flags, and theming.
-
-## M1 Implementation steps
-1. Read stdin items (one per line) into memory; exit with a non-zero error if stdin is empty.
-2. Build AppKit UI: window + search NSTextField + list view (NSTableView in a scroll view).
-3. Wire live filtering on text change using a tokenized fuzzy match.
-4. Enforce preserve-order behavior and a hard limit of 10 results.
-5. Enter prints the top filtered item and exits 0; Esc cancels with a non-zero exit code.
+Dynamic updates are supported via `--follow-stdin` (polls stdin and appends items), with set/prepend/append
+helpers available on the menu model.
 
 ## Validation
 - `zig build run` with stdin opens a window, shows the list, and filters as you type.
-- Pressing Enter prints the top filtered item to stdout and exits 0.
+- Pressing Enter prints the selected item to stdout and exits 0.
 - Pressing Esc exits with a non-zero code.
 - Running without stdin exits with an error.
-- `zig test src/search.zig` passes.
+- `zig build test` runs search tests.
+- `just visual` captures a snapshot (requires Accessibility + Screen Recording permissions).
 
-## Follow-on for gmenu replacement (out of scope for M1)
-- Menu list selection + output to stdout for explicit selection.
-- Keyboard nav and shortcuts mirroring current behavior.
-- Search/filter pipeline parity, state caching, and config handling.
-- CLI wiring for terminal mode parity.
+## Follow-on ideas (if needed)
+- Release packaging + notarization for macOS.
+- Richer theming (fonts, selection colors, row separators).
+- Expand dynamic update protocol beyond follow-stdin.
