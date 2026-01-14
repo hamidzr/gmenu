@@ -106,6 +106,11 @@ source of truth and document it.
   code defaults are 600/300 and 1920/1080.
 - gmenu.yaml.example omits initial_query and uses a different filename.
 
+Resolved decisions (Zig v1):
+- Supported search methods: direct/fuzzy/fuzzy1/fuzzy3/default (no regex/exact).
+- Config filename is `config.yaml` in the gmenu config locations.
+- Default window bounds are 600x300 with max 1920x1080.
+
 ## Zig v1 split (prioritized components)
 
 P0 (must-have for v1 parity)
