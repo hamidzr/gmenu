@@ -88,7 +88,7 @@
 - [x] Alternating row colors (zebra striping)
 - [x] Icon hints display
 - [x] Score metadata column (for debugging/tuning)
-- [ ] Theme customization (colors/sizes)
+- [x] Theme customization (colors/sizes)
 - [ ] Dynamic items API (for embedding)
   - [ ] SetItems
   - [ ] AppendItems

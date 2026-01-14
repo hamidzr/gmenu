@@ -28,6 +28,9 @@ const config_key_variants = [_]ConfigKeyVariant{
     .{ .canonical = "row_height", .camel = "rowHeight" },
     .{ .canonical = "alternate_rows", .camel = "alternateRows" },
     .{ .canonical = "accept_custom_selection", .camel = "acceptCustomSelection" },
+    .{ .canonical = "background_color", .camel = "backgroundColor" },
+    .{ .canonical = "list_background_color", .camel = "listBackgroundColor" },
+    .{ .canonical = "field_background_color", .camel = "fieldBackgroundColor" },
 };
 
 pub fn parse(allocator: std.mem.Allocator) !appconfig.Config {
@@ -177,6 +180,21 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
+    if (envValue(allocator, "GMENU_BACKGROUND_COLOR")) |value| {
+        config.background_color = try parseColorOptional(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_LIST_BACKGROUND_COLOR")) |value| {
+        config.list_background_color = try parseColorOptional(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_FIELD_BACKGROUND_COLOR")) |value| {
+        config.field_background_color = try parseColorOptional(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
 
     if (envValue(allocator, "GMENU_SEARCH_METHOD")) |value| {
         try applySearchMethod(config, value);
@@ -286,6 +304,24 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             i += 1;
             if (i >= args.len) return error.MissingValue;
             config.row_height = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--background-color")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.background_color = try parseColorOptional(args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--list-background-color")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.list_background_color = try parseColorOptional(args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--field-background-color")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.field_background_color = try parseColorOptional(args[i]);
             continue;
         }
         if (std.mem.eql(u8, arg, "--alternate-rows")) {
@@ -401,6 +437,18 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
         config.alternate_rows = try parseBool(value);
         return;
     }
+    if (eqKey(key, "background_color") or eqKey(key, "backgroundColor")) {
+        config.background_color = try parseColorOptional(value);
+        return;
+    }
+    if (eqKey(key, "list_background_color") or eqKey(key, "listBackgroundColor")) {
+        config.list_background_color = try parseColorOptional(value);
+        return;
+    }
+    if (eqKey(key, "field_background_color") or eqKey(key, "fieldBackgroundColor")) {
+        config.field_background_color = try parseColorOptional(value);
+        return;
+    }
 }
 
 fn applySearchMethod(config: *appconfig.Config, value: []const u8) !void {
@@ -435,6 +483,39 @@ fn parseBool(value: []const u8) !bool {
         return false;
     }
     return error.InvalidBool;
+}
+
+fn parseColorOptional(value: []const u8) !?appconfig.Color {
+    const trimmed = std.mem.trim(u8, value, " \t");
+    if (trimmed.len == 0) return null;
+    if (std.ascii.eqlIgnoreCase(trimmed, "none") or std.ascii.eqlIgnoreCase(trimmed, "default")) {
+        return null;
+    }
+    return try parseHexColor(trimmed);
+}
+
+fn parseHexColor(value: []const u8) !appconfig.Color {
+    var hex = value;
+    if (hex.len > 0 and hex[0] == '#') {
+        hex = hex[1..];
+    }
+    if (hex.len != 6 and hex.len != 8) return error.InvalidColor;
+
+    const r = try parseHexByte(hex[0..2]);
+    const g = try parseHexByte(hex[2..4]);
+    const b = try parseHexByte(hex[4..6]);
+    const a: u8 = if (hex.len == 8) try parseHexByte(hex[6..8]) else 255;
+
+    return .{
+        .r = @as(f64, r) / 255.0,
+        .g = @as(f64, g) / 255.0,
+        .b = @as(f64, b) / 255.0,
+        .a = @as(f64, a) / 255.0,
+    };
+}
+
+fn parseHexByte(value: []const u8) !u8 {
+    return std.fmt.parseInt(u8, value, 16);
 }
 
 fn stripQuotes(value: []const u8) []const u8 {
@@ -499,6 +580,9 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\max_height: {d}
         \\row_height: {d}
         \\alternate_rows: true
+        \\background_color: ""
+        \\list_background_color: ""
+        \\field_background_color: ""
         \\
     ,
         .{

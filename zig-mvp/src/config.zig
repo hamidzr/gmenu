@@ -1,5 +1,12 @@
 const search = @import("search.zig");
 
+pub const Color = struct {
+    r: f64,
+    g: f64,
+    b: f64,
+    a: f64,
+};
+
 pub const Config = struct {
     title: [:0]const u8,
     placeholder: [:0]const u8,
@@ -24,6 +31,9 @@ pub const Config = struct {
     score_column_width: f64,
     row_height: f64,
     alternate_rows: bool,
+    background_color: ?Color,
+    list_background_color: ?Color,
+    field_background_color: ?Color,
 };
 
 pub fn defaults() Config {
@@ -55,5 +65,8 @@ pub fn defaults() Config {
         .score_column_width = 60,
         .row_height = 22,
         .alternate_rows = true,
+        .background_color = null,
+        .list_background_color = null,
+        .field_background_color = null,
     };
 }

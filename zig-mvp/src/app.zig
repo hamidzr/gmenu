@@ -81,6 +81,16 @@ fn nsString(str: [:0]const u8) objc.Object {
     return NSString.msgSend(objc.Object, "stringWithUTF8String:", .{str});
 }
 
+fn nsColor(color: appconfig.Color) objc.Object {
+    const NSColor = objc.getClass("NSColor").?;
+    return NSColor.msgSend(objc.Object, "colorWithSRGBRed:green:blue:alpha:", .{
+        color.r,
+        color.g,
+        color.b,
+        color.a,
+    });
+}
+
 fn quit(state: *AppState, code: u8) void {
     if (state.pid_path) |path| {
         pid.remove(path);
@@ -725,6 +735,9 @@ pub fn run(config: appconfig.Config) !void {
 
     window.msgSend(void, "center", .{});
     window.msgSend(void, "setTitle:", .{nsString(config.title)});
+    if (config.background_color) |color| {
+        window.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
+    }
 
     const content_view = window.msgSend(objc.Object, "contentView", .{});
 
@@ -757,6 +770,10 @@ pub fn run(config: appconfig.Config) !void {
     text_field.msgSend(void, "setPlaceholderString:", .{nsString(config.placeholder)});
     text_field.msgSend(void, "setEditable:", .{true});
     text_field.msgSend(void, "setSelectable:", .{true});
+    if (config.field_background_color) |color| {
+        text_field.msgSend(void, "setDrawsBackground:", .{true});
+        text_field.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
+    }
 
     const handler = makeInputHandler();
     text_field.msgSend(void, "setDelegate:", .{handler});
@@ -819,6 +836,11 @@ pub fn run(config: appconfig.Config) !void {
 
     scroll_view.msgSend(void, "setDocumentView:", .{table_view});
     scroll_view.msgSend(void, "setHasVerticalScroller:", .{true});
+    if (config.list_background_color) |color| {
+        table_view.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
+        scroll_view.msgSend(void, "setDrawsBackground:", .{true});
+        scroll_view.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
+    }
 
     content_view.msgSend(void, "addSubview:", .{scroll_view});
     content_view.msgSend(void, "addSubview:", .{text_field});
