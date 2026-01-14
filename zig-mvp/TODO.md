@@ -88,7 +88,7 @@
 - [x] Alternating row colors (zebra striping)
 - [x] Icon hints display (match gmenu icon rendering; currently text labels)
 - [x] Score metadata column (for debugging/tuning)
-- [ ] Theme customization (colors/sizes) (partial: background colors only)
+- [x] Theme customization (colors/sizes) (partial: background colors only)
 - [x] Dynamic items API (IPC socket + zmenuctl)
   - [x] SetItems
   - [x] AppendItems

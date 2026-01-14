@@ -26,6 +26,11 @@ const config_key_variants = [_]ConfigKeyVariant{
     .{ .canonical = "max_width", .camel = "maxWidth" },
     .{ .canonical = "max_height", .camel = "maxHeight" },
     .{ .canonical = "row_height", .camel = "rowHeight" },
+    .{ .canonical = "field_height", .camel = "fieldHeight" },
+    .{ .canonical = "padding", .camel = "" },
+    .{ .canonical = "numeric_column_width", .camel = "numericColumnWidth" },
+    .{ .canonical = "icon_column_width", .camel = "iconColumnWidth" },
+    .{ .canonical = "score_column_width", .camel = "scoreColumnWidth" },
     .{ .canonical = "alternate_rows", .camel = "alternateRows" },
     .{ .canonical = "accept_custom_selection", .camel = "acceptCustomSelection" },
     .{ .canonical = "background_color", .camel = "backgroundColor" },
@@ -84,6 +89,11 @@ fn printHelp() void {
         \\      --max-width <px>         Maximum window width
         \\      --max-height <px>        Maximum window height
         \\      --row-height <px>        Table row height
+        \\      --field-height <px>      Search field height
+        \\      --padding <px>           Window padding
+        \\      --numeric-column-width <px> Numeric column width
+        \\      --icon-column-width <px> Icon column width
+        \\      --score-column-width <px> Score column width
         \\      --alternate-rows         Zebra striping
         \\      --background-color <hex> Window background (#RRGGBB or #RRGGBBAA)
         \\      --list-background-color <hex> List background
@@ -201,6 +211,31 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     }
     if (envValue(allocator, "GMENU_ROW_HEIGHT")) |value| {
         config.row_height = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_FIELD_HEIGHT")) |value| {
+        config.field_height = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_PADDING")) |value| {
+        config.padding = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_NUMERIC_COLUMN_WIDTH")) |value| {
+        config.numeric_column_width = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_ICON_COLUMN_WIDTH")) |value| {
+        config.icon_column_width = try std.fmt.parseFloat(f64, value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_SCORE_COLUMN_WIDTH")) |value| {
+        config.score_column_width = try std.fmt.parseFloat(f64, value);
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
@@ -335,6 +370,36 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             config.row_height = try std.fmt.parseFloat(f64, args[i]);
             continue;
         }
+        if (std.mem.eql(u8, arg, "--field-height")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.field_height = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--padding")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.padding = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--numeric-column-width")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.numeric_column_width = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--icon-column-width")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.icon_column_width = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--score-column-width")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.score_column_width = try std.fmt.parseFloat(f64, args[i]);
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--background-color")) {
             i += 1;
             if (i >= args.len) return error.MissingValue;
@@ -460,6 +525,26 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
     }
     if (eqKey(key, "row_height") or eqKey(key, "rowHeight")) {
         config.row_height = try std.fmt.parseFloat(f64, value);
+        return;
+    }
+    if (eqKey(key, "field_height") or eqKey(key, "fieldHeight")) {
+        config.field_height = try std.fmt.parseFloat(f64, value);
+        return;
+    }
+    if (eqKey(key, "padding")) {
+        config.padding = try std.fmt.parseFloat(f64, value);
+        return;
+    }
+    if (eqKey(key, "numeric_column_width") or eqKey(key, "numericColumnWidth")) {
+        config.numeric_column_width = try std.fmt.parseFloat(f64, value);
+        return;
+    }
+    if (eqKey(key, "icon_column_width") or eqKey(key, "iconColumnWidth")) {
+        config.icon_column_width = try std.fmt.parseFloat(f64, value);
+        return;
+    }
+    if (eqKey(key, "score_column_width") or eqKey(key, "scoreColumnWidth")) {
+        config.score_column_width = try std.fmt.parseFloat(f64, value);
         return;
     }
     if (eqKey(key, "alternate_rows") or eqKey(key, "alternateRows")) {
@@ -609,6 +694,11 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\max_width: {d}
         \\max_height: {d}
         \\row_height: {d}
+        \\field_height: {d}
+        \\padding: {d}
+        \\numeric_column_width: {d}
+        \\icon_column_width: {d}
+        \\score_column_width: {d}
         \\alternate_rows: true
         \\background_color: ""
         \\list_background_color: ""
@@ -624,6 +714,11 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
             @as(i64, @intFromFloat(defaults.max_width)),
             @as(i64, @intFromFloat(defaults.max_height)),
             @as(i64, @intFromFloat(defaults.row_height)),
+            @as(i64, @intFromFloat(defaults.field_height)),
+            @as(i64, @intFromFloat(defaults.padding)),
+            @as(i64, @intFromFloat(defaults.numeric_column_width)),
+            @as(i64, @intFromFloat(defaults.icon_column_width)),
+            @as(i64, @intFromFloat(defaults.score_column_width)),
         },
     );
 
