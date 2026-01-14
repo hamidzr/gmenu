@@ -6,8 +6,15 @@ build:
 run:
 	zig build run
 
+test:
+	zig build test
+
 clean:
 	rm -rf zig-out .zig-cache bin
 
 visual:
 	scripts/visual_test.sh
+
+zip:
+	rm -f ../zmenu.zip
+	zip -r ../zmenu.zip . -x ".git/*" -x ".zig-cache/*" -x "zig-out/*" -x "bin/*"
