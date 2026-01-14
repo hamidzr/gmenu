@@ -69,11 +69,11 @@
   - [x] --no-numeric-selection
   - [x] --min-width, --min-height
   - [x] --max-width, --max-height
-  - [x] --init-config (write default config and exit)
+  - [ ] --init-config (match gmenu: refuse overwrite if config exists)
 - [x] Environment variable support (GMENU_* prefix)
-- [x] YAML config file loading
-  - [x] ~/.config/gmenu/<menu-id>/config.yaml
-  - [x] ~/.gmenu/<menu-id>/config.yaml
+- [ ] YAML config file loading (match gmenu path order and menu-id resolution)
+  - [ ] Prefer ~/.config/gmenu before OS user config dir on macOS
+  - [ ] Use CLI --menu-id (not GMENU_MENU_ID) to select namespaced config paths
   - [x] XDG_CONFIG_HOME support
 - [x] Config priority: CLI flags > env vars > config file
 - [x] Config validation (snake_case and camelCase keys)
@@ -86,14 +86,14 @@
 - [x] Terminal mode (--terminal flag)
 - [x] Match counter label ("[matched/total]")
 - [x] Alternating row colors (zebra striping)
-- [x] Icon hints display
+- [ ] Icon hints display (match gmenu icon rendering; currently text labels)
 - [x] Score metadata column (for debugging/tuning)
-- [x] Theme customization (colors/sizes)
-- [x] Dynamic items API (for embedding)
-  - [x] SetItems
-  - [x] AppendItems
-  - [x] PrependItems
-  - [x] ItemsChan for live updates
+- [ ] Theme customization (colors/sizes) (partial: background colors only)
+- [ ] Dynamic items API (for embedding) (follow-stdin only; no public API/protocol)
+  - [ ] SetItems
+  - [ ] AppendItems
+  - [ ] PrependItems
+  - [ ] ItemsChan for live updates
 
 ## Documentation & Testing
 - [x] Add `zig build test` step to build.zig
