@@ -97,8 +97,8 @@
 
 ## Documentation & Testing
 - [x] Add `zig build test` step to build.zig
-- [ ] Document search method differences (docs mention "exact"/"regex", code has "direct"/"fuzzy"/"fuzzy1"/"fuzzy3")
-- [ ] Reconcile config file name inconsistency (docs: gmenu.yaml vs code: config.yaml)
-- [ ] Update default window size docs (docs: 800/400 vs code: 600/300)
-- [ ] Document migration path from Go gmenu to Zig zmenu
+- [x] Document search method differences (docs mention "exact"/"regex", code has "direct"/"fuzzy"/"fuzzy1"/"fuzzy3")
+- [x] Reconcile config file name inconsistency (docs: gmenu.yaml vs code: config.yaml)
+- [x] Update default window size docs (docs: 800/400 vs code: 600/300)
+- [x] Document migration path from Go gmenu to Zig zmenu
 - [ ] Add visual regression tests for GUI changes

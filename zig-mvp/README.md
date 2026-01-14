@@ -36,3 +36,14 @@ Config file: searches `config.yaml` in `$XDG_CONFIG_HOME/gmenu[/<menu_id>]` (mac
 Terminal mode is a simple prompt/response flow (non-live) that reads the query from `/dev/tty` and returns the top match. `--follow-stdin` keeps the GUI running and appends new stdin lines as they arrive.
 When `--show-icons` is enabled, input lines can prefix `[app]`, `[file]`, `[folder]`, or `[info]` to show a text hint column.
 `--row-height` and `--alternate-rows` adjust table density and zebra striping.
+
+### Compatibility notes
+- Search methods supported: `direct`, `fuzzy`, `fuzzy1`, `fuzzy3`, `default` (`default` matches `fuzzy`). Regex or `exact` modes are not implemented.
+- The config filename is `config.yaml` in the standard gmenu config locations; `gmenu.yaml` is not read.
+- Default window bounds are `600x300` with max `1920x1080` (override via config/env/flags).
+
+### Migration from Go gmenu
+- Copy your existing `config.yaml` into the same gmenu config locations; ensure `search_method` is one of the supported values above.
+- If you previously used `exact` or `regex`, switch to `direct` or `fuzzy` since zmenu does not implement regex search.
+- Numeric selection is opt-in by setting `no_numeric_selection: false` in config or env.
+- Terminal mode is intentionally minimal and chooses the first match on Enter.
