@@ -240,6 +240,7 @@ fn saveCache(state: *AppState, selection: []const u8) void {
     cache.save(state.allocator, state.config.menu_id, .{
         .last_query = query,
         .last_selection = selection,
+        .last_selection_time = std.time.timestamp(),
     }) catch {};
 }
 
@@ -369,6 +370,32 @@ fn tableViewObjectValue(
     const item_index = state.model.filtered.items[row_index];
     const item = state.model.items[item_index];
     return nsString(item.label).value;
+}
+
+fn tableViewShouldSelectRow(
+    target: objc.c.id,
+    sel: objc.c.SEL,
+    table: objc.c.id,
+    row: c_long,
+) callconv(.c) bool {
+    _ = target;
+    _ = sel;
+    _ = table;
+
+    const state = g_state orelse return true;
+    if (row < 0) {
+        state.model.selected = -1;
+        return true;
+    }
+
+    const row_index: usize = @intCast(row);
+    if (row_index >= state.model.filtered.items.len) {
+        state.model.selected = -1;
+        return true;
+    }
+
+    state.model.selected = @intCast(row);
+    return true;
 }
 
 fn tableViewSelectionDidChange(target: objc.c.id, sel: objc.c.SEL, notification: objc.c.id) callconv(.c) void {
@@ -570,6 +597,9 @@ fn dataSourceClass() objc.Class {
     }
     if (!cls.addMethod("tableView:objectValueForTableColumn:row:", tableViewObjectValue)) {
         @panic("failed to add tableView:objectValueForTableColumn:row: method");
+    }
+    if (!cls.addMethod("tableView:shouldSelectRow:", tableViewShouldSelectRow)) {
+        @panic("failed to add tableView:shouldSelectRow: method");
     }
     if (!cls.addMethod("tableViewSelectionDidChange:", tableViewSelectionDidChange)) {
         @panic("failed to add tableViewSelectionDidChange: method");

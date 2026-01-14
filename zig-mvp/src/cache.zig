@@ -4,6 +4,7 @@ const builtin = @import("builtin");
 pub const State = struct {
     last_query: []const u8,
     last_selection: []const u8,
+    last_selection_time: i64,
 };
 
 pub fn load(allocator: std.mem.Allocator, menu_id: []const u8) !?State {
@@ -17,6 +18,7 @@ pub fn load(allocator: std.mem.Allocator, menu_id: []const u8) !?State {
     const contents = try file.readToEndAlloc(allocator, 64 * 1024);
     var last_query: []const u8 = "";
     var last_selection: []const u8 = "";
+    var last_selection_time: i64 = 0;
 
     var iter = std.mem.splitScalar(u8, contents, '\n');
     while (iter.next()) |line| {
@@ -30,6 +32,16 @@ pub fn load(allocator: std.mem.Allocator, menu_id: []const u8) !?State {
             last_selection = std.mem.trim(u8, trimmed["last_selection:".len..], " \t");
             continue;
         }
+        if (std.mem.startsWith(u8, trimmed, "last_selection_time:")) {
+            const raw = std.mem.trim(u8, trimmed["last_selection_time:".len..], " \t");
+            last_selection_time = std.fmt.parseInt(i64, raw, 10) catch 0;
+            continue;
+        }
+        if (std.mem.startsWith(u8, trimmed, "last_entry_time:")) {
+            const raw = std.mem.trim(u8, trimmed["last_entry_time:".len..], " \t");
+            last_selection_time = std.fmt.parseInt(i64, raw, 10) catch 0;
+            continue;
+        }
     }
 
     if (last_query.len == 0 and last_selection.len == 0) return null;
@@ -37,6 +49,7 @@ pub fn load(allocator: std.mem.Allocator, menu_id: []const u8) !?State {
     return .{
         .last_query = last_query,
         .last_selection = last_selection,
+        .last_selection_time = last_selection_time,
     };
 }
 
@@ -49,8 +62,8 @@ pub fn save(allocator: std.mem.Allocator, menu_id: []const u8, state: State) !vo
     defer file.close();
 
     try file.deprecatedWriter().print(
-        "last_query: {s}\nlast_selection: {s}\n",
-        .{ state.last_query, state.last_selection },
+        "last_query: {s}\nlast_selection: {s}\nlast_selection_time: {d}\n",
+        .{ state.last_query, state.last_selection, state.last_selection_time },
     );
 }
 
