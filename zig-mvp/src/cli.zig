@@ -507,10 +507,10 @@ fn parseHexColor(value: []const u8) !appconfig.Color {
     const a: u8 = if (hex.len == 8) try parseHexByte(hex[6..8]) else 255;
 
     return .{
-        .r = @as(f64, r) / 255.0,
-        .g = @as(f64, g) / 255.0,
-        .b = @as(f64, b) / 255.0,
-        .a = @as(f64, a) / 255.0,
+        .r = @as(f64, @floatFromInt(r)) / 255.0,
+        .g = @as(f64, @floatFromInt(g)) / 255.0,
+        .b = @as(f64, @floatFromInt(b)) / 255.0,
+        .a = @as(f64, @floatFromInt(a)) / 255.0,
     };
 }
 

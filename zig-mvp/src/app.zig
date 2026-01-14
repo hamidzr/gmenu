@@ -26,33 +26,44 @@ const NSRect = extern struct {
     size: NSSize,
 };
 
-const UpdateQueue = struct {
+pub const UpdateKind = enum {
+    append,
+    prepend,
+    set,
+};
+
+pub const ItemUpdate = struct {
+    kind: UpdateKind,
+    line: []const u8,
+};
+
+pub const UpdateQueue = struct {
     allocator: std.mem.Allocator,
     mutex: std.Thread.Mutex = .{},
-    items: std.ArrayList([]const u8),
+    items: std.ArrayList(ItemUpdate),
 
     pub fn init(allocator: std.mem.Allocator) UpdateQueue {
         return .{
             .allocator = allocator,
-            .items = std.ArrayList([]const u8).empty,
+            .items = std.ArrayList(ItemUpdate).empty,
         };
     }
 
-    pub fn pushOwned(self: *UpdateQueue, line: []const u8) void {
+    pub fn pushOwned(self: *UpdateQueue, kind: UpdateKind, line: []const u8) void {
         self.mutex.lock();
         defer self.mutex.unlock();
-        self.items.append(self.allocator, line) catch self.allocator.free(line);
+        self.items.append(self.allocator, .{ .kind = kind, .line = line }) catch self.allocator.free(line);
     }
 
-    pub fn drain(self: *UpdateQueue) []const []const u8 {
+    pub fn drain(self: *UpdateQueue) []const ItemUpdate {
         self.mutex.lock();
         defer self.mutex.unlock();
         if (self.items.items.len == 0) {
-            return &[_][]const u8{};
+            return &[_]ItemUpdate{};
         }
-        const out = self.allocator.alloc([]const u8, self.items.items.len) catch {
+        const out = self.allocator.alloc(ItemUpdate, self.items.items.len) catch {
             self.items.clearRetainingCapacity();
-            return &[_][]const u8{};
+            return &[_]ItemUpdate{};
         };
         @memcpy(out, self.items.items);
         self.items.clearRetainingCapacity();
@@ -179,7 +190,7 @@ fn followStdinThread(queue: *UpdateQueue) void {
             queue.allocator.free(line);
             line = copy;
         }
-        queue.pushOwned(line);
+        queue.pushOwned(.append, line);
     }
 }
 
@@ -459,30 +470,40 @@ fn onUpdateTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(
 
     const state = g_state orelse return;
     const queue = state.update_queue orelse return;
-    const lines = queue.drain();
-    if (lines.len == 0) return;
+    const updates = queue.drain();
+    if (updates.len == 0) return;
 
-    var new_items = std.ArrayList(menu.MenuItem).empty;
-    defer new_items.deinit(state.allocator);
-    new_items.ensureTotalCapacity(state.allocator, lines.len) catch {
-        for (lines) |line| queue.allocator.free(line);
-        queue.allocator.free(lines);
-        return;
-    };
+    var set_items = std.ArrayList(menu.MenuItem).empty;
+    defer set_items.deinit(state.allocator);
+    var prepend_items = std.ArrayList(menu.MenuItem).empty;
+    defer prepend_items.deinit(state.allocator);
+    var append_items = std.ArrayList(menu.MenuItem).empty;
+    defer append_items.deinit(state.allocator);
 
-    const start = state.model.items.len;
-    for (lines, 0..) |line, idx| {
-        const item = menu.parseItem(state.allocator, line, start + idx, state.config.show_icons) catch {
-            queue.allocator.free(line);
+    for (updates) |update| {
+        const item = menu.parseItem(state.allocator, update.line, 0, state.config.show_icons) catch {
+            queue.allocator.free(update.line);
             continue;
         };
-        new_items.appendAssumeCapacity(item);
-        queue.allocator.free(line);
+        queue.allocator.free(update.line);
+        switch (update.kind) {
+            .set => set_items.append(state.allocator, item) catch {},
+            .prepend => prepend_items.append(state.allocator, item) catch {},
+            .append => append_items.append(state.allocator, item) catch {},
+        }
     }
-    queue.allocator.free(lines);
+    queue.allocator.free(updates);
 
-    if (new_items.items.len == 0) return;
-    state.model.appendItems(state.allocator, new_items.items) catch return;
+    if (set_items.items.len == 0 and prepend_items.items.len == 0 and append_items.items.len == 0) return;
+    if (set_items.items.len > 0) {
+        state.model.setItems(state.allocator, set_items.items) catch return;
+    }
+    if (prepend_items.items.len > 0) {
+        state.model.prependItems(state.allocator, prepend_items.items) catch return;
+    }
+    if (append_items.items.len > 0) {
+        state.model.appendItems(state.allocator, append_items.items) catch return;
+    }
     applyFilter(state, currentQuery(state));
 }
 
@@ -673,6 +694,11 @@ pub fn run(config: appconfig.Config) !void {
     if (!config.follow_stdin) {
         items = readItems(allocator, config.show_icons) catch {
             std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
+            std.process.exit(exit_codes.unknown_error);
+        };
+    } else {
+        items = allocator.alloc(menu.MenuItem, 0) catch {
+            std.fs.File.stderr().deprecatedWriter().print("zmenu: unable to allocate items\n", .{}) catch {};
             std.process.exit(exit_codes.unknown_error);
         };
     }

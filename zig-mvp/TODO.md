@@ -89,11 +89,11 @@
 - [x] Icon hints display
 - [x] Score metadata column (for debugging/tuning)
 - [x] Theme customization (colors/sizes)
-- [ ] Dynamic items API (for embedding)
-  - [ ] SetItems
-  - [ ] AppendItems
-  - [ ] PrependItems
-  - [ ] ItemsChan for live updates
+- [x] Dynamic items API (for embedding)
+  - [x] SetItems
+  - [x] AppendItems
+  - [x] PrependItems
+  - [x] ItemsChan for live updates
 
 ## Documentation & Testing
 - [x] Add `zig build test` step to build.zig

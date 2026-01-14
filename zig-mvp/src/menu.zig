@@ -87,6 +87,7 @@ pub const Model = struct {
     pub fn deinit(self: *Model, allocator: std.mem.Allocator) void {
         self.matches.deinit(allocator);
         self.filtered.deinit(allocator);
+        allocator.free(self.items);
         allocator.free(self.labels);
         allocator.free(self.scores);
     }
@@ -129,6 +130,71 @@ pub const Model = struct {
 
         try self.matches.ensureTotalCapacity(allocator, new_len);
         try self.filtered.ensureTotalCapacity(allocator, new_len);
+    }
+
+    pub fn prependItems(self: *Model, allocator: std.mem.Allocator, new_items: []const MenuItem) !void {
+        if (new_items.len == 0) return;
+
+        const old_items = self.items;
+        const old_labels = self.labels;
+        const old_scores = self.scores;
+
+        const old_len = old_items.len;
+        const new_len = old_len + new_items.len;
+
+        const items = try allocator.alloc(MenuItem, new_len);
+        const labels = try allocator.alloc([]const u8, new_len);
+        const scores = try allocator.alloc(i32, new_len);
+        @memset(scores, 0);
+
+        for (new_items, 0..) |item_in, idx| {
+            var item = item_in;
+            item.index = idx;
+            items[idx] = item;
+            labels[idx] = item.label[0..item.label.len];
+        }
+
+        for (old_items, 0..) |item_in, offset| {
+            const idx = new_items.len + offset;
+            var item = item_in;
+            item.index = idx;
+            items[idx] = item;
+            labels[idx] = item.label[0..item.label.len];
+        }
+
+        self.items = items;
+        self.labels = labels;
+        self.scores = scores;
+
+        allocator.free(old_items);
+        allocator.free(old_labels);
+        allocator.free(old_scores);
+
+        try self.matches.ensureTotalCapacity(allocator, new_len);
+        try self.filtered.ensureTotalCapacity(allocator, new_len);
+    }
+
+    pub fn setItems(self: *Model, allocator: std.mem.Allocator, new_items: []const MenuItem) !void {
+        const new_len = new_items.len;
+
+        self.items = try allocator.realloc(self.items, new_len);
+        self.labels = try allocator.realloc(self.labels, new_len);
+        self.scores = try allocator.realloc(self.scores, new_len);
+        @memset(self.scores, 0);
+
+        for (new_items, 0..) |item_in, idx| {
+            var item = item_in;
+            item.index = idx;
+            self.items[idx] = item;
+            self.labels[idx] = item.label[0..item.label.len];
+        }
+
+        self.matches.clearRetainingCapacity();
+        self.filtered.clearRetainingCapacity();
+        try self.matches.ensureTotalCapacity(allocator, new_len);
+        try self.filtered.ensureTotalCapacity(allocator, new_len);
+        self.match_count = 0;
+        self.selected = -1;
     }
 
     pub fn moveSelection(self: *Model, delta: isize) void {
