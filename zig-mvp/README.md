@@ -43,6 +43,17 @@ When `--show-icons` is enabled, input lines can prefix `[app]`, `[file]`, `[fold
 `--row-height` and `--alternate-rows` adjust table density and zebra striping.
 Theme colors accept hex strings like `#RRGGBB` or `#RRGGBBAA` (empty/`none`/`default` keeps system defaults).
 
+### IPC + dynamic items
+zmenu listens on a local Unix socket for dynamic item updates. Use `zmenuctl` to send
+`set`, `append`, or `prepend` commands to a running instance:
+
+```bash
+printf "alpha\nbravo\n" | zmenuctl --menu-id demo set --stdin
+zmenuctl --menu-id demo append "charlie"
+```
+
+Protocol details live in `IPC_PROTOCOL.md`.
+
 ### Compatibility notes
 - Search methods supported: `direct`, `fuzzy`, `fuzzy1`, `fuzzy3`, `default` (`default` matches `fuzzy`). Regex or `exact` modes are not implemented.
 - The config filename is `config.yaml` in the standard gmenu config locations; `gmenu.yaml` is not read.

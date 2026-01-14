@@ -27,6 +27,16 @@ pub fn build(b: *std.Build) void {
     b.install_prefix = "bin";
     b.installArtifact(exe);
 
+    const ctl = b.addExecutable(.{
+        .name = "zmenuctl",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/zmenuctl.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    b.installArtifact(ctl);
+
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {

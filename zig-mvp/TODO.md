@@ -89,11 +89,11 @@
 - [ ] Icon hints display (match gmenu icon rendering; currently text labels)
 - [x] Score metadata column (for debugging/tuning)
 - [ ] Theme customization (colors/sizes) (partial: background colors only)
-- [ ] Dynamic items API (for embedding) (follow-stdin only; no public API/protocol)
-  - [ ] SetItems
-  - [ ] AppendItems
-  - [ ] PrependItems
-  - [ ] ItemsChan for live updates
+- [x] Dynamic items API (IPC socket + zmenuctl)
+  - [x] SetItems
+  - [x] AppendItems
+  - [x] PrependItems
+  - [x] ItemsChan for live updates
 
 ## Documentation & Testing
 - [x] Add `zig build test` step to build.zig
