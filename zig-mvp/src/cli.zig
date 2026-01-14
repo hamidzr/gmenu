@@ -44,17 +44,16 @@ pub fn parse(allocator: std.mem.Allocator) !appconfig.Config {
         std.process.exit(0);
     }
 
-    if (try resolveMenuID(allocator, args)) |menu_id| {
-        config.menu_id = menu_id;
-    }
+    const cli_menu_id = try resolveMenuIDFromArgs(allocator, args);
+    const config_menu_id: [:0]const u8 = cli_menu_id orelse "";
 
     if (hasFlag(args, "--init-config")) {
-        const path = try writeDefaultConfig(allocator, config.menu_id);
+        const path = try writeDefaultConfig(allocator, config_menu_id);
         std.fs.File.stdout().deprecatedWriter().print("zmenu: wrote config to {s}\n", .{path}) catch {};
         std.process.exit(0);
     }
 
-    try loadConfigFile(allocator, config.menu_id, &config);
+    try loadConfigFile(allocator, config_menu_id, &config);
     try applyEnv(allocator, &config);
     try applyArgs(allocator, args, &config);
 
@@ -94,19 +93,11 @@ fn printHelp() void {
     , .{}) catch {};
 }
 
-fn resolveMenuID(allocator: std.mem.Allocator, args: []const [:0]const u8) !?[:0]const u8 {
-    var menu_id: ?[:0]const u8 = null;
-    if (envValue(allocator, "GMENU_MENU_ID")) |value| {
-        menu_id = value;
-    } else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
-
+fn resolveMenuIDFromArgs(allocator: std.mem.Allocator, args: []const [:0]const u8) !?[:0]const u8 {
     if (findArgValue(args, "--menu-id", "-m")) |value| {
-        menu_id = try allocator.dupeZ(u8, value);
+        return try allocator.dupeZ(u8, value);
     }
-
-    return menu_id;
+    return null;
 }
 
 fn loadConfigFile(allocator: std.mem.Allocator, menu_id: [:0]const u8, config: *appconfig.Config) !void {
@@ -595,13 +586,14 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
     try makePathAbsolute(dir);
 
     const defaults = appconfig.defaults();
-    var file = try std.fs.createFileAbsolute(path, .{ .truncate = true });
+    var file = try std.fs.createFileAbsolute(path, .{ .exclusive = true });
     defer file.close();
 
     try file.deprecatedWriter().print(
         \\# gmenu config
         \\title: {s}
         \\prompt: {s}
+        \\menu_id: "{s}"
         \\search_method: fuzzy
         \\preserve_order: false
         \\initial_query: ""
@@ -626,6 +618,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         .{
             defaults.title,
             defaults.placeholder,
+            menu_id,
             @as(i64, @intFromFloat(defaults.window_width)),
             @as(i64, @intFromFloat(defaults.window_height)),
             @as(i64, @intFromFloat(defaults.max_width)),
@@ -638,22 +631,25 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
 }
 
 fn defaultConfigPath(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]const u8 {
-    const home = std.process.getEnvVarOwned(allocator, "HOME") catch |err| switch (err) {
-        error.EnvironmentVariableNotFound => return error.MissingHome,
-        else => return err,
-    };
-
-    const config_home = if (std.process.getEnvVarOwned(allocator, "XDG_CONFIG_HOME")) |dir| dir else |err| blk: {
-        if (err != error.EnvironmentVariableNotFound) return err;
-        if (builtin.os.tag == .macos) break :blk try std.fs.path.join(allocator, &.{ home, "Library", "Application Support" });
-        break :blk try std.fs.path.join(allocator, &.{ home, ".config" });
-    };
-
-    const gmenu_config = try std.fs.path.join(allocator, &.{ config_home, "gmenu" });
-    if (menu_id.len > 0) {
-        return std.fs.path.join(allocator, &.{ gmenu_config, menu_id, "config.yaml" });
+    const home = try homeDir(allocator);
+    if (home) |home_dir| {
+        const gmenu_config = try std.fs.path.join(allocator, &.{ home_dir, ".config", "gmenu" });
+        if (menu_id.len > 0) {
+            return std.fs.path.join(allocator, &.{ gmenu_config, menu_id, "config.yaml" });
+        }
+        return std.fs.path.join(allocator, &.{ gmenu_config, "config.yaml" });
     }
-    return std.fs.path.join(allocator, &.{ gmenu_config, "config.yaml" });
+
+    const config_home = try userConfigDir(allocator, home);
+    if (config_home) |dir| {
+        const gmenu_config = try std.fs.path.join(allocator, &.{ dir, "gmenu" });
+        if (menu_id.len > 0) {
+            return std.fs.path.join(allocator, &.{ gmenu_config, menu_id, "config.yaml" });
+        }
+        return std.fs.path.join(allocator, &.{ gmenu_config, "config.yaml" });
+    }
+
+    return error.MissingHome;
 }
 
 fn makePathAbsolute(path: []const u8) !void {
@@ -676,34 +672,56 @@ fn hasFlag(args: []const [:0]const u8, flag: []const u8) bool {
 }
 
 fn findConfigPath(allocator: std.mem.Allocator, menu_id: [:0]const u8) !?[]const u8 {
-    const home = std.process.getEnvVarOwned(allocator, "HOME") catch |err| switch (err) {
-        error.EnvironmentVariableNotFound => return null,
-        else => return err,
-    };
+    const home = try homeDir(allocator);
+    const config_home = try userConfigDir(allocator, home);
 
-    const config_home = if (std.process.getEnvVarOwned(allocator, "XDG_CONFIG_HOME")) |dir| dir else |err| blk: {
-        if (err != error.EnvironmentVariableNotFound) return err;
-        if (builtin.os.tag == .macos) break :blk try std.fs.path.join(allocator, &.{ home, "Library", "Application Support" });
-        break :blk try std.fs.path.join(allocator, &.{ home, ".config" });
-    };
-
-    const gmenu_config = try std.fs.path.join(allocator, &.{ config_home, "gmenu" });
     if (menu_id.len > 0) {
-        const scoped = try std.fs.path.join(allocator, &.{ gmenu_config, menu_id, "config.yaml" });
-        if (pathExists(scoped)) return scoped;
+        if (home) |home_dir| {
+            const scoped = try std.fs.path.join(allocator, &.{ home_dir, ".config", "gmenu", menu_id, "config.yaml" });
+            if (pathExists(scoped)) return scoped;
+            const gmenu_home = try std.fs.path.join(allocator, &.{ home_dir, ".gmenu", menu_id, "config.yaml" });
+            if (pathExists(gmenu_home)) return gmenu_home;
+        }
+        if (config_home) |dir| {
+            const scoped = try std.fs.path.join(allocator, &.{ dir, "gmenu", menu_id, "config.yaml" });
+            if (pathExists(scoped)) return scoped;
+        }
     }
-    const base = try std.fs.path.join(allocator, &.{ gmenu_config, "config.yaml" });
-    if (pathExists(base)) return base;
 
-    const gmenu_home = try std.fs.path.join(allocator, &.{ home, ".gmenu" });
-    if (menu_id.len > 0) {
-        const scoped = try std.fs.path.join(allocator, &.{ gmenu_home, menu_id, "config.yaml" });
-        if (pathExists(scoped)) return scoped;
+    if (home) |home_dir| {
+        const base = try std.fs.path.join(allocator, &.{ home_dir, ".config", "gmenu", "config.yaml" });
+        if (pathExists(base)) return base;
+        const home_base = try std.fs.path.join(allocator, &.{ home_dir, ".gmenu", "config.yaml" });
+        if (pathExists(home_base)) return home_base;
     }
-    const home_base = try std.fs.path.join(allocator, &.{ gmenu_home, "config.yaml" });
-    if (pathExists(home_base)) return home_base;
+    if (config_home) |dir| {
+        const base = try std.fs.path.join(allocator, &.{ dir, "gmenu", "config.yaml" });
+        if (pathExists(base)) return base;
+    }
 
     return null;
+}
+
+fn homeDir(allocator: std.mem.Allocator) !?[]const u8 {
+    return std.process.getEnvVarOwned(allocator, "HOME") catch |err| switch (err) {
+        error.EnvironmentVariableNotFound => null,
+        else => return err,
+    };
+}
+
+fn userConfigDir(allocator: std.mem.Allocator, home: ?[]const u8) !?[]const u8 {
+    if (std.process.getEnvVarOwned(allocator, "XDG_CONFIG_HOME")) |dir| {
+        return @as(?[]const u8, dir);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (home == null) return null;
+    if (builtin.os.tag == .macos) {
+        const path = try std.fs.path.join(allocator, &.{ home.?, "Library", "Application Support" });
+        return @as(?[]const u8, path);
+    }
+    const path = try std.fs.path.join(allocator, &.{ home.?, ".config" });
+    return @as(?[]const u8, path);
 }
 
 fn pathExists(path: []const u8) bool {

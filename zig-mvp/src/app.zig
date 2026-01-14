@@ -452,14 +452,18 @@ fn columnIsScore(column: objc.Object) bool {
     return std.mem.eql(u8, name, "score");
 }
 
-fn iconLabel(kind: menu.IconKind) [:0]const u8 {
-    return switch (kind) {
-        .app => "APP",
-        .file => "FILE",
-        .folder => "DIR",
-        .info => "INFO",
-        else => "",
+fn iconImage(kind: menu.IconKind) ?objc.Object {
+    const name: [:0]const u8 = switch (kind) {
+        .app => "NSApplicationIcon",
+        .file => "NSGenericDocument",
+        .folder => "NSFolder",
+        .info => "NSInfo",
+        else => return null,
     };
+    const NSImage = objc.getClass("NSImage").?;
+    const image = NSImage.msgSend(objc.Object, "imageNamed:", .{nsString(name)});
+    if (image.value == null) return null;
+    return image;
 }
 
 fn tableViewObjectValue(
@@ -492,9 +496,8 @@ fn tableViewObjectValue(
         const column_obj = objc.Object.fromId(column);
         if (columnIsIcon(column_obj)) {
             const item_index = state.model.filtered.items[row_index];
-            const label = iconLabel(state.model.items[item_index].icon);
-            if (label.len == 0) return nsString("").value;
-            return nsString(label).value;
+            const image = iconImage(state.model.items[item_index].icon) orelse return null;
+            return image.value;
         }
     }
     if (state.config.show_score and column != null) {
@@ -964,6 +967,10 @@ pub fn run(config: appconfig.Config) !void {
         const icon_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("icon")});
         icon_column.msgSend(void, "setWidth:", .{icon_width});
+        const NSImageCell = objc.getClass("NSImageCell").?;
+        const image_cell = NSImageCell.msgSend(objc.Object, "alloc", .{})
+            .msgSend(objc.Object, "init", .{});
+        icon_column.msgSend(void, "setDataCell:", .{image_cell});
         table_view.msgSend(void, "addTableColumn:", .{icon_column});
     }
     const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})

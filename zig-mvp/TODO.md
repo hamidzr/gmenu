@@ -69,11 +69,11 @@
   - [x] --no-numeric-selection
   - [x] --min-width, --min-height
   - [x] --max-width, --max-height
-  - [ ] --init-config (match gmenu: refuse overwrite if config exists)
+  - [x] --init-config (match gmenu: refuse overwrite if config exists)
 - [x] Environment variable support (GMENU_* prefix)
-- [ ] YAML config file loading (match gmenu path order and menu-id resolution)
-  - [ ] Prefer ~/.config/gmenu before OS user config dir on macOS
-  - [ ] Use CLI --menu-id (not GMENU_MENU_ID) to select namespaced config paths
+- [x] YAML config file loading (match gmenu path order and menu-id resolution)
+  - [x] Prefer ~/.config/gmenu before OS user config dir on macOS
+  - [x] Use CLI --menu-id (not GMENU_MENU_ID) to select namespaced config paths
   - [x] XDG_CONFIG_HOME support
 - [x] Config priority: CLI flags > env vars > config file
 - [x] Config validation (snake_case and camelCase keys)
@@ -86,7 +86,7 @@
 - [x] Terminal mode (--terminal flag)
 - [x] Match counter label ("[matched/total]")
 - [x] Alternating row colors (zebra striping)
-- [ ] Icon hints display (match gmenu icon rendering; currently text labels)
+- [x] Icon hints display (match gmenu icon rendering; currently text labels)
 - [x] Score metadata column (for debugging/tuning)
 - [ ] Theme customization (colors/sizes) (partial: background colors only)
 - [x] Dynamic items API (IPC socket + zmenuctl)
