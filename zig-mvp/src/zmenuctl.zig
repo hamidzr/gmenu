@@ -60,7 +60,7 @@ pub fn main() !void {
         if (start < args.len) {
             for (args[start..]) |arg| {
                 if (arg.len == 0) continue;
-                try items.append(allocator, .{ .label = arg });
+                try items.append(allocator, .{ .id = arg, .label = arg });
             }
         }
     }
@@ -108,7 +108,7 @@ fn readItemsFromStdin(allocator: std.mem.Allocator, items: *std.ArrayList(ipc.It
             trimmed = trimmed[0 .. trimmed.len - 1];
         }
         if (trimmed.len == 0) continue;
-        try items.append(allocator, .{ .label = trimmed });
+        try items.append(allocator, .{ .id = trimmed, .label = trimmed });
     }
 }
 

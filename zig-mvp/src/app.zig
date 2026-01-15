@@ -34,8 +34,14 @@ pub const UpdateKind = enum {
     set,
 };
 
+pub const UpdateSource = enum {
+    stdin,
+    ipc,
+};
+
 pub const ItemUpdate = struct {
     kind: UpdateKind,
+    source: UpdateSource,
     line: []const u8,
 };
 
@@ -51,10 +57,10 @@ pub const UpdateQueue = struct {
         };
     }
 
-    pub fn pushOwned(self: *UpdateQueue, kind: UpdateKind, line: []const u8) void {
+    pub fn pushOwned(self: *UpdateQueue, kind: UpdateKind, source: UpdateSource, line: []const u8) void {
         self.mutex.lock();
         defer self.mutex.unlock();
-        self.items.append(self.allocator, .{ .kind = kind, .line = line }) catch self.allocator.free(line);
+        self.items.append(self.allocator, .{ .kind = kind, .source = source, .line = line }) catch self.allocator.free(line);
     }
 
     pub fn drain(self: *UpdateQueue) []const ItemUpdate {
@@ -197,11 +203,11 @@ fn followStdinThread(queue: *UpdateQueue) void {
             queue.allocator.free(line);
             line = copy;
         }
-        queue.pushOwned(.append, line);
+        queue.pushOwned(.append, .stdin, line);
     }
 }
 
-fn startIpcServer(queue: *UpdateQueue, menu_id: []const u8, show_icons: bool) ?[]const u8 {
+fn startIpcServer(queue: *UpdateQueue, menu_id: []const u8) ?[]const u8 {
     const path = ipc.socketPath(std.heap.c_allocator, menu_id) catch return null;
     std.fs.deleteFileAbsolute(path) catch |err| switch (err) {
         error.FileNotFound => {},
@@ -217,7 +223,7 @@ fn startIpcServer(queue: *UpdateQueue, menu_id: []const u8, show_icons: bool) ?[
     };
     server_ptr.* = server;
 
-    _ = std.Thread.spawn(.{}, ipcServerLoop, .{ server_ptr, queue, show_icons }) catch {
+    _ = std.Thread.spawn(.{}, ipcServerLoop, .{ server_ptr, queue }) catch {
         server.deinit();
         std.heap.c_allocator.destroy(server_ptr);
         return null;
@@ -226,15 +232,15 @@ fn startIpcServer(queue: *UpdateQueue, menu_id: []const u8, show_icons: bool) ?[
     return path;
 }
 
-fn ipcServerLoop(server: *std.net.Server, queue: *UpdateQueue, show_icons: bool) void {
+fn ipcServerLoop(server: *std.net.Server, queue: *UpdateQueue) void {
     while (true) {
         const conn = server.accept() catch continue;
-        handleIpcConnection(conn.stream, queue, show_icons);
+        handleIpcConnection(conn.stream, queue);
         conn.stream.close();
     }
 }
 
-fn handleIpcConnection(stream: std.net.Stream, queue: *UpdateQueue, show_icons: bool) void {
+fn handleIpcConnection(stream: std.net.Stream, queue: *UpdateQueue) void {
     var buf: [4096]u8 = undefined;
     var reader = stream.reader(&buf);
     const io_reader = reader.interface();
@@ -256,7 +262,7 @@ fn handleIpcConnection(stream: std.net.Stream, queue: *UpdateQueue, show_icons: 
 
         io_reader.readSliceAll(payload) catch return;
 
-        handleIpcPayload(queue, show_icons, payload);
+        handleIpcPayload(queue, payload);
     }
 }
 
@@ -280,40 +286,57 @@ fn readLineAlloc(reader: *std.Io.Reader, allocator: std.mem.Allocator, max_len: 
     return slice;
 }
 
-fn handleIpcPayload(queue: *UpdateQueue, show_icons: bool, payload: []const u8) void {
-    const parsed = std.json.parseFromSlice(ipc.Message, std.heap.c_allocator, payload, .{
-        .ignore_unknown_fields = true,
-    }) catch return;
+fn handleIpcPayload(queue: *UpdateQueue, payload: []const u8) void {
+    const parsed = std.json.parseFromSlice(std.json.Value, std.heap.c_allocator, payload, .{}) catch return;
     defer parsed.deinit();
 
-    handleIpcMessage(queue, show_icons, parsed.value);
-}
+    const root = parsed.value;
+    const obj = switch (root) {
+        .object => |value| value,
+        else => return,
+    };
 
-fn handleIpcMessage(queue: *UpdateQueue, show_icons: bool, msg: ipc.Message) void {
-    const items = msg.items orelse return;
+    const cmd_value = obj.get("cmd") orelse return;
+    const cmd = switch (cmd_value) {
+        .string => |value| value,
+        else => return,
+    };
+
     var kind: UpdateKind = undefined;
-    if (std.ascii.eqlIgnoreCase(msg.cmd, "set")) {
+    if (std.ascii.eqlIgnoreCase(cmd, "set")) {
         kind = .set;
-    } else if (std.ascii.eqlIgnoreCase(msg.cmd, "append")) {
+    } else if (std.ascii.eqlIgnoreCase(cmd, "append")) {
         kind = .append;
-    } else if (std.ascii.eqlIgnoreCase(msg.cmd, "prepend")) {
+    } else if (std.ascii.eqlIgnoreCase(cmd, "prepend")) {
         kind = .prepend;
     } else {
         return;
     }
 
-    for (items) |item| {
-        if (item.label.len == 0) continue;
-        const line = buildIpcLine(queue.allocator, item, show_icons) catch continue;
-        queue.pushOwned(kind, line);
-    }
-}
+    const items_value = obj.get("items") orelse return;
+    const items = switch (items_value) {
+        .array => |value| value,
+        else => return,
+    };
 
-fn buildIpcLine(allocator: std.mem.Allocator, item: ipc.Item, show_icons: bool) ![]const u8 {
-    if (show_icons and item.icon != null and item.icon.?.len > 0) {
-        return std.fmt.allocPrint(allocator, "[{s}] {s}", .{ item.icon.?, item.label });
+    for (items.items) |item_value| {
+        const item_obj = switch (item_value) {
+            .object => |value| value,
+            else => continue,
+        };
+        const label_value = item_obj.get("label") orelse continue;
+        const label = switch (label_value) {
+            .string => |value| value,
+            else => continue,
+        };
+        if (label.len == 0) continue;
+
+        var json_out: std.Io.Writer.Allocating = .init(queue.allocator);
+        defer json_out.deinit();
+        std.json.Stringify.value(item_value, .{}, &json_out.writer) catch continue;
+        const payload_copy = queue.allocator.dupe(u8, json_out.written()) catch continue;
+        queue.pushOwned(kind, .ipc, payload_copy);
     }
-    return allocator.dupe(u8, item.label);
 }
 
 fn controlTextDidChange(target: objc.c.id, sel: objc.c.SEL, notification: objc.c.id) callconv(.c) void {
@@ -388,6 +411,24 @@ fn saveCache(state: *AppState, selection: []const u8) void {
 }
 
 fn acceptSelection(state: *AppState) void {
+    if (state.config.ipc_only) {
+        if (state.model.selectedItem()) |item| {
+            saveCache(state, item.label);
+            const payload = item.ipc_payload orelse item.label;
+            std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{payload}) catch {};
+            quit(state, 0);
+        }
+        if (state.model.filtered.items.len == 0) {
+            quit(state, exit_codes.user_canceled);
+        }
+        const item_index = state.model.filtered.items[0];
+        const item = state.model.items[item_index];
+        saveCache(state, item.label);
+        const payload = item.ipc_payload orelse item.label;
+        std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{payload}) catch {};
+        quit(state, 0);
+    }
+
     if (state.model.filtered.items.len == 0) {
         if (!state.config.accept_custom_selection) {
             return;
@@ -588,6 +629,22 @@ fn onFocusLossTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callco
     std.process.exit(exit_codes.user_canceled);
 }
 
+fn menuItemFromIpc(allocator: std.mem.Allocator, payload: []const u8) ?menu.MenuItem {
+    const parsed = std.json.parseFromSlice(ipc.Item, allocator, payload, .{
+        .ignore_unknown_fields = true,
+    }) catch return null;
+    defer parsed.deinit();
+
+    const item = parsed.value;
+    if (item.label.len == 0) return null;
+
+    const label_z = allocator.dupeZ(u8, item.label) catch return null;
+    const icon = menu.iconKindFromName(item.icon);
+    const payload_copy = allocator.dupe(u8, payload) catch return null;
+
+    return .{ .label = label_z, .index = 0, .icon = icon, .ipc_payload = payload_copy };
+}
+
 fn onUpdateTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(.c) void {
     _ = target;
     _ = sel;
@@ -606,9 +663,15 @@ fn onUpdateTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(
     defer append_items.deinit(state.allocator);
 
     for (updates) |update| {
-        const item = menu.parseItem(state.allocator, update.line, 0, state.config.show_icons) catch {
-            queue.allocator.free(update.line);
-            continue;
+        const item = switch (update.source) {
+            .stdin => menu.parseItem(state.allocator, update.line, 0, state.config.show_icons) catch {
+                queue.allocator.free(update.line);
+                continue;
+            },
+            .ipc => menuItemFromIpc(state.allocator, update.line) orelse {
+                queue.allocator.free(update.line);
+                continue;
+            },
         };
         queue.allocator.free(update.line);
         switch (update.kind) {
@@ -822,7 +885,12 @@ pub fn run(config: appconfig.Config) !void {
     const allocator = arena.allocator();
 
     var items: []menu.MenuItem = &[_]menu.MenuItem{};
-    if (!config.follow_stdin) {
+    if (config.ipc_only) {
+        items = allocator.alloc(menu.MenuItem, 0) catch {
+            std.fs.File.stderr().deprecatedWriter().print("zmenu: unable to allocate items\n", .{}) catch {};
+            std.process.exit(exit_codes.unknown_error);
+        };
+    } else if (!config.follow_stdin) {
         items = readItems(allocator, config.show_icons) catch {
             std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
             std.process.exit(exit_codes.unknown_error);
@@ -1011,7 +1079,7 @@ pub fn run(config: appconfig.Config) !void {
 
     var update_queue = UpdateQueue.init(std.heap.c_allocator);
     const update_queue_ptr: ?*UpdateQueue = &update_queue;
-    const ipc_path = if (update_queue_ptr != null) startIpcServer(update_queue_ptr.?, config.menu_id, config.show_icons) else null;
+    const ipc_path = if (update_queue_ptr != null) startIpcServer(update_queue_ptr.?, config.menu_id) else null;
 
     var state = AppState{
         .model = try menu.Model.init(allocator, items),
@@ -1029,7 +1097,7 @@ pub fn run(config: appconfig.Config) !void {
     defer state.model.deinit(allocator);
     g_state = &state;
 
-    if (config.follow_stdin and update_queue_ptr != null) {
+    if (config.follow_stdin and !config.ipc_only and update_queue_ptr != null) {
         _ = std.Thread.spawn(.{}, followStdinThread, .{update_queue_ptr.?}) catch {};
     }
     if (update_queue_ptr != null) {

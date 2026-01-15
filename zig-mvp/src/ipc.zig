@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub const Item = struct {
+    id: []const u8 = "",
     label: []const u8,
     icon: ?[]const u8 = null,
 };

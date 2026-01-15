@@ -30,7 +30,7 @@ Where `<length>` is the decimal byte count of the JSON payload.
   "v": 1,
   "cmd": "set" | "append" | "prepend",
   "items": [
-    { "label": "Item label", "icon": "app" }
+    { "id": "item-id", "label": "Item label", "icon": "app" }
   ]
 }
 ```
@@ -38,7 +38,9 @@ Where `<length>` is the decimal byte count of the JSON payload.
 - `v` is the protocol version (currently `1`).
 - `cmd` determines how items are applied.
 - `items` is required for `set`, `append`, and `prepend`.
+- `id` is a stable identifier string (recommended for IPC-only mode).
 - `label` is required. `icon` is optional (app/file/folder/info).
+- Extra fields on item objects are preserved for IPC-only output.
 
 ## Behavior
 
@@ -47,6 +49,13 @@ Where `<length>` is the decimal byte count of the JSON payload.
 - `prepend`: adds items to the beginning.
 
 zmenu re-filters the list after each update using the current query text.
+
+## IPC-only selection mode
+
+When `--ipc-only` (or config `ipc_only: true`) is set, zmenu ignores stdin and
+starts with an empty list. On accept, it prints the full JSON item to stdout on a
+single line, preserving any extra item fields. Cancels exit non-zero without
+stdout output.
 
 ## Size limits
 
@@ -65,5 +74,5 @@ Or raw protocol:
 
 ```text
 46
-{"v":1,"cmd":"append","items":[{"label":"hi"}]}
+{"v":1,"cmd":"append","items":[{"id":"hi","label":"hi"}]}
 ```

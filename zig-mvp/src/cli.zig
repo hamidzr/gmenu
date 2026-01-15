@@ -17,6 +17,7 @@ const config_key_variants = [_]ConfigKeyVariant{
     .{ .canonical = "auto_accept", .camel = "autoAccept" },
     .{ .canonical = "terminal_mode", .camel = "terminalMode" },
     .{ .canonical = "follow_stdin", .camel = "followStdin" },
+    .{ .canonical = "ipc_only", .camel = "ipcOnly" },
     .{ .canonical = "no_numeric_selection", .camel = "noNumericSelection" },
     .{ .canonical = "show_icons", .camel = "showIcons" },
     .{ .canonical = "show_score", .camel = "showScore" },
@@ -81,6 +82,7 @@ fn printHelp() void {
         \\      --auto-accept            Auto accept when single match
         \\      --terminal               Terminal mode
         \\      --follow-stdin           Keep running and append stdin
+        \\      --ipc-only               Ignore stdin and wait for IPC updates
         \\      --no-numeric-selection   Disable numeric shortcuts
         \\      --show-icons             Show icon hint column
         \\      --show-score             Show score column
@@ -185,6 +187,11 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     }
     if (envValue(allocator, "GMENU_FOLLOW_STDIN")) |value| {
         config.follow_stdin = try parseBool(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_IPC_ONLY")) |value| {
+        config.ipc_only = try parseBool(value);
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
@@ -340,6 +347,10 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             config.follow_stdin = true;
             continue;
         }
+        if (std.mem.eql(u8, arg, "--ipc-only")) {
+            config.ipc_only = true;
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--min-width")) {
             i += 1;
             if (i >= args.len) return error.MissingValue;
@@ -477,6 +488,10 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
     }
     if (eqKey(key, "follow_stdin") or eqKey(key, "followStdin")) {
         config.follow_stdin = try parseBool(value);
+        return;
+    }
+    if (eqKey(key, "ipc_only") or eqKey(key, "ipcOnly")) {
+        config.ipc_only = try parseBool(value);
         return;
     }
     if (eqKey(key, "preserve_order") or eqKey(key, "preserveOrder")) {
@@ -684,6 +699,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\initial_query: ""
         \\terminal_mode: false
         \\follow_stdin: false
+        \\ipc_only: false
         \\auto_accept: false
         \\accept_custom_selection: true
         \\no_numeric_selection: true

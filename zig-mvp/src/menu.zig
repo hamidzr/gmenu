@@ -5,6 +5,7 @@ pub const MenuItem = struct {
     label: [:0]const u8,
     index: usize,
     icon: IconKind,
+    ipc_payload: ?[]const u8 = null,
 };
 
 pub const IconKind = enum {
@@ -30,7 +31,12 @@ pub fn parseItem(allocator: std.mem.Allocator, line: []const u8, index: usize, p
     }
 
     const label_z = try allocator.dupeZ(u8, label);
-    return .{ .label = label_z, .index = index, .icon = icon };
+    return .{ .label = label_z, .index = index, .icon = icon, .ipc_payload = null };
+}
+
+pub fn iconKindFromName(name: ?[]const u8) IconKind {
+    if (name == null) return .none;
+    return iconFromName(name.?) orelse .none;
 }
 
 fn iconFromName(name: []const u8) ?IconKind {
