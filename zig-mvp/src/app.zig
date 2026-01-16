@@ -63,6 +63,15 @@ pub const UpdateQueue = struct {
         self.items.append(self.allocator, .{ .kind = kind, .source = source, .line = line }) catch self.allocator.free(line);
     }
 
+    pub fn reset(self: *UpdateQueue) void {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        for (self.items.items) |update| {
+            self.allocator.free(update.line);
+        }
+        self.items.clearRetainingCapacity();
+    }
+
     pub fn drain(self: *UpdateQueue) []const ItemUpdate {
         self.mutex.lock();
         defer self.mutex.unlock();
@@ -1080,6 +1089,9 @@ pub fn run(config: appconfig.Config) !void {
     var update_queue = UpdateQueue.init(std.heap.c_allocator);
     const update_queue_ptr: ?*UpdateQueue = &update_queue;
     const ipc_path = if (update_queue_ptr != null) startIpcServer(update_queue_ptr.?, config.menu_id) else null;
+    if (update_queue_ptr != null and config.ipc_only) {
+        update_queue_ptr.?.reset();
+    }
 
     var state = AppState{
         .model = try menu.Model.init(allocator, items),
