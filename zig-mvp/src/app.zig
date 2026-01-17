@@ -1088,9 +1088,6 @@ pub fn run(config: appconfig.Config) !void {
         .msgSend(objc.Object, "initWithFrame:", .{table_frame});
 
     const table_font = nsFont(@max(config.row_height * 0.6, 14.0));
-    if (text_color) |color| {
-        table_view.msgSend(void, "setTextColor:", .{color});
-    }
 
     table_view.msgSend(void, "setHeaderView:", .{@as(objc.c.id, null)});
     table_view.msgSend(void, "setAllowsMultipleSelection:", .{false});
