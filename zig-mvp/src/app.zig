@@ -141,11 +141,14 @@ fn nsFont(size: f64) objc.Object {
     return NSFont.msgSend(objc.Object, "systemFontOfSize:", .{size});
 }
 
-fn applyColumnFont(column: objc.Object, font: objc.Object) void {
+fn applyColumnFont(column: objc.Object, font: objc.Object, text_color: ?objc.Object) void {
     const NSTextFieldCell = objc.getClass("NSTextFieldCell").?;
     const cell = NSTextFieldCell.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "init", .{});
     cell.msgSend(void, "setFont:", .{font});
+    if (text_color) |color| {
+        cell.msgSend(void, "setTextColor:", .{color});
+    }
     column.msgSend(void, "setDataCell:", .{cell});
 }
 
@@ -526,14 +529,6 @@ fn columnIsIcon(column: objc.Object) bool {
     return std.mem.eql(u8, name, "icon");
 }
 
-fn columnIsScore(column: objc.Object) bool {
-    const identifier = column.msgSend(objc.Object, "identifier", .{});
-    const utf8_ptr = identifier.msgSend(?[*:0]const u8, "UTF8String", .{});
-    if (utf8_ptr == null) return false;
-    const name = std.mem.sliceTo(utf8_ptr.?, 0);
-    return std.mem.eql(u8, name, "score");
-}
-
 fn iconImage(kind: menu.IconKind) ?objc.Object {
     const name: [:0]const u8 = switch (kind) {
         .app => "NSApplicationIcon",
@@ -582,18 +577,6 @@ fn tableViewObjectValue(
             return image.value;
         }
     }
-    if (state.config.show_score and column != null) {
-        const column_obj = objc.Object.fromId(column);
-        if (columnIsScore(column_obj)) {
-            const item_index = state.model.filtered.items[row_index];
-            const score = state.model.scores[item_index];
-            if (score <= 0) return nsString("").value;
-            var buf: [32]u8 = undefined;
-            const score_z = std.fmt.bufPrintZ(&buf, "{d}", .{score}) catch return nsString("").value;
-            return nsString(score_z).value;
-        }
-    }
-
     const item_index = state.model.filtered.items[row_index];
     const item = state.model.items[item_index];
     return nsString(item.label).value;
@@ -993,9 +976,8 @@ pub fn run(config: appconfig.Config) !void {
     const list_width = window_width - (padding * 2.0);
     const list_height = window_height - field_height - (padding * 3.0);
     const numeric_width = if (config.no_numeric_selection) 0 else config.numeric_column_width;
-    const score_width = if (config.show_score) config.score_column_width else 0;
     const icon_width = if (config.show_icons) config.icon_column_width else 0;
-    var item_width = list_width - numeric_width - icon_width - score_width;
+    var item_width = list_width - numeric_width - icon_width;
     if (item_width < 0) item_width = 0;
 
     const window_rect = NSRect{
@@ -1044,6 +1026,8 @@ pub fn run(config: appconfig.Config) !void {
 
     const font_size = @max(config.field_height * 0.65, 15.0);
     const text_font = nsFont(font_size);
+    const text_color = if (config.text_color) |color| nsColor(color) else null;
+    const secondary_text_color = if (config.secondary_text_color) |color| nsColor(color) else null;
 
     const SearchField = searchFieldClass();
     const text_field = SearchField.msgSend(objc.Object, "alloc", .{})
@@ -1052,10 +1036,18 @@ pub fn run(config: appconfig.Config) !void {
     text_field.msgSend(void, "setPlaceholderString:", .{nsString(config.placeholder)});
     text_field.msgSend(void, "setEditable:", .{true});
     text_field.msgSend(void, "setSelectable:", .{true});
+    text_field.msgSend(void, "setBezeled:", .{false});
+    text_field.msgSend(void, "setFocusRingType:", .{@as(c_long, 0)});
+    if (text_color) |color| {
+        text_field.msgSend(void, "setTextColor:", .{color});
+    }
     text_field.msgSend(void, "setFont:", .{text_font});
     if (config.field_background_color) |color| {
         text_field.msgSend(void, "setDrawsBackground:", .{true});
         text_field.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
+    }
+    if (secondary_text_color) |color| {
+        text_field.msgSend(void, "setPlaceholderTextColor:", .{color});
     }
 
     const handler = makeInputHandler();
@@ -1071,6 +1063,9 @@ pub fn run(config: appconfig.Config) !void {
     match_label.msgSend(void, "setEditable:", .{false});
     match_label.msgSend(void, "setSelectable:", .{false});
     match_label.msgSend(void, "setAlignment:", .{@as(c_int, 2)});
+    if (secondary_text_color) |color| {
+        match_label.msgSend(void, "setTextColor:", .{color});
+    }
     match_label.msgSend(void, "setFont:", .{text_font});
 
     const table_frame = NSRect{
@@ -1083,12 +1078,16 @@ pub fn run(config: appconfig.Config) !void {
         .msgSend(objc.Object, "initWithFrame:", .{table_frame});
 
     const table_font = nsFont(@max(config.row_height * 0.6, 14.0));
+    if (text_color) |color| {
+        table_view.msgSend(void, "setTextColor:", .{color});
+    }
 
     table_view.msgSend(void, "setHeaderView:", .{@as(objc.c.id, null)});
     table_view.msgSend(void, "setAllowsMultipleSelection:", .{false});
     table_view.msgSend(void, "setAllowsEmptySelection:", .{true});
     table_view.msgSend(void, "setRowHeight:", .{config.row_height});
     table_view.msgSend(void, "setUsesAlternatingRowBackgroundColors:", .{config.alternate_rows});
+    table_view.msgSend(void, "setSelectionHighlightStyle:", .{@as(c_long, 0)});
     table_view.msgSend(void, "setTarget:", .{handler});
     table_view.msgSend(void, "setDoubleAction:", .{objc.sel("onSubmit:")});
 
@@ -1097,7 +1096,7 @@ pub fn run(config: appconfig.Config) !void {
         const index_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("index")});
         index_column.msgSend(void, "setWidth:", .{numeric_width});
-        applyColumnFont(index_column, table_font);
+        applyColumnFont(index_column, table_font, secondary_text_color);
         table_view.msgSend(void, "addTableColumn:", .{index_column});
     }
     if (config.show_icons) {
@@ -1113,15 +1112,8 @@ pub fn run(config: appconfig.Config) !void {
     const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithIdentifier:", .{nsString("items")});
     table_column.msgSend(void, "setWidth:", .{item_width});
-    applyColumnFont(table_column, table_font);
+    applyColumnFont(table_column, table_font, text_color);
     table_view.msgSend(void, "addTableColumn:", .{table_column});
-    if (config.show_score) {
-        const score_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
-            .msgSend(objc.Object, "initWithIdentifier:", .{nsString("score")});
-        score_column.msgSend(void, "setWidth:", .{score_width});
-        applyColumnFont(score_column, table_font);
-        table_view.msgSend(void, "addTableColumn:", .{score_column});
-    }
 
     const NSScrollView = objc.getClass("NSScrollView").?;
     const scroll_view = NSScrollView.msgSend(objc.Object, "alloc", .{})
@@ -1130,9 +1122,16 @@ pub fn run(config: appconfig.Config) !void {
     scroll_view.msgSend(void, "setDocumentView:", .{table_view});
     scroll_view.msgSend(void, "setHasVerticalScroller:", .{true});
     if (config.list_background_color) |color| {
-        table_view.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
+        const list_color = nsColor(color);
+        table_view.msgSend(void, "setBackgroundColor:", .{list_color});
+        table_view.msgSend(void, "setGridStyleMask:", .{@as(c_ulong, 0)});
+        table_view.msgSend(void, "setUsesAlternatingRowBackgroundColors:", .{false});
         scroll_view.msgSend(void, "setDrawsBackground:", .{true});
-        scroll_view.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
+        scroll_view.msgSend(void, "setBackgroundColor:", .{list_color});
+        scroll_view.msgSend(void, "setBorderType:", .{@as(c_ulong, 0)});
+    }
+    if (config.selection_color) |selection| {
+        table_view.msgSend(void, "setSelectionHighlightColor:", .{nsColor(selection)});
     }
 
     content_view.msgSend(void, "addSubview:", .{scroll_view});

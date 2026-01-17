@@ -20,7 +20,6 @@ const config_key_variants = [_]ConfigKeyVariant{
     .{ .canonical = "ipc_only", .camel = "ipcOnly" },
     .{ .canonical = "no_numeric_selection", .camel = "noNumericSelection" },
     .{ .canonical = "show_icons", .camel = "showIcons" },
-    .{ .canonical = "show_score", .camel = "showScore" },
     .{ .canonical = "limit", .camel = "" },
     .{ .canonical = "min_width", .camel = "minWidth" },
     .{ .canonical = "min_height", .camel = "minHeight" },
@@ -31,12 +30,14 @@ const config_key_variants = [_]ConfigKeyVariant{
     .{ .canonical = "padding", .camel = "" },
     .{ .canonical = "numeric_column_width", .camel = "numericColumnWidth" },
     .{ .canonical = "icon_column_width", .camel = "iconColumnWidth" },
-    .{ .canonical = "score_column_width", .camel = "scoreColumnWidth" },
     .{ .canonical = "alternate_rows", .camel = "alternateRows" },
     .{ .canonical = "accept_custom_selection", .camel = "acceptCustomSelection" },
     .{ .canonical = "background_color", .camel = "backgroundColor" },
     .{ .canonical = "list_background_color", .camel = "listBackgroundColor" },
     .{ .canonical = "field_background_color", .camel = "fieldBackgroundColor" },
+    .{ .canonical = "text_color", .camel = "textColor" },
+    .{ .canonical = "secondary_text_color", .camel = "secondaryTextColor" },
+    .{ .canonical = "selection_color", .camel = "selectionColor" },
 };
 
 pub fn parse(allocator: std.mem.Allocator) !appconfig.Config {
@@ -85,7 +86,6 @@ fn printHelp() void {
         \\      --ipc-only               Ignore stdin and wait for IPC updates
         \\      --no-numeric-selection   Disable numeric shortcuts
         \\      --show-icons             Show icon hint column
-        \\      --show-score             Show score column
         \\      --min-width <px>         Minimum window width
         \\      --min-height <px>        Minimum window height
         \\      --max-width <px>         Maximum window width
@@ -95,11 +95,13 @@ fn printHelp() void {
         \\      --padding <px>           Window padding
         \\      --numeric-column-width <px> Numeric column width
         \\      --icon-column-width <px> Icon column width
-        \\      --score-column-width <px> Score column width
         \\      --alternate-rows         Zebra striping
         \\      --background-color <hex> Window background (#RRGGBB or #RRGGBBAA)
         \\      --list-background-color <hex> List background
         \\      --field-background-color <hex> Input background
+        \\      --text-color <hex>        Primary text color
+        \\      --secondary-text-color <hex> Secondary text color
+        \\      --selection-color <hex>   Selected row highlight
         \\      --init-config            Write default config and exit
         \\
     , .{}) catch {};
@@ -241,11 +243,6 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
-    if (envValue(allocator, "GMENU_SCORE_COLUMN_WIDTH")) |value| {
-        config.score_column_width = try std.fmt.parseFloat(f64, value);
-    } else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
     if (envValue(allocator, "GMENU_ALTERNATE_ROWS")) |value| {
         config.alternate_rows = try parseBool(value);
     } else |err| {
@@ -263,6 +260,21 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     }
     if (envValue(allocator, "GMENU_FIELD_BACKGROUND_COLOR")) |value| {
         config.field_background_color = try parseColorOptional(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_TEXT_COLOR")) |value| {
+        config.text_color = try parseColorOptional(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_SECONDARY_TEXT_COLOR")) |value| {
+        config.secondary_text_color = try parseColorOptional(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_SELECTION_COLOR")) |value| {
+        config.selection_color = try parseColorOptional(value);
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
@@ -294,11 +306,6 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     }
     if (envValue(allocator, "GMENU_SHOW_ICONS")) |value| {
         config.show_icons = try parseBool(value);
-    } else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
-    if (envValue(allocator, "GMENU_SHOW_SCORE")) |value| {
-        config.show_score = try parseBool(value);
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
@@ -405,12 +412,6 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             config.icon_column_width = try std.fmt.parseFloat(f64, args[i]);
             continue;
         }
-        if (std.mem.eql(u8, arg, "--score-column-width")) {
-            i += 1;
-            if (i >= args.len) return error.MissingValue;
-            config.score_column_width = try std.fmt.parseFloat(f64, args[i]);
-            continue;
-        }
         if (std.mem.eql(u8, arg, "--background-color")) {
             i += 1;
             if (i >= args.len) return error.MissingValue;
@@ -427,6 +428,24 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             i += 1;
             if (i >= args.len) return error.MissingValue;
             config.field_background_color = try parseColorOptional(args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--text-color")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.text_color = try parseColorOptional(args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--secondary-text-color")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.secondary_text_color = try parseColorOptional(args[i]);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--selection-color")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.selection_color = try parseColorOptional(args[i]);
             continue;
         }
         if (std.mem.eql(u8, arg, "--alternate-rows")) {
@@ -452,10 +471,6 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
         }
         if (std.mem.eql(u8, arg, "--show-icons")) {
             config.show_icons = true;
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--show-score")) {
-            config.show_score = true;
             continue;
         }
     }
@@ -514,10 +529,6 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
         config.show_icons = try parseBool(value);
         return;
     }
-    if (eqKey(key, "show_score") or eqKey(key, "showScore")) {
-        config.show_score = try parseBool(value);
-        return;
-    }
     if (eqKey(key, "limit")) {
         config.search.limit = try std.fmt.parseInt(usize, value, 10);
         return;
@@ -558,10 +569,6 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
         config.icon_column_width = try std.fmt.parseFloat(f64, value);
         return;
     }
-    if (eqKey(key, "score_column_width") or eqKey(key, "scoreColumnWidth")) {
-        config.score_column_width = try std.fmt.parseFloat(f64, value);
-        return;
-    }
     if (eqKey(key, "alternate_rows") or eqKey(key, "alternateRows")) {
         config.alternate_rows = try parseBool(value);
         return;
@@ -576,6 +583,18 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
     }
     if (eqKey(key, "field_background_color") or eqKey(key, "fieldBackgroundColor")) {
         config.field_background_color = try parseColorOptional(value);
+        return;
+    }
+    if (eqKey(key, "text_color") or eqKey(key, "textColor")) {
+        config.text_color = try parseColorOptional(value);
+        return;
+    }
+    if (eqKey(key, "secondary_text_color") or eqKey(key, "secondaryTextColor")) {
+        config.secondary_text_color = try parseColorOptional(value);
+        return;
+    }
+    if (eqKey(key, "selection_color") or eqKey(key, "selectionColor")) {
+        config.selection_color = try parseColorOptional(value);
         return;
     }
 }
@@ -704,7 +723,6 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\accept_custom_selection: true
         \\no_numeric_selection: true
         \\show_icons: false
-        \\show_score: false
         \\min_width: {d}
         \\min_height: {d}
         \\max_width: {d}
@@ -714,11 +732,13 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\padding: {d}
         \\numeric_column_width: {d}
         \\icon_column_width: {d}
-        \\score_column_width: {d}
         \\alternate_rows: true
         \\background_color: ""
         \\list_background_color: ""
         \\field_background_color: ""
+        \\text_color: ""
+        \\secondary_text_color: ""
+        \\selection_color: ""
         \\
     ,
         .{
@@ -734,7 +754,6 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
             @as(i64, @intFromFloat(defaults.padding)),
             @as(i64, @intFromFloat(defaults.numeric_column_width)),
             @as(i64, @intFromFloat(defaults.icon_column_width)),
-            @as(i64, @intFromFloat(defaults.score_column_width)),
         },
     );
 
