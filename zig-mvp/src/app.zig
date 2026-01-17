@@ -43,24 +43,35 @@ pub const ItemUpdate = struct {
     kind: UpdateKind,
     source: UpdateSource,
     line: []const u8,
+    batch: u64,
 };
 
 pub const UpdateQueue = struct {
     allocator: std.mem.Allocator,
     mutex: std.Thread.Mutex = .{},
     items: std.ArrayList(ItemUpdate),
+    next_batch: u64,
 
     pub fn init(allocator: std.mem.Allocator) UpdateQueue {
         return .{
             .allocator = allocator,
             .items = std.ArrayList(ItemUpdate).empty,
+            .next_batch = 1,
         };
     }
 
-    pub fn pushOwned(self: *UpdateQueue, kind: UpdateKind, source: UpdateSource, line: []const u8) void {
+    pub fn pushOwned(self: *UpdateQueue, kind: UpdateKind, source: UpdateSource, line: []const u8, batch: u64) void {
         self.mutex.lock();
         defer self.mutex.unlock();
-        self.items.append(self.allocator, .{ .kind = kind, .source = source, .line = line }) catch self.allocator.free(line);
+        self.items.append(self.allocator, .{ .kind = kind, .source = source, .line = line, .batch = batch }) catch self.allocator.free(line);
+    }
+
+    pub fn nextBatchId(self: *UpdateQueue) u64 {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        const batch = self.next_batch;
+        self.next_batch += 1;
+        return batch;
     }
 
     pub fn reset(self: *UpdateQueue) void {
@@ -70,6 +81,7 @@ pub const UpdateQueue = struct {
             self.allocator.free(update.line);
         }
         self.items.clearRetainingCapacity();
+        self.next_batch = 1;
     }
 
     pub fn drain(self: *UpdateQueue) []const ItemUpdate {
@@ -212,7 +224,7 @@ fn followStdinThread(queue: *UpdateQueue) void {
             queue.allocator.free(line);
             line = copy;
         }
-        queue.pushOwned(.append, .stdin, line);
+        queue.pushOwned(.append, .stdin, line, 0);
     }
 }
 
@@ -328,6 +340,7 @@ fn handleIpcPayload(queue: *UpdateQueue, payload: []const u8) void {
         else => return,
     };
 
+    const batch_id = queue.nextBatchId();
     for (items.items) |item_value| {
         const item_obj = switch (item_value) {
             .object => |value| value,
@@ -344,7 +357,7 @@ fn handleIpcPayload(queue: *UpdateQueue, payload: []const u8) void {
         defer json_out.deinit();
         std.json.Stringify.value(item_value, .{}, &json_out.writer) catch continue;
         const payload_copy = queue.allocator.dupe(u8, json_out.written()) catch continue;
-        queue.pushOwned(kind, .ipc, payload_copy);
+        queue.pushOwned(kind, .ipc, payload_copy, batch_id);
     }
 }
 
@@ -664,6 +677,14 @@ fn onUpdateTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(
     const updates = queue.drain();
     if (updates.len == 0) return;
 
+    var latest_set_batch: ?u64 = null;
+    for (updates) |update| {
+        if (update.kind != .set) continue;
+        if (latest_set_batch == null or update.batch > latest_set_batch.?) {
+            latest_set_batch = update.batch;
+        }
+    }
+
     var set_items = std.ArrayList(menu.MenuItem).empty;
     defer set_items.deinit(state.allocator);
     var prepend_items = std.ArrayList(menu.MenuItem).empty;
@@ -672,6 +693,10 @@ fn onUpdateTimer(target: objc.c.id, sel: objc.c.SEL, timer: objc.c.id) callconv(
     defer append_items.deinit(state.allocator);
 
     for (updates) |update| {
+        if (update.kind == .set and latest_set_batch != null and update.batch != latest_set_batch.?) {
+            queue.allocator.free(update.line);
+            continue;
+        }
         const item = switch (update.source) {
             .stdin => menu.parseItem(state.allocator, update.line, 0, state.config.show_icons) catch {
                 queue.allocator.free(update.line);
