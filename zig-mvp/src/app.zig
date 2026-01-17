@@ -1088,9 +1088,6 @@ pub fn run(config: appconfig.Config) !void {
         .msgSend(objc.Object, "initWithFrame:", .{table_frame});
 
     const table_font = nsFont(@max(config.row_height * 0.6, 14.0));
-    if (text_color) |color| {
-        table_view.msgSend(void, "setTextColor:", .{color});
-    }
 
     table_view.msgSend(void, "setHeaderView:", .{@as(objc.c.id, null)});
     table_view.msgSend(void, "setAllowsMultipleSelection:", .{false});
@@ -1140,9 +1137,10 @@ pub fn run(config: appconfig.Config) !void {
         scroll_view.msgSend(void, "setBackgroundColor:", .{list_color});
         scroll_view.msgSend(void, "setBorderType:", .{@as(c_ulong, 0)});
     }
-    if (config.selection_color) |selection| {
-        table_view.msgSend(void, "setSelectionHighlightColor:", .{nsColor(selection)});
-    }
+    // Note: setSelectionHighlightColor: is not a valid NSTableView method
+    // Custom selection colors require using setSelectionHighlightStyle: with NSTableViewSelectionHighlightStyleNone
+    // and implementing custom cell rendering. For now, we use the default system selection color.
+    _ = config.selection_color; // prevent unused variable warning
 
     content_view.msgSend(void, "addSubview:", .{scroll_view});
     content_view.msgSend(void, "addSubview:", .{text_field});
