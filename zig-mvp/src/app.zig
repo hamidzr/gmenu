@@ -141,6 +141,16 @@ fn nsFont(size: f64) objc.Object {
     return NSFont.msgSend(objc.Object, "systemFontOfSize:", .{size});
 }
 
+fn applyPlaceholderColor(field: objc.Object, placeholder: [:0]const u8, color: objc.Object) void {
+    const NSDictionary = objc.getClass("NSDictionary").?;
+    const NSAttributedString = objc.getClass("NSAttributedString").?;
+    const key = nsString("NSForegroundColorAttributeName");
+    const value = NSDictionary.msgSend(objc.Object, "dictionaryWithObject:forKey:", .{ color, key });
+    const attributed = NSAttributedString.msgSend(objc.Object, "alloc", .{})
+        .msgSend(objc.Object, "initWithString:attributes:", .{ nsString(placeholder), value });
+    field.msgSend(void, "setPlaceholderAttributedString:", .{attributed});
+}
+
 fn applyColumnFont(column: objc.Object, font: objc.Object, text_color: ?objc.Object) void {
     const NSTextFieldCell = objc.getClass("NSTextFieldCell").?;
     const cell = NSTextFieldCell.msgSend(objc.Object, "alloc", .{})
@@ -1047,7 +1057,7 @@ pub fn run(config: appconfig.Config) !void {
         text_field.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
     }
     if (secondary_text_color) |color| {
-        text_field.msgSend(void, "setPlaceholderTextColor:", .{color});
+        applyPlaceholderColor(text_field, config.placeholder, color);
     }
 
     const handler = makeInputHandler();
