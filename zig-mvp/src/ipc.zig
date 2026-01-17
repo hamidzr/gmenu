@@ -27,6 +27,6 @@ pub fn socketName(allocator: std.mem.Allocator, menu_id: []const u8) ![]const u8
 
 fn tempDir(_: std.mem.Allocator) ![]const u8 {
     const env = std.posix.getenv("TMPDIR") orelse std.posix.getenv("TMP") orelse std.posix.getenv("TEMP");
-    if (env) |value| return std.mem.span(value);
+    if (env) |value| return value[0..value.len];
     return "/tmp";
 }

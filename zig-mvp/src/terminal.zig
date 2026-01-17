@@ -179,7 +179,7 @@ fn containsInsensitive(haystack: []const u8, needle: []const u8) bool {
 }
 
 fn readItems(allocator: std.mem.Allocator) ![]menu.MenuItem {
-    const input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
+    var input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
     defer input.deinit(allocator);
 
     if (input.lines.len == 0) return error.NoInput;

@@ -381,7 +381,7 @@ test "direct smart-case matches only uppercase when query has uppercase" {
     out.clearRetainingCapacity();
     matches.clearRetainingCapacity();
     filterIndices(labels[0..], "br", .{ .method = .direct }, &matches, &out);
-    try std.testing.expectEqualSlices(usize, &[_]usize{1, 2}, out.items);
+    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 2 }, out.items);
 }
 
 test "fuzzy tokenized requires all tokens" {
@@ -414,7 +414,7 @@ test "fuzzy3 orders direct matches before fuzzy" {
     try out.ensureTotalCapacity(std.testing.allocator, labels.len);
 
     filterIndices(labels[0..], "abc", .{ .method = .fuzzy3 }, &matches, &out);
-    try std.testing.expectEqualSlices(usize, &[_]usize{1, 0}, out.items);
+    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 0 }, out.items);
 }
 
 test "limit caps results" {

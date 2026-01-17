@@ -71,6 +71,6 @@ fn pidIsAlive(pid: std.posix.pid_t) bool {
 
 fn tempDir(_: std.mem.Allocator) ![]const u8 {
     const env = std.posix.getenv("TMPDIR") orelse std.posix.getenv("TMP") orelse std.posix.getenv("TEMP");
-    if (env) |value| return std.mem.span(value);
+    if (env) |value| return value[0..value.len];
     return "/tmp";
 }

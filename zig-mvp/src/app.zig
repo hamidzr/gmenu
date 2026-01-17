@@ -136,6 +136,19 @@ fn nsColor(color: appconfig.Color) objc.Object {
     });
 }
 
+fn nsFont(size: f64) objc.Object {
+    const NSFont = objc.getClass("NSFont").?;
+    return NSFont.msgSend(objc.Object, "systemFontOfSize:", .{size});
+}
+
+fn applyColumnFont(column: objc.Object, font: objc.Object) void {
+    const NSTextFieldCell = objc.getClass("NSTextFieldCell").?;
+    const cell = NSTextFieldCell.msgSend(objc.Object, "alloc", .{})
+        .msgSend(objc.Object, "init", .{});
+    cell.msgSend(void, "setFont:", .{font});
+    column.msgSend(void, "setDataCell:", .{cell});
+}
+
 fn quit(state: *AppState, code: u8) void {
     if (state.pid_path) |path| {
         pid.remove(path);
@@ -184,7 +197,7 @@ fn moveSelection(state: *AppState, delta: isize) void {
 }
 
 fn readItems(allocator: std.mem.Allocator, parse_icons: bool) ![]menu.MenuItem {
-    const input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
+    var input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
     defer input.deinit(allocator);
 
     if (input.lines.len == 0) return error.NoInput;
@@ -258,7 +271,7 @@ fn startUpdateQueue(config: appconfig.Config) !QueueState {
 
 fn startIpcServer(queue: *UpdateQueue, menu_id: []const u8) ?[]const u8 {
     const path = ipc.socketPath(std.heap.c_allocator, menu_id) catch return null;
-    const server = openIpcServer(path) catch return null;
+    var server = openIpcServer(path) catch return null;
 
     const server_ptr = std.heap.c_allocator.create(std.net.Server) catch {
         server.deinit();
@@ -351,7 +364,10 @@ fn handleIpcPayload(queue: *UpdateQueue, payload: []const u8) void {
         const label = std.mem.trim(u8, item.label, " \t\r\n");
         if (label.len == 0) continue;
 
-        const payload_copy = std.json.stringifyAlloc(queue.allocator, item, .{}) catch continue;
+        var json_out: std.Io.Writer.Allocating = .init(queue.allocator);
+        defer json_out.deinit();
+        std.json.Stringify.value(item, .{}, &json_out.writer) catch continue;
+        const payload_copy = queue.allocator.dupe(u8, json_out.written()) catch continue;
         queue.pushOwned(kind, .ipc, payload_copy, batch_id);
     }
 }
@@ -1026,6 +1042,9 @@ pub fn run(config: appconfig.Config) !void {
         .size = .{ .width = list_width, .height = list_height },
     };
 
+    const font_size = @max(config.field_height * 0.65, 15.0);
+    const text_font = nsFont(font_size);
+
     const SearchField = searchFieldClass();
     const text_field = SearchField.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithFrame:", .{field_rect});
@@ -1033,6 +1052,7 @@ pub fn run(config: appconfig.Config) !void {
     text_field.msgSend(void, "setPlaceholderString:", .{nsString(config.placeholder)});
     text_field.msgSend(void, "setEditable:", .{true});
     text_field.msgSend(void, "setSelectable:", .{true});
+    text_field.msgSend(void, "setFont:", .{text_font});
     if (config.field_background_color) |color| {
         text_field.msgSend(void, "setDrawsBackground:", .{true});
         text_field.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
@@ -1051,6 +1071,7 @@ pub fn run(config: appconfig.Config) !void {
     match_label.msgSend(void, "setEditable:", .{false});
     match_label.msgSend(void, "setSelectable:", .{false});
     match_label.msgSend(void, "setAlignment:", .{@as(c_int, 2)});
+    match_label.msgSend(void, "setFont:", .{text_font});
 
     const table_frame = NSRect{
         .origin = .{ .x = 0, .y = 0 },
@@ -1060,6 +1081,8 @@ pub fn run(config: appconfig.Config) !void {
     const NSTableView = objc.getClass("NSTableView").?;
     const table_view = NSTableView.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithFrame:", .{table_frame});
+
+    const table_font = nsFont(@max(config.row_height * 0.6, 14.0));
 
     table_view.msgSend(void, "setHeaderView:", .{@as(objc.c.id, null)});
     table_view.msgSend(void, "setAllowsMultipleSelection:", .{false});
@@ -1074,6 +1097,7 @@ pub fn run(config: appconfig.Config) !void {
         const index_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("index")});
         index_column.msgSend(void, "setWidth:", .{numeric_width});
+        applyColumnFont(index_column, table_font);
         table_view.msgSend(void, "addTableColumn:", .{index_column});
     }
     if (config.show_icons) {
@@ -1089,11 +1113,13 @@ pub fn run(config: appconfig.Config) !void {
     const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithIdentifier:", .{nsString("items")});
     table_column.msgSend(void, "setWidth:", .{item_width});
+    applyColumnFont(table_column, table_font);
     table_view.msgSend(void, "addTableColumn:", .{table_column});
     if (config.show_score) {
         const score_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("score")});
         score_column.msgSend(void, "setWidth:", .{score_width});
+        applyColumnFont(score_column, table_font);
         table_view.msgSend(void, "addTableColumn:", .{score_column});
     }
 
