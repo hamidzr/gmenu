@@ -179,22 +179,16 @@ fn containsInsensitive(haystack: []const u8, needle: []const u8) bool {
 }
 
 fn readItems(allocator: std.mem.Allocator) ![]menu.MenuItem {
-    const stdin = std.fs.File.stdin();
-    const input = try stdin.readToEndAlloc(allocator, 16 * 1024 * 1024);
-    if (input.len == 0) return error.NoInput;
+    const input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
+    defer input.deinit(allocator);
+
+    if (input.lines.len == 0) return error.NoInput;
 
     var items = std.ArrayList(menu.MenuItem).empty;
     errdefer items.deinit(allocator);
 
-    var iter = std.mem.splitScalar(u8, input, '\n');
-    while (iter.next()) |line| {
-        var trimmed = line;
-        if (trimmed.len > 0 and trimmed[trimmed.len - 1] == '\r') {
-            trimmed = trimmed[0 .. trimmed.len - 1];
-        }
-        if (trimmed.len == 0) continue;
-
-        const item = try menu.parseItem(allocator, trimmed, items.items.len, false);
+    for (input.lines) |line| {
+        const item = try menu.parseItem(allocator, line, items.items.len, false);
         try items.append(allocator, item);
     }
 

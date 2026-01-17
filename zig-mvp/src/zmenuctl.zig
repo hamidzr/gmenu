@@ -1,5 +1,6 @@
 const std = @import("std");
 const ipc = @import("ipc.zig");
+const menu = @import("menu.zig");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -98,17 +99,12 @@ fn isSupportedCommand(cmd: []const u8) bool {
 }
 
 fn readItemsFromStdin(allocator: std.mem.Allocator, items: *std.ArrayList(ipc.Item)) !void {
-    const stdin = std.fs.File.stdin();
-    const input = try stdin.readToEndAlloc(allocator, 16 * 1024 * 1024);
+    var input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
+    defer input.deinit(allocator);
 
-    var iter = std.mem.splitScalar(u8, input, '\n');
-    while (iter.next()) |line| {
-        var trimmed = line;
-        if (trimmed.len > 0 and trimmed[trimmed.len - 1] == '\r') {
-            trimmed = trimmed[0 .. trimmed.len - 1];
-        }
-        if (trimmed.len == 0) continue;
-        try items.append(allocator, .{ .id = trimmed, .label = trimmed });
+    for (input.lines) |line| {
+        const owned = try allocator.dupe(u8, line);
+        try items.append(allocator, .{ .id = owned, .label = owned });
     }
 }
 

@@ -14,23 +14,19 @@ pub const Message = struct {
 
 pub fn socketPath(allocator: std.mem.Allocator, menu_id: []const u8) ![]const u8 {
     const dir = try tempDir(allocator);
-    const name = if (menu_id.len > 0)
-        try std.fmt.allocPrint(allocator, "zmenu.{s}.sock", .{menu_id})
-    else
-        try allocator.dupe(u8, "zmenu.sock");
-
+    const name = try socketName(allocator, menu_id);
     return std.fs.path.join(allocator, &.{ dir, name });
 }
 
-fn tempDir(allocator: std.mem.Allocator) ![]const u8 {
-    if (std.process.getEnvVarOwned(allocator, "TMPDIR")) |dir| return dir else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
+pub fn socketName(allocator: std.mem.Allocator, menu_id: []const u8) ![]const u8 {
+    if (menu_id.len > 0) {
+        return std.fmt.allocPrint(allocator, "zmenu.{s}.sock", .{menu_id});
     }
-    if (std.process.getEnvVarOwned(allocator, "TMP")) |dir| return dir else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
-    if (std.process.getEnvVarOwned(allocator, "TEMP")) |dir| return dir else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
-    return allocator.dupe(u8, "/tmp");
+    return allocator.dupe(u8, "zmenu.sock");
+}
+
+fn tempDir(_: std.mem.Allocator) ![]const u8 {
+    const env = std.posix.getenv("TMPDIR") orelse std.posix.getenv("TMP") orelse std.posix.getenv("TEMP");
+    if (env) |value| return std.mem.span(value);
+    return "/tmp";
 }

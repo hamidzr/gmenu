@@ -69,15 +69,8 @@ fn pidIsAlive(pid: std.posix.pid_t) bool {
     return true;
 }
 
-fn tempDir(allocator: std.mem.Allocator) ![]const u8 {
-    if (std.process.getEnvVarOwned(allocator, "TMPDIR")) |dir| return dir else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
-    if (std.process.getEnvVarOwned(allocator, "TMP")) |dir| return dir else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
-    if (std.process.getEnvVarOwned(allocator, "TEMP")) |dir| return dir else |err| {
-        if (err != error.EnvironmentVariableNotFound) return err;
-    }
-    return allocator.dupe(u8, "/tmp");
+fn tempDir(_: std.mem.Allocator) ![]const u8 {
+    const env = std.posix.getenv("TMPDIR") orelse std.posix.getenv("TMP") orelse std.posix.getenv("TEMP");
+    if (env) |value| return std.mem.span(value);
+    return "/tmp";
 }
