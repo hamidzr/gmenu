@@ -16,19 +16,60 @@ pub const IconKind = enum {
     info,
 };
 
+pub const stdin_max_bytes: usize = 16 * 1024 * 1024;
+
+pub const LineBuffer = struct {
+    buffer: []u8,
+    lines: [][]const u8,
+
+    pub fn deinit(self: *LineBuffer, allocator: std.mem.Allocator) void {
+        allocator.free(self.lines);
+        allocator.free(self.buffer);
+    }
+};
+
+pub fn readStdinLines(allocator: std.mem.Allocator, max_bytes: usize) !LineBuffer {
+    const stdin = std.fs.File.stdin();
+    const buffer = try stdin.readToEndAlloc(allocator, max_bytes);
+
+    var lines = std.ArrayList([]const u8).empty;
+    errdefer lines.deinit(allocator);
+
+    var iter = std.mem.splitScalar(u8, buffer, '\n');
+    while (iter.next()) |line| {
+        const trimmed = trimLineEnding(line);
+        if (trimmed.len == 0) continue;
+        try lines.append(allocator, trimmed);
+    }
+
+    return .{
+        .buffer = buffer,
+        .lines = try lines.toOwnedSlice(allocator),
+    };
+}
+
+fn trimLineEnding(line: []const u8) []const u8 {
+    if (line.len > 0 and line[line.len - 1] == '\r') {
+        return line[0 .. line.len - 1];
+    }
+    return line;
+}
+
 pub fn parseItem(allocator: std.mem.Allocator, line: []const u8, index: usize, parse_icon: bool) !MenuItem {
     var icon: IconKind = .none;
-    var label = line;
+    var label = trimLineEnding(line);
 
-    if (parse_icon and line.len >= 3 and line[0] == '[') {
-        if (std.mem.indexOfScalar(u8, line, ']')) |close_idx| {
-            const raw = line[1..close_idx];
+    if (parse_icon and label.len >= 3 and label[0] == '[') {
+        if (std.mem.indexOfScalar(u8, label, ']')) |close_idx| {
+            const raw = label[1..close_idx];
             if (iconFromName(raw)) |kind| {
                 icon = kind;
-                label = std.mem.trimLeft(u8, line[close_idx + 1 ..], " \t");
+                label = std.mem.trimLeft(u8, label[close_idx + 1 ..], " \t");
             }
         }
     }
+
+    if (label.len == 0) return error.EmptyLabel;
 
     const label_z = try allocator.dupeZ(u8, label);
     return .{ .label = label_z, .index = index, .icon = icon, .ipc_payload = null };
