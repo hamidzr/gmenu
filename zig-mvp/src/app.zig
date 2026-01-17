@@ -11,7 +11,6 @@ const NSApplicationActivationPolicyRegular: i64 = 0;
 const NSWindowStyleMaskBorderless: u64 = 0;
 const NSBackingStoreBuffered: u64 = 2;
 const NSEventModifierFlagControl: u64 = 1 << 18;
-const NSEventModifierFlagCommand: u64 = 1 << 20;
 const ipc_max_payload: usize = 1024 * 1024;
 
 const NSPoint = extern struct {
@@ -775,10 +774,6 @@ fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) vo
                 if ((modifiers & NSEventModifierFlagControl) != 0 and (ch == 'l' or ch == 'L')) {
                     state.?.text_field.msgSend(void, "setStringValue:", .{nsString("")});
                     applyFilter(state.?, "");
-                    return;
-                }
-                if ((modifiers & NSEventModifierFlagCommand) != 0 and (ch == 'a' or ch == 'A')) {
-                    obj.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
                     return;
                 }
 
