@@ -1010,7 +1010,22 @@ pub fn run(config: appconfig.Config) !void {
         window.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
     }
 
+    // add subtle border around window
+    window.msgSend(void, "setHasShadow:", .{true});
     const content_view = window.msgSend(objc.Object, "contentView", .{});
+    content_view.msgSend(void, "setWantsLayer:", .{true});
+    const layer = content_view.msgSend(objc.Object, "layer", .{});
+    const NSColor = objc.getClass("NSColor").?;
+    const border_color = NSColor.msgSend(objc.Object, "colorWithSRGBRed:green:blue:alpha:", .{
+        @as(f64, 0.5),
+        @as(f64, 0.5),
+        @as(f64, 0.5),
+        @as(f64, 0.3),
+    });
+    const cg_color = border_color.msgSend(objc.c.id, "CGColor", .{});
+    layer.msgSend(void, "setBorderColor:", .{cg_color});
+    layer.msgSend(void, "setBorderWidth:", .{@as(f64, 1.0)});
+    layer.msgSend(void, "setCornerRadius:", .{@as(f64, 0.0)});
 
     var match_label_width: f64 = 100.0;
     var search_width: f64 = list_width - match_label_width;
@@ -1047,7 +1062,7 @@ pub fn run(config: appconfig.Config) !void {
     text_field.msgSend(void, "setSelectable:", .{true});
     text_field.msgSend(void, "setBezeled:", .{true});
     text_field.msgSend(void, "setBordered:", .{false});
-    text_field.msgSend(void, "setFocusRingType:", .{@as(c_long, 0)});
+    text_field.msgSend(void, "setFocusRingType:", .{@as(c_uint, 1)}); // NSFocusRingTypeNone = 1
     text_field.msgSend(void, "setAlignment:", .{@as(c_ulong, 0)}); // NSTextAlignmentLeft
 
     // Ensure proper text baseline alignment
