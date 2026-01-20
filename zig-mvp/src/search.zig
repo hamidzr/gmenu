@@ -517,3 +517,17 @@ test "levenshtein fallback returns closest matches when enabled" {
     try std.testing.expectEqual(@as(usize, 3), out.items.len);
     try std.testing.expectEqual(@as(usize, 1), out.items[0]);
 }
+
+test "levenshtein fallback orders dev input for detla query" {
+    const labels = [_][]const u8{ "alpha", "beta", "gamma", "delta", "epsilon" };
+    var matches = std.ArrayList(Match).empty;
+    var out = std.ArrayList(usize).empty;
+    defer matches.deinit(std.testing.allocator);
+    defer out.deinit(std.testing.allocator);
+
+    try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
+    try out.ensureTotalCapacity(std.testing.allocator, labels.len);
+
+    filterIndices(labels[0..], "detla", .{ .method = .direct }, &matches, &out);
+    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 3, 0, 2, 4 }, out.items);
+}
