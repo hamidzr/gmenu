@@ -13,6 +13,7 @@ const config_key_variants = [_]ConfigKeyVariant{
     .{ .canonical = "menu_id", .camel = "menuId" },
     .{ .canonical = "search_method", .camel = "searchMethod" },
     .{ .canonical = "preserve_order", .camel = "preserveOrder" },
+    .{ .canonical = "levenshtein_fallback", .camel = "levenshteinFallback" },
     .{ .canonical = "initial_query", .camel = "initialQuery" },
     .{ .canonical = "auto_accept", .camel = "autoAccept" },
     .{ .canonical = "terminal_mode", .camel = "terminalMode" },
@@ -80,6 +81,7 @@ fn printHelp() void {
         \\  -p, --prompt <text>          Prompt text
         \\  -s, --search-method <name>   direct|fuzzy|fuzzy1|fuzzy3|default
         \\  -o, --preserve-order         Preserve match order
+        \\      --no-levenshtein-fallback Disable Levenshtein fallback
         \\      --auto-accept            Auto accept when single match
         \\      --terminal               Terminal mode
         \\      --follow-stdin           Keep running and append stdin
@@ -289,6 +291,11 @@ fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
+    if (envValue(allocator, "GMENU_LEVENSHTEIN_FALLBACK")) |value| {
+        config.search.levenshtein_fallback = try parseBool(value);
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
     if (envValue(allocator, "GMENU_AUTO_ACCEPT")) |value| {
         config.auto_accept = try parseBool(value);
     } else |err| {
@@ -456,6 +463,24 @@ fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, config: *
             config.search.preserve_order = true;
             continue;
         }
+        if (std.mem.startsWith(u8, arg, "--levenshtein-fallback=")) {
+            const value = arg["--levenshtein-fallback=".len..];
+            config.search.levenshtein_fallback = try parseBool(value);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--levenshtein-fallback")) {
+            config.search.levenshtein_fallback = true;
+            continue;
+        }
+        if (std.mem.startsWith(u8, arg, "--no-levenshtein-fallback=")) {
+            const value = arg["--no-levenshtein-fallback=".len..];
+            config.search.levenshtein_fallback = !try parseBool(value);
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--no-levenshtein-fallback")) {
+            config.search.levenshtein_fallback = false;
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--auto-accept")) {
             config.auto_accept = true;
             continue;
@@ -511,6 +536,10 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
     }
     if (eqKey(key, "preserve_order") or eqKey(key, "preserveOrder")) {
         config.search.preserve_order = try parseBool(value);
+        return;
+    }
+    if (eqKey(key, "levenshtein_fallback") or eqKey(key, "levenshteinFallback")) {
+        config.search.levenshtein_fallback = try parseBool(value);
         return;
     }
     if (eqKey(key, "auto_accept") or eqKey(key, "autoAccept")) {
@@ -715,6 +744,7 @@ fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) ![]co
         \\menu_id: "{s}"
         \\search_method: fuzzy
         \\preserve_order: false
+        \\levenshtein_fallback: true
         \\initial_query: ""
         \\terminal_mode: false
         \\follow_stdin: false

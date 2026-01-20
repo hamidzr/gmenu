@@ -12,6 +12,7 @@ pub const Options = struct {
     method: SearchMethod = .fuzzy,
     preserve_order: bool = false,
     limit: usize = 10,
+    levenshtein_fallback: bool = true,
 };
 
 pub const Match = struct {
@@ -57,12 +58,40 @@ pub fn filterIndices(
         .fuzzy1 => fuzzyScoreSearch(labels, query, opts.preserve_order, matches),
     }
 
+    if (opts.levenshtein_fallback and matches.items.len == 0 and trimmed.len > 0) {
+        levenshteinFallback(labels, trimmed, matches);
+    }
+
     out_indices.clearRetainingCapacity();
     const limit = effectiveLimit(opts.limit, matches.items.len);
     var i: usize = 0;
     while (i < limit) : (i += 1) {
         out_indices.appendAssumeCapacity(matches.items[i].index);
     }
+}
+
+fn levenshteinFallback(labels: []const []const u8, query: []const u8, matches: *std.ArrayList(Match)) void {
+    matches.clearRetainingCapacity();
+    if (query.len == 0) return;
+
+    var max_len: usize = query.len;
+    for (labels) |label| {
+        if (label.len > max_len) max_len = label.len;
+    }
+
+    const row_buffer = std.heap.page_allocator.alloc(usize, max_len + 1) catch return;
+    defer std.heap.page_allocator.free(row_buffer);
+
+    const ignore_case = !hasUpperAscii(query);
+    for (labels, 0..) |label, idx| {
+        const distance = levenshteinDistance(query, label, row_buffer[0 .. label.len + 1], ignore_case);
+        matches.appendAssumeCapacity(.{
+            .index = idx,
+            .score = distanceScore(distance),
+        });
+    }
+
+    std.sort.insertion(Match, matches.items, {}, scoreDescIndexAsc);
 }
 
 fn directSearch(labels: []const []const u8, query: []const u8, matches: *std.ArrayList(Match)) void {
@@ -327,6 +356,43 @@ fn sahilmScore(pattern: []const u8, candidate: []const u8) ?i32 {
     return null;
 }
 
+fn levenshteinDistance(a: []const u8, b: []const u8, row: []usize, ignore_case: bool) usize {
+    const b_len = b.len;
+    var j: usize = 0;
+    while (j <= b_len) : (j += 1) {
+        row[j] = j;
+    }
+
+    var i: usize = 0;
+    while (i < a.len) : (i += 1) {
+        var prev = row[0];
+        row[0] = i + 1;
+        j = 0;
+        while (j < b_len) : (j += 1) {
+            const old = row[j + 1];
+            const cost: usize = if (charsEqual(a[i], b[j], ignore_case)) 0 else 1;
+            const deletion = old + 1;
+            const insertion = row[j] + 1;
+            const substitution = prev + cost;
+            row[j + 1] = min3(deletion, insertion, substitution);
+            prev = old;
+        }
+    }
+
+    return row[b_len];
+}
+
+fn min3(a: usize, b: usize, c: usize) usize {
+    var out = if (a < b) a else b;
+    if (c < out) out = c;
+    return out;
+}
+
+fn distanceScore(distance: usize) i32 {
+    const capped: i32 = if (distance > std.math.maxInt(i32)) std.math.maxInt(i32) else @as(i32, @intCast(distance));
+    return -capped;
+}
+
 fn adjacentCharBonus(i: isize, last_match: isize, current_bonus: i32) i32 {
     if (last_match == i) {
         return current_bonus * 2 + adjacent_match_bonus;
@@ -399,7 +465,7 @@ test "fuzzy tokenized requires all tokens" {
 
     out.clearRetainingCapacity();
     matches.clearRetainingCapacity();
-    filterIndices(labels[0..], "al zz", .{ .method = .fuzzy }, &matches, &out);
+    filterIndices(labels[0..], "al zz", .{ .method = .fuzzy, .levenshtein_fallback = false }, &matches, &out);
     try std.testing.expectEqual(@as(usize, 0), out.items.len);
 }
 
@@ -435,4 +501,19 @@ test "limit caps results" {
     try std.testing.expectEqual(@as(usize, 10), out.items.len);
     try std.testing.expectEqual(@as(usize, 0), out.items[0]);
     try std.testing.expectEqual(@as(usize, 9), out.items[9]);
+}
+
+test "levenshtein fallback returns closest matches when enabled" {
+    const labels = [_][]const u8{ "ab", "abce", "wxyz" };
+    var matches = std.ArrayList(Match).empty;
+    var out = std.ArrayList(usize).empty;
+    defer matches.deinit(std.testing.allocator);
+    defer out.deinit(std.testing.allocator);
+
+    try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
+    try out.ensureTotalCapacity(std.testing.allocator, labels.len);
+
+    filterIndices(labels[0..], "abcd", .{ .method = .direct }, &matches, &out);
+    try std.testing.expectEqual(@as(usize, 3), out.items.len);
+    try std.testing.expectEqual(@as(usize, 1), out.items[0]);
 }

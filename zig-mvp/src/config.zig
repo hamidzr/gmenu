@@ -48,6 +48,7 @@ pub fn defaults() Config {
             .method = .fuzzy,
             .preserve_order = false,
             .limit = 10,
+            .levenshtein_fallback = true,
         },
         .terminal_mode = false,
         .follow_stdin = false,
