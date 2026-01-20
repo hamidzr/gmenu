@@ -70,7 +70,7 @@ pub fn defaults() Config {
         .list_background_color = .{ .r = 0.06, .g = 0.07, .b = 0.09, .a = 0.98 },
         .field_background_color = .{ .r = 0.12, .g = 0.13, .b = 0.17, .a = 1.0 },
         .text_color = .{ .r = 0.94, .g = 0.95, .b = 0.97, .a = 1.0 },
-        .secondary_text_color = .{ .r = 0.6, .g = 0.62, .b = 0.7, .a = 1.0 },
+        .secondary_text_color = .{ .r = 0.75, .g = 0.77, .b = 0.82, .a = 1.0 },
         .selection_color = .{ .r = 0.22, .g = 0.24, .b = 0.3, .a = 0.9 },
     };
 }

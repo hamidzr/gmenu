@@ -52,3 +52,6 @@ check: fmt lint test
 # Install project dependencies and tools
 setup: get-deps
 	go mod tidy
+
+zig CMD:
+	just -f ./zig-mvp/justfile $(CMD)

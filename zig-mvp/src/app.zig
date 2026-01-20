@@ -1010,7 +1010,22 @@ pub fn run(config: appconfig.Config) !void {
         window.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
     }
 
+    // add subtle border around window
+    window.msgSend(void, "setHasShadow:", .{true});
     const content_view = window.msgSend(objc.Object, "contentView", .{});
+    content_view.msgSend(void, "setWantsLayer:", .{true});
+    const layer = content_view.msgSend(objc.Object, "layer", .{});
+    const NSColor = objc.getClass("NSColor").?;
+    const border_color = NSColor.msgSend(objc.Object, "colorWithSRGBRed:green:blue:alpha:", .{
+        @as(f64, 0.5),
+        @as(f64, 0.5),
+        @as(f64, 0.5),
+        @as(f64, 0.3),
+    });
+    const cg_color = border_color.msgSend(objc.c.id, "CGColor", .{});
+    layer.msgSend(void, "setBorderColor:", .{cg_color});
+    layer.msgSend(void, "setBorderWidth:", .{@as(f64, 1.0)});
+    layer.msgSend(void, "setCornerRadius:", .{@as(f64, 0.0)});
 
     var match_label_width: f64 = 100.0;
     var search_width: f64 = list_width - match_label_width;
@@ -1043,11 +1058,18 @@ pub fn run(config: appconfig.Config) !void {
     const text_field = SearchField.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithFrame:", .{field_rect});
 
-    text_field.msgSend(void, "setPlaceholderString:", .{nsString(config.placeholder)});
     text_field.msgSend(void, "setEditable:", .{true});
     text_field.msgSend(void, "setSelectable:", .{true});
-    text_field.msgSend(void, "setBezeled:", .{false});
-    text_field.msgSend(void, "setFocusRingType:", .{@as(c_long, 0)});
+    text_field.msgSend(void, "setBezeled:", .{true});
+    text_field.msgSend(void, "setBordered:", .{false});
+    text_field.msgSend(void, "setFocusRingType:", .{@as(c_uint, 1)}); // NSFocusRingTypeNone = 1
+    text_field.msgSend(void, "setAlignment:", .{@as(c_ulong, 0)}); // NSTextAlignmentLeft
+
+    // Ensure proper text baseline alignment
+    const cell = text_field.msgSend(objc.Object, "cell", .{});
+    cell.msgSend(void, "setUsesSingleLineMode:", .{true});
+    cell.msgSend(void, "setLineBreakMode:", .{@as(c_ulong, 2)}); // NSLineBreakByTruncatingTail
+
     if (text_color) |color| {
         text_field.msgSend(void, "setTextColor:", .{color});
     }
@@ -1056,8 +1078,12 @@ pub fn run(config: appconfig.Config) !void {
         text_field.msgSend(void, "setDrawsBackground:", .{true});
         text_field.msgSend(void, "setBackgroundColor:", .{nsColor(color)});
     }
+
+    // Set placeholder with custom color - must be done after setting bezeled/bordered
     if (secondary_text_color) |color| {
         applyPlaceholderColor(text_field, config.placeholder, color);
+    } else {
+        text_field.msgSend(void, "setPlaceholderString:", .{nsString(config.placeholder)});
     }
 
     const handler = makeInputHandler();
@@ -1094,15 +1120,20 @@ pub fn run(config: appconfig.Config) !void {
     table_view.msgSend(void, "setAllowsEmptySelection:", .{true});
     table_view.msgSend(void, "setRowHeight:", .{config.row_height});
     table_view.msgSend(void, "setUsesAlternatingRowBackgroundColors:", .{config.alternate_rows});
-    table_view.msgSend(void, "setSelectionHighlightStyle:", .{@as(c_long, 0)});
+    table_view.msgSend(void, "setSelectionHighlightStyle:", .{@as(c_long, 1)}); // NSTableViewSelectionHighlightStyleRegular
     table_view.msgSend(void, "setTarget:", .{handler});
     table_view.msgSend(void, "setDoubleAction:", .{objc.sel("onSubmit:")});
+    table_view.msgSend(void, "setIntercellSpacing:", .{NSSize{ .width = 0, .height = 0 }});
+    table_view.msgSend(void, "setColumnAutoresizingStyle:", .{@as(c_ulong, 1)}); // NSTableViewLastColumnOnlyAutoresizingStyle
 
     const NSTableColumn = objc.getClass("NSTableColumn").?;
     if (!config.no_numeric_selection) {
         const index_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("index")});
         index_column.msgSend(void, "setWidth:", .{numeric_width});
+        index_column.msgSend(void, "setMinWidth:", .{numeric_width});
+        index_column.msgSend(void, "setMaxWidth:", .{numeric_width});
+        index_column.msgSend(void, "setResizingMask:", .{@as(c_ulong, 0)}); // no resizing
         applyColumnFont(index_column, table_font, secondary_text_color);
         table_view.msgSend(void, "addTableColumn:", .{index_column});
     }
@@ -1110,6 +1141,9 @@ pub fn run(config: appconfig.Config) !void {
         const icon_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("icon")});
         icon_column.msgSend(void, "setWidth:", .{icon_width});
+        icon_column.msgSend(void, "setMinWidth:", .{icon_width});
+        icon_column.msgSend(void, "setMaxWidth:", .{icon_width});
+        icon_column.msgSend(void, "setResizingMask:", .{@as(c_ulong, 0)}); // no resizing
         const NSImageCell = objc.getClass("NSImageCell").?;
         const image_cell = NSImageCell.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "init", .{});
@@ -1119,6 +1153,7 @@ pub fn run(config: appconfig.Config) !void {
     const table_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithIdentifier:", .{nsString("items")});
     table_column.msgSend(void, "setWidth:", .{item_width});
+    table_column.msgSend(void, "setResizingMask:", .{@as(c_ulong, 1)}); // autoresize with table
     applyColumnFont(table_column, table_font, text_color);
     table_view.msgSend(void, "addTableColumn:", .{table_column});
 
@@ -1128,6 +1163,7 @@ pub fn run(config: appconfig.Config) !void {
 
     scroll_view.msgSend(void, "setDocumentView:", .{table_view});
     scroll_view.msgSend(void, "setHasVerticalScroller:", .{true});
+    scroll_view.msgSend(void, "setAutohidesScrollers:", .{true});
     if (config.list_background_color) |color| {
         const list_color = nsColor(color);
         table_view.msgSend(void, "setBackgroundColor:", .{list_color});
@@ -1137,9 +1173,10 @@ pub fn run(config: appconfig.Config) !void {
         scroll_view.msgSend(void, "setBackgroundColor:", .{list_color});
         scroll_view.msgSend(void, "setBorderType:", .{@as(c_ulong, 0)});
     }
-    if (config.selection_color) |selection| {
-        table_view.msgSend(void, "setSelectionHighlightColor:", .{nsColor(selection)});
-    }
+    // Note: setSelectionHighlightColor: is not a valid NSTableView method
+    // Custom selection colors require using setSelectionHighlightStyle: with NSTableViewSelectionHighlightStyleNone
+    // and implementing custom cell rendering. For now, we use the default system selection color.
+    _ = config.selection_color; // prevent unused variable warning
 
     content_view.msgSend(void, "addSubview:", .{scroll_view});
     content_view.msgSend(void, "addSubview:", .{text_field});
