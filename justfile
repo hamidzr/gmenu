@@ -3,6 +3,7 @@
 # Build the main binary
 build:
 	go build -o bin/gmenu -v ./cmd
+	just -f ./zig-mvp/justfile build
 
 # Build for multiple platforms (Darwin amd64/arm64)
 build-all:

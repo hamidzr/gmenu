@@ -582,3 +582,17 @@ test "levenshtein results come after fuzzy results" {
     try std.testing.expectEqual(@as(usize, 0), out.items[0]); // "test" contains "te"
     try std.testing.expectEqual(@as(usize, 1), out.items[1]); // "testing" contains "te"
 }
+
+test "fuzzy matches agenda after direct hit for anda" {
+    const labels = [_][]const u8{ "agenda", "anda" };
+    var matches = std.ArrayList(Match).empty;
+    var out = std.ArrayList(usize).empty;
+    defer matches.deinit(std.testing.allocator);
+    defer out.deinit(std.testing.allocator);
+
+    try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
+    try out.ensureTotalCapacity(std.testing.allocator, labels.len);
+
+    filterIndices(labels[0..], "anda", .{ .method = .fuzzy }, &matches, &out);
+    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 0 }, out.items);
+}
