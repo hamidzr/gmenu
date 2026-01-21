@@ -59,8 +59,10 @@ pub fn filterIndices(
         .fuzzy1 => fuzzyScoreSearch(labels, query, opts.preserve_order, matches),
     }
 
-    if (opts.levenshtein_fallback and matches.items.len == 0 and trimmed.len > 0) {
+    if (opts.levenshtein_fallback and matches.items.len < 3 and trimmed.len > 0) {
         levenshteinFallback(labels, trimmed, matches);
+        // Sort all matches so fuzzy results (higher scores) come before levenshtein results (negative scores)
+        std.sort.insertion(Match, matches.items, {}, scoreDescIndexAsc);
     }
 
     out_indices.clearRetainingCapacity();
@@ -72,7 +74,6 @@ pub fn filterIndices(
 }
 
 fn levenshteinFallback(labels: []const []const u8, query: []const u8, matches: *std.ArrayList(Match)) void {
-    matches.clearRetainingCapacity();
     if (query.len == 0) return;
 
     var max_len: usize = query.len;
@@ -85,6 +86,16 @@ fn levenshteinFallback(labels: []const []const u8, query: []const u8, matches: *
 
     const ignore_case = !hasUpperAscii(query);
     for (labels, 0..) |label, idx| {
+        // Check if this index is already in matches to avoid duplicates
+        var already_matched = false;
+        for (matches.items) |match| {
+            if (match.index == idx) {
+                already_matched = true;
+                break;
+            }
+        }
+        if (already_matched) continue;
+
         const distance = levenshteinDistance(query, label, row_buffer[0 .. label.len + 1], ignore_case);
         if (distance <= levenshtein_distance_threshold) {
             matches.appendAssumeCapacity(.{
@@ -93,8 +104,6 @@ fn levenshteinFallback(labels: []const []const u8, query: []const u8, matches: *
             });
         }
     }
-
-    std.sort.insertion(Match, matches.items, {}, scoreDescIndexAsc);
 }
 
 fn directSearch(labels: []const []const u8, query: []const u8, matches: *std.ArrayList(Match)) void {
@@ -482,7 +491,7 @@ test "fuzzy3 orders direct matches before fuzzy" {
     try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
     try out.ensureTotalCapacity(std.testing.allocator, labels.len);
 
-    filterIndices(labels[0..], "abc", .{ .method = .fuzzy3 }, &matches, &out);
+    filterIndices(labels[0..], "abc", .{ .method = .fuzzy3, .levenshtein_fallback = false }, &matches, &out);
     try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 0 }, out.items);
 }
 
@@ -535,4 +544,41 @@ test "levenshtein fallback orders dev input for detla query" {
     filterIndices(labels[0..], "detla", .{ .method = .direct }, &matches, &out);
     // With threshold of 2, only "beta" (distance 2) and "delta" (distance 2) match
     try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 3 }, out.items);
+}
+
+test "levenshtein fallback triggers when less than 3 results and appends" {
+    const labels = [_][]const u8{ "apple", "app", "application", "banana", "apricot" };
+    var matches = std.ArrayList(Match).empty;
+    var out = std.ArrayList(usize).empty;
+    defer matches.deinit(std.testing.allocator);
+    defer out.deinit(std.testing.allocator);
+
+    try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
+    try out.ensureTotalCapacity(std.testing.allocator, labels.len);
+
+    // "appp" should fuzzy match "app" directly, then add levenshtein matches
+    filterIndices(labels[0..], "appp", .{ .method = .direct }, &matches, &out);
+    // Direct match: none (0 results)
+    // Levenshtein with threshold 2: "app" (distance 1), "apple" (distance 2)
+    try std.testing.expectEqual(@as(usize, 2), out.items.len);
+    try std.testing.expect(out.items.len >= 1);
+}
+
+test "levenshtein results come after fuzzy results" {
+    const labels = [_][]const u8{ "test", "testing", "fest", "best", "rest" };
+    var matches = std.ArrayList(Match).empty;
+    var out = std.ArrayList(usize).empty;
+    defer matches.deinit(std.testing.allocator);
+    defer out.deinit(std.testing.allocator);
+
+    try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
+    try out.ensureTotalCapacity(std.testing.allocator, labels.len);
+
+    // "te" should match "test" and "testing" as substring (fuzzy)
+    // and may add levenshtein matches if < 3 results
+    filterIndices(labels[0..], "te", .{ .method = .direct }, &matches, &out);
+    // Direct substring matches come first
+    try std.testing.expect(out.items.len >= 2);
+    try std.testing.expectEqual(@as(usize, 0), out.items[0]); // "test" contains "te"
+    try std.testing.expectEqual(@as(usize, 1), out.items[1]); // "testing" contains "te"
 }
