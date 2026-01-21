@@ -26,6 +26,7 @@ const camel_case_match_bonus: i32 = 20;
 const adjacent_match_bonus: i32 = 5;
 const unmatched_leading_char_penalty: i32 = -5;
 const max_unmatched_leading_char_penalty: i32 = -15;
+const levenshtein_distance_threshold: usize = 2;
 
 pub fn filterIndices(
     labels: []const []const u8,
@@ -85,10 +86,12 @@ fn levenshteinFallback(labels: []const []const u8, query: []const u8, matches: *
     const ignore_case = !hasUpperAscii(query);
     for (labels, 0..) |label, idx| {
         const distance = levenshteinDistance(query, label, row_buffer[0 .. label.len + 1], ignore_case);
-        matches.appendAssumeCapacity(.{
-            .index = idx,
-            .score = distanceScore(distance),
-        });
+        if (distance <= levenshtein_distance_threshold) {
+            matches.appendAssumeCapacity(.{
+                .index = idx,
+                .score = distanceScore(distance),
+            });
+        }
     }
 
     std.sort.insertion(Match, matches.items, {}, scoreDescIndexAsc);
@@ -514,8 +517,9 @@ test "levenshtein fallback returns closest matches when enabled" {
     try out.ensureTotalCapacity(std.testing.allocator, labels.len);
 
     filterIndices(labels[0..], "abcd", .{ .method = .direct }, &matches, &out);
-    try std.testing.expectEqual(@as(usize, 3), out.items.len);
-    try std.testing.expectEqual(@as(usize, 1), out.items[0]);
+    // With threshold of 2, "abce" (distance 1) and "ab" (distance 2) match, but not "wxyz" (distance 4)
+    try std.testing.expectEqual(@as(usize, 2), out.items.len);
+    try std.testing.expectEqual(@as(usize, 1), out.items[0]); // "abce" has lowest distance
 }
 
 test "levenshtein fallback orders dev input for detla query" {
@@ -529,5 +533,6 @@ test "levenshtein fallback orders dev input for detla query" {
     try out.ensureTotalCapacity(std.testing.allocator, labels.len);
 
     filterIndices(labels[0..], "detla", .{ .method = .direct }, &matches, &out);
-    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 3, 0, 2, 4 }, out.items);
+    // With threshold of 2, only "beta" (distance 2) and "delta" (distance 2) match
+    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 3 }, out.items);
 }
