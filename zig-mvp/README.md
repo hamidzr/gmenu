@@ -11,6 +11,7 @@ Native macOS AppKit MVP for the gmenu replacement (zmenu).
 - Double-clicking a row accepts that item.
 - Keys 1-9 accept the corresponding item when numeric selection is enabled.
 - Ctrl+L clears the query.
+- Cmd+A select-all is handled via `performKeyEquivalent:` on the search field (it may not arrive via `keyDown` and can appear as `noop:` in `doCommandBySelector`).
 - A pid file in the temp dir prevents multiple instances per menu id.
 - When `menu_id` is set, the last query + selection are stored under `~/.cache/gmenu/<menu_id>/cache.yaml`.
 

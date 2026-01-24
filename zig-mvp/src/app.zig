@@ -427,9 +427,6 @@ fn controlTextViewDoCommandBySelector(
     _ = control;
     _ = text_view;
 
-    const command_name = (objc.Sel{ .value = command }).getName();
-    std.debug.print("doCommandBySelector: {s}\n", .{command_name});
-
     const state = g_state orelse return false;
 
     if (command == objc.sel("moveUp:").value) {
@@ -769,33 +766,7 @@ fn resignKeyWindow(target: objc.c.id, sel: objc.c.SEL) callconv(.c) void {
     if (g_state) |state| {
         if (!state.had_focus) return;
     }
-    std.debug.print("resignKeyWindow\n", .{});
     scheduleFocusLossCancel();
-}
-
-fn debugKeyEvent(event_obj: objc.Object) void {
-    const key_code = event_obj.msgSend(u16, "keyCode", .{});
-    const modifiers = event_obj.msgSend(c_ulong, "modifierFlags", .{});
-    const chars = event_obj.msgSend(objc.Object, "characters", .{});
-    const chars_ignoring = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
-    const chars_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
-    const chars_ignoring_ptr = chars_ignoring.msgSend(?[*:0]const u8, "UTF8String", .{});
-    const chars_text = if (chars_ptr) |ptr| std.mem.sliceTo(ptr, 0) else "<null>";
-    const chars_ignoring_text = if (chars_ignoring_ptr) |ptr| std.mem.sliceTo(ptr, 0) else "<null>";
-
-    std.debug.print(
-        "keyDown: keyCode={} mods=0x{x} cmd={} ctrl={} opt={} shift={} chars=\"{s}\" charsIgnoring=\"{s}\"\n",
-        .{
-            key_code,
-            modifiers,
-            (modifiers & NSEventModifierFlagCommand) != 0,
-            (modifiers & NSEventModifierFlagControl) != 0,
-            (modifiers & NSEventModifierFlagOption) != 0,
-            (modifiers & NSEventModifierFlagShift) != 0,
-            chars_text,
-            chars_ignoring_text,
-        },
-    );
 }
 
 fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) void {
@@ -808,7 +779,6 @@ fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c) vo
 
     if (state != null) {
         const event_obj = objc.Object.fromId(event);
-        debugKeyEvent(event_obj);
         const chars = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
         const utf8_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
         if (utf8_ptr != null) {
@@ -876,7 +846,6 @@ fn becomeFirstResponder(target: objc.c.id, sel: objc.c.SEL) callconv(.c) bool {
     const obj = objc.Object.fromId(target);
     const NSTextField = objc.getClass("NSTextField").?;
     const accepted = obj.msgSendSuper(NSTextField, bool, "becomeFirstResponder", .{});
-    std.debug.print("becomeFirstResponder accepted={}\n", .{accepted});
     if (accepted) {
         if (g_state) |state| {
             state.had_focus = true;
@@ -996,8 +965,6 @@ pub fn run(config: appconfig.Config) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
-
-    std.debug.print("zmenu: app run start\n", .{});
 
     var items: []menu.MenuItem = &[_]menu.MenuItem{};
     if (config.ipc_only) {
@@ -1302,7 +1269,6 @@ pub fn run(config: appconfig.Config) !void {
 
     app.msgSend(void, "activateIgnoringOtherApps:", .{true});
     window.msgSend(void, "makeKeyAndOrderFront:", .{@as(objc.c.id, null)});
-    const did_become = window.msgSend(bool, "makeFirstResponder:", .{text_field});
-    std.debug.print("makeFirstResponder returned={}\n", .{did_become});
+    _ = window.msgSend(bool, "makeFirstResponder:", .{text_field});
     app.msgSend(void, "run", .{});
 }
