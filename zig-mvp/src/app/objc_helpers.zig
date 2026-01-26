@@ -41,7 +41,7 @@ pub fn nsFont(size: f64) objc.Object {
 pub fn applyPlaceholderColor(field: objc.Object, placeholder: [:0]const u8, color: objc.Object) void {
     const NSDictionary = objc.getClass("NSDictionary").?;
     const NSAttributedString = objc.getClass("NSAttributedString").?;
-    const key = nsString("NSForegroundColorAttributeName");
+    const key = nsString("NSColor");
     const value = NSDictionary.msgSend(objc.Object, "dictionaryWithObject:forKey:", .{ color, key });
     const attributed = NSAttributedString.msgSend(objc.Object, "alloc", .{})
         .msgSend(objc.Object, "initWithString:attributes:", .{ nsString(placeholder), value });
