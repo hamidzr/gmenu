@@ -105,12 +105,9 @@ just check
 - **Configuration** (`internal/config/`, `model/`): Config management
 - **Storage** (`store/`): State persistence
 
-## Inspiration
+## Inspiration and Related Projects
 
 - [suckless dmenu](https://tools.suckless.org/dmenu/)
 - [dmenu-mac](https://github.com/oNaiPs/dmenu-mac)
 - [rofi](https://github.com/davatorium/rofi)
-
-## License
-
-[Add your license here]
+- [choose](https://github.com/chipsenkbeil/choose)

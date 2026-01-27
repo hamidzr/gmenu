@@ -32,3 +32,4 @@
 ## Configuration & Runtime Tips
 - This project targets macOS and AppKit; ensure Xcode Command Line Tools are installed.
 - Use a Terminal to run `zig build run` if you need to see stdout output.
+- The installed `zmenu` is symlinked to the build output, so rebuilding updates the installed binary.

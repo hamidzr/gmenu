@@ -16,7 +16,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
     };
     defer pid.remove(pid_path);
 
-    var tty = std.fs.openFileAbsolute("/dev/tty", .{}) catch {
+    var tty = std.fs.openFileAbsolute("/dev/tty", .{ .mode = .read_write }) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: unable to open tty\n", .{}) catch {};
         std.process.exit(exit_codes.unknown_error);
     };
@@ -58,7 +58,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
                 }
             },
             3 => {
-                tty.deprecatedWriter().print("\n{s}Input cancelled\n", .{config.placeholder}) catch {};
+                tty.deprecatedWriter().print("\r\n{s}Input cancelled\r\n", .{config.placeholder}) catch {};
                 exit_code = exit_codes.user_canceled;
                 break;
             },
@@ -96,7 +96,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
     }
 
     std.fs.File.stdout().deprecatedWriter().print("\x1b[2J\x1b[H", .{}) catch {};
-    std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{first_match.?}) catch {};
+    std.fs.File.stdout().deprecatedWriter().print("{s}", .{first_match.?}) catch {};
 }
 
 fn enableRawMode(fd: std.posix.fd_t) !std.posix.termios {
@@ -139,25 +139,25 @@ fn renderMatches(
 ) !void {
     var writer = tty.deprecatedWriter();
     try writer.print("\x1b[2J\x1b[H", .{});
-    try writer.print("{s}: {s}\n", .{ prompt, query });
-    try writer.print("--------------------------------\n", .{});
+    try writer.print("{s}: {s}\r\n", .{ prompt, query });
+    try writer.print("--------------------------------\r\n", .{});
 
     var match_index: usize = 0;
     for (items) |item| {
         if (containsInsensitive(item.label, query)) {
             match_index += 1;
             if (no_numeric_selection) {
-                try writer.print("{s}\n", .{item.label});
+                try writer.print("{s}\r\n", .{item.label});
             } else {
-                try writer.print("{d}. {s}\n", .{ match_index, item.label });
+                try writer.print("{d}. {s}\r\n", .{ match_index, item.label });
             }
         }
     }
 
     if (match_index == 0) {
-        try writer.print("(no matches)\n", .{});
+        try writer.print("(no matches)\r\n", .{});
     }
-    try writer.print("--------------------------------\n", .{});
+    try writer.print("--------------------------------\r\n", .{});
 }
 
 fn containsInsensitive(haystack: []const u8, needle: []const u8) bool {
