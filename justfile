@@ -1,8 +1,13 @@
 # gmenu justfile
 
 # Build the main binary
-build:
+[parallel]
+build: build-go build-zig
+
+build-go:
 	go build -o bin/gmenu -v ./cmd
+
+build-zig:
 	just -f ./zig/justfile build
 
 # Build for multiple platforms (Darwin amd64/arm64)
