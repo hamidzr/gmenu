@@ -3,7 +3,7 @@
 # Build the main binary
 build:
 	go build -o bin/gmenu -v ./cmd
-	just -f ./zig-mvp/justfile build
+	just -f ./zig/justfile build
 
 # Build for multiple platforms (Darwin amd64/arm64)
 build-all:
@@ -55,4 +55,4 @@ setup: get-deps
 	go mod tidy
 
 zig CMD:
-	just -f ./zig-mvp/justfile $(CMD)
+	just -f ./zig/justfile $(CMD)

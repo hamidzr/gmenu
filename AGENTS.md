@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Zmenu Efforts
-- `zig-mvp/` hosts a Zig rewrite in progress.
+- `zig/` hosts a Zig rewrite in progress.
 
 ## Project Structure & Module Organization
 gmenu is a Go module with the entry point in `cmd/main.go`. Shared logic lives in `core/` for menu orchestration, with `internal/cli/` providing Cobra command wiring and flag parsing. UI components and theming sit in `render/`, while configuration schemas are in `internal/config/` and `model/`. Persistent state and cache helpers live under `store/`. Supporting assets and examples are stored in `samples/`, and automation scripts in `scripts/`. Build outputs land in `bin/`; remove them with `just clean`.
