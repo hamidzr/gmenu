@@ -87,7 +87,7 @@ pub fn run(config: appconfig.Config) !void {
     const padding = config.padding;
     const list_width = window_width - (padding * 2.0);
     const list_height = window_height - field_height - (padding * 3.0);
-    const numeric_width = if (config.no_numeric_selection) 0 else config.numeric_column_width;
+    const numeric_width = if (config.hasNumericSelectionColumn()) config.numeric_column_width else 0;
     const icon_width = if (config.show_icons) config.icon_column_width else 0;
     var item_width = list_width - numeric_width - icon_width;
     if (item_width < 0) item_width = 0;
@@ -229,15 +229,17 @@ pub fn run(config: appconfig.Config) !void {
     table_view.msgSend(void, "setColumnAutoresizingStyle:", .{@as(c_ulong, 1)}); // NSTableViewLastColumnOnlyAutoresizingStyle
 
     const NSTableColumn = objc.getClass("NSTableColumn").?;
-    if (!config.no_numeric_selection) {
-        const index_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
+    var index_column: ?objc.Object = null;
+    if (config.hasNumericSelectionColumn()) {
+        const table_index_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
             .msgSend(objc.Object, "initWithIdentifier:", .{nsString("index")});
-        index_column.msgSend(void, "setWidth:", .{numeric_width});
-        index_column.msgSend(void, "setMinWidth:", .{numeric_width});
-        index_column.msgSend(void, "setMaxWidth:", .{numeric_width});
-        index_column.msgSend(void, "setResizingMask:", .{@as(c_ulong, 0)}); // no resizing
-        applyColumnFont(index_column, table_font, secondary_text_color);
-        table_view.msgSend(void, "addTableColumn:", .{index_column});
+        table_index_column.msgSend(void, "setWidth:", .{numeric_width});
+        table_index_column.msgSend(void, "setMinWidth:", .{numeric_width});
+        table_index_column.msgSend(void, "setMaxWidth:", .{numeric_width});
+        table_index_column.msgSend(void, "setResizingMask:", .{@as(c_ulong, 0)}); // no resizing
+        applyColumnFont(table_index_column, table_font, secondary_text_color);
+        table_view.msgSend(void, "addTableColumn:", .{table_index_column});
+        index_column = table_index_column;
     }
     if (config.show_icons) {
         const icon_column = NSTableColumn.msgSend(objc.Object, "alloc", .{})
@@ -292,6 +294,7 @@ pub fn run(config: appconfig.Config) !void {
     var app_state = state.AppState{
         .model = try menu.Model.init(allocator, items),
         .table_view = table_view,
+        .index_column = index_column,
         .text_field = text_field,
         .match_label = match_label,
         .handler = handler,

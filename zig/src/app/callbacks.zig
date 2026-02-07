@@ -33,7 +33,18 @@ pub fn controlTextDidChange(target: objc.c.id, sel: objc.c.SEL, notification: ob
         return;
     }
 
-    const query = std.mem.sliceTo(utf8_ptr.?, 0);
+    const query: []const u8 = std.mem.sliceTo(utf8_ptr.?, 0);
+    if (currentEventChar()) |event_char| {
+        if (event_char.modifiers == 0 and event_char.char >= '1' and event_char.char <= '9') {
+            var query_for_mode = query;
+            if (query.len > 0 and query[query.len - 1] == event_char.char) {
+                query_for_mode = query[0 .. query.len - 1];
+            }
+            if (handleNumericShortcutWithQuery(app_state, event_char.char, query_for_mode)) {
+                return;
+            }
+        }
+    }
     logic.applyFilter(app_state, query);
 }
 
@@ -66,6 +77,13 @@ pub fn controlTextViewDoCommandBySelector(
     if (command == objc.sel("insertBacktab:").value) {
         logic.moveSelection(app_state, -1);
         return true;
+    }
+    if (command == objc.sel("insertText:").value or command == objc.sel("noop:").value) {
+        if (currentEventChar()) |event_char| {
+            if (event_char.modifiers == 0 and handleNumericShortcut(app_state, event_char.char)) {
+                return true;
+            }
+        }
     }
 
     return false;
@@ -106,10 +124,11 @@ pub fn tableViewObjectValue(
     const row_index: usize = @intCast(row);
     if (row_index >= app_state.model.filtered.items.len) return null;
 
-    if (!app_state.config.no_numeric_selection and column != null) {
+    if (column != null) {
         const column_obj = objc.Object.fromId(column);
         if (columnIsIndex(column_obj)) {
-            if (row_index < state.digit_labels.len) {
+            const query = logic.currentQuery(app_state);
+            if (app_state.config.numericSelectionEnabled(app_state.model.filtered.items.len, query) and row_index < state.digit_labels.len) {
                 return nsString(state.digit_labels[row_index]).value;
             }
             return nsString("").value;
@@ -313,13 +332,7 @@ pub fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c
                     return;
                 }
 
-                if (!app_state.?.config.no_numeric_selection and ch >= '1' and ch <= '9') {
-                    const index: usize = @intCast(ch - '1');
-                    if (index < app_state.?.model.filtered.items.len) {
-                        app_state.?.model.selected = @intCast(index);
-                        logic.updateSelection(app_state.?);
-                        logic.acceptSelection(app_state.?);
-                    }
+                if (handleNumericShortcut(app_state.?, ch)) {
                     return;
                 }
             }
@@ -353,6 +366,50 @@ pub fn performKeyEquivalent(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id
 
     const NSTextField = objc.getClass("NSTextField").?;
     return obj.msgSendSuper(NSTextField, bool, "performKeyEquivalent:", .{event});
+}
+
+const EventChar = struct {
+    char: u8,
+    modifiers: c_ulong,
+};
+
+fn currentEventChar() ?EventChar {
+    const NSApplication = objc.getClass("NSApplication").?;
+    const app = NSApplication.msgSend(objc.Object, "sharedApplication", .{});
+    const event = app.msgSend(objc.c.id, "currentEvent", .{});
+    if (event == null) return null;
+
+    const event_obj = objc.Object.fromId(event);
+    const chars = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
+    const utf8_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
+    if (utf8_ptr == null) return null;
+    const text = std.mem.sliceTo(utf8_ptr.?, 0);
+    if (text.len != 1) return null;
+
+    const modifiers = event_obj.msgSend(c_ulong, "modifierFlags", .{});
+    const masked = modifiers & (NSEventModifierFlagShift | NSEventModifierFlagControl | NSEventModifierFlagOption | NSEventModifierFlagCommand);
+    return .{
+        .char = text[0],
+        .modifiers = masked,
+    };
+}
+
+fn handleNumericShortcut(app_state: *state.AppState, ch: u8) bool {
+    const query = logic.currentQuery(app_state);
+    return handleNumericShortcutWithQuery(app_state, ch, query);
+}
+
+fn handleNumericShortcutWithQuery(app_state: *state.AppState, ch: u8, query_for_mode: []const u8) bool {
+    if (!app_state.config.numericSelectionEnabled(app_state.model.filtered.items.len, query_for_mode)) return false;
+    if (ch < '1' or ch > '9') return false;
+
+    const index: usize = @intCast(ch - '1');
+    if (index < app_state.model.filtered.items.len) {
+        app_state.model.selected = @intCast(index);
+        logic.updateSelection(app_state);
+        logic.acceptSelection(app_state);
+    }
+    return true;
 }
 
 pub fn becomeFirstResponder(target: objc.c.id, sel: objc.c.SEL) callconv(.c) bool {

@@ -9,7 +9,7 @@ Native macOS AppKit MVP for the gmenu replacement (zmenu).
 - Enter prints the selected (default top) item to stdout and exits 0; Esc cancels with a non-zero exit code.
 - Up/Down/Tab move the selection within the filtered list.
 - Double-clicking a row accepts that item.
-- Keys 1-9 accept the corresponding item when numeric selection is enabled.
+- Keys 1-9 accept the corresponding item when numeric selection is active.
 - Ctrl+L clears the query.
 - A pid file in the temp dir prevents multiple instances per menu id.
 - When `menu_id` is set, the last query + selection are stored under `~/.cache/gmenu/<menu_id>/cache.yaml`.
@@ -34,8 +34,8 @@ If you run without stdin, zmenu exits with an error.
 on macOS Accessibility + Screen Recording permissions to capture the window.
 
 ### Config + CLI
-Supported flags: `--menu-id/-m`, `--initial-query/-q`, `--search-method/-s`, `--preserve-order/-o`, `--no-levenshtein-fallback`, `--auto-accept`, `--terminal`, `--follow-stdin`, `--ipc-only`, `--no-numeric-selection`, `--show-icons`, `--title/-t`, `--prompt/-p`, `--min-width`, `--min-height`, `--max-width`, `--max-height`, `--row-height`, `--field-height`, `--padding`, `--numeric-column-width`, `--icon-column-width`, `--alternate-rows`, `--background-color`, `--list-background-color`, `--field-background-color`, `--text-color`, `--secondary-text-color`, `--selection-color`, `--init-config`.
-Supported env: `GMENU_MENU_ID`, `GMENU_INITIAL_QUERY`, `GMENU_SEARCH_METHOD`, `GMENU_PRESERVE_ORDER`, `GMENU_LEVENSHTEIN_FALLBACK`, `GMENU_AUTO_ACCEPT`, `GMENU_TERMINAL_MODE`, `GMENU_FOLLOW_STDIN`, `GMENU_IPC_ONLY`, `GMENU_NO_NUMERIC_SELECTION`, `GMENU_SHOW_ICONS`, `GMENU_ACCEPT_CUSTOM_SELECTION`, `GMENU_TITLE`, `GMENU_PROMPT`, `GMENU_MIN_WIDTH`, `GMENU_MIN_HEIGHT`, `GMENU_MAX_WIDTH`, `GMENU_MAX_HEIGHT`, `GMENU_ROW_HEIGHT`, `GMENU_FIELD_HEIGHT`, `GMENU_PADDING`, `GMENU_NUMERIC_COLUMN_WIDTH`, `GMENU_ICON_COLUMN_WIDTH`, `GMENU_ALTERNATE_ROWS`, `GMENU_BACKGROUND_COLOR`, `GMENU_LIST_BACKGROUND_COLOR`, `GMENU_FIELD_BACKGROUND_COLOR`, `GMENU_TEXT_COLOR`, `GMENU_SECONDARY_TEXT_COLOR`, `GMENU_SELECTION_COLOR`.
+Supported flags: `--menu-id/-m`, `--initial-query/-q`, `--search-method/-s`, `--preserve-order/-o`, `--no-levenshtein-fallback`, `--auto-accept`, `--terminal`, `--follow-stdin`, `--ipc-only`, `--numeric-selection-mode`, `--no-numeric-selection`, `--show-icons`, `--title/-t`, `--prompt/-p`, `--min-width`, `--min-height`, `--max-width`, `--max-height`, `--row-height`, `--field-height`, `--padding`, `--numeric-column-width`, `--icon-column-width`, `--alternate-rows`, `--background-color`, `--list-background-color`, `--field-background-color`, `--text-color`, `--secondary-text-color`, `--selection-color`, `--init-config`.
+Supported env: `GMENU_MENU_ID`, `GMENU_INITIAL_QUERY`, `GMENU_SEARCH_METHOD`, `GMENU_PRESERVE_ORDER`, `GMENU_LEVENSHTEIN_FALLBACK`, `GMENU_AUTO_ACCEPT`, `GMENU_TERMINAL_MODE`, `GMENU_FOLLOW_STDIN`, `GMENU_IPC_ONLY`, `GMENU_NUMERIC_SELECTION_MODE`, `GMENU_NO_NUMERIC_SELECTION`, `GMENU_SHOW_ICONS`, `GMENU_ACCEPT_CUSTOM_SELECTION`, `GMENU_TITLE`, `GMENU_PROMPT`, `GMENU_MIN_WIDTH`, `GMENU_MIN_HEIGHT`, `GMENU_MAX_WIDTH`, `GMENU_MAX_HEIGHT`, `GMENU_ROW_HEIGHT`, `GMENU_FIELD_HEIGHT`, `GMENU_PADDING`, `GMENU_NUMERIC_COLUMN_WIDTH`, `GMENU_ICON_COLUMN_WIDTH`, `GMENU_ALTERNATE_ROWS`, `GMENU_BACKGROUND_COLOR`, `GMENU_LIST_BACKGROUND_COLOR`, `GMENU_FIELD_BACKGROUND_COLOR`, `GMENU_TEXT_COLOR`, `GMENU_SECONDARY_TEXT_COLOR`, `GMENU_SELECTION_COLOR`.
 Theme colors accept hex strings like `#RRGGBB` or `#RRGGBBAA` (empty/`none`/`default` keeps system defaults). Size tuning is available via `field_height`, `padding`, and the column width settings.
 
 
@@ -70,5 +70,7 @@ Example stdout:
 ### Migration from Go gmenu
 - Copy your existing `config.yaml` into the same gmenu config locations; ensure `search_method` is one of the supported values above.
 - If you previously used `exact` or `regex`, switch to `direct` or `fuzzy` since zmenu does not implement regex search.
-- Numeric selection is opt-in by setting `no_numeric_selection: false` in config or env.
+- Numeric selection defaults to `numeric_selection_mode: auto`, which enables 1-9 hints only when filtered results are `<= 9`.
+- Set `numeric_selection_mode: on` to always enable numeric shortcuts, or `off` to always disable them.
+- `no_numeric_selection` and `GMENU_NO_NUMERIC_SELECTION` are still supported as legacy on/off aliases.
 - Terminal mode is intentionally minimal and chooses the first match on Enter.

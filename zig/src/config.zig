@@ -1,3 +1,4 @@
+const std = @import("std");
 const search = @import("search.zig");
 
 pub const Color = struct {
@@ -6,6 +7,28 @@ pub const Color = struct {
     b: f64,
     a: f64,
 };
+
+pub const numeric_shortcut_max: usize = 9;
+
+pub const NumericSelectionMode = enum {
+    off,
+    on,
+    auto,
+};
+
+fn queryEndsWithDigit(query: []const u8) bool {
+    if (query.len == 0) return false;
+    return std.ascii.isDigit(query[query.len - 1]);
+}
+
+pub fn numericSelectionEnabledForMode(mode: NumericSelectionMode, filtered_count: usize, query: []const u8) bool {
+    if (queryEndsWithDigit(query)) return false;
+    return switch (mode) {
+        .off => false,
+        .on => true,
+        .auto => filtered_count <= numeric_shortcut_max,
+    };
+}
 
 pub const Config = struct {
     title: [:0]const u8,
@@ -24,7 +47,7 @@ pub const Config = struct {
     max_height: f64,
     field_height: f64,
     padding: f64,
-    no_numeric_selection: bool,
+    numeric_selection_mode: NumericSelectionMode,
     numeric_column_width: f64,
     show_icons: bool,
     icon_column_width: f64,
@@ -36,6 +59,14 @@ pub const Config = struct {
     text_color: ?Color,
     secondary_text_color: ?Color,
     selection_color: ?Color,
+
+    pub fn hasNumericSelectionColumn(self: Config) bool {
+        return self.numeric_selection_mode != .off;
+    }
+
+    pub fn numericSelectionEnabled(self: Config, filtered_count: usize, query: []const u8) bool {
+        return numericSelectionEnabledForMode(self.numeric_selection_mode, filtered_count, query);
+    }
 };
 
 pub fn defaults() Config {
@@ -61,7 +92,7 @@ pub fn defaults() Config {
         .max_height = 1080,
         .field_height = 30,
         .padding = 14,
-        .no_numeric_selection = true,
+        .numeric_selection_mode = .auto,
         .numeric_column_width = 28,
         .show_icons = false,
         .icon_column_width = 40,

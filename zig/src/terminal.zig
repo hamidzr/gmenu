@@ -34,7 +34,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
         try input.appendSlice(allocator, config.initial_query);
     }
 
-    try renderMatches(&tty, config.placeholder, input.items, items, config.no_numeric_selection);
+    try renderMatches(&tty, config.placeholder, input.items, items, config.numeric_selection_mode);
 
     var reader = tty.deprecatedReader();
     var final_query: []const u8 = input.items;
@@ -54,7 +54,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
             127, 8 => {
                 if (input.items.len > 0) {
                     input.items.len -= 1;
-                    try renderMatches(&tty, config.placeholder, input.items, items, config.no_numeric_selection);
+                    try renderMatches(&tty, config.placeholder, input.items, items, config.numeric_selection_mode);
                 }
             },
             3 => {
@@ -65,7 +65,7 @@ pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
             else => {
                 if (ch >= 32 and ch <= 126) {
                     try input.append(allocator, ch);
-                    try renderMatches(&tty, config.placeholder, input.items, items, config.no_numeric_selection);
+                    try renderMatches(&tty, config.placeholder, input.items, items, config.numeric_selection_mode);
                 }
             },
         }
@@ -135,21 +135,29 @@ fn renderMatches(
     prompt: [:0]const u8,
     query: []const u8,
     items: []menu.MenuItem,
-    no_numeric_selection: bool,
+    numeric_selection_mode: appconfig.NumericSelectionMode,
 ) !void {
     var writer = tty.deprecatedWriter();
     try writer.print("\x1b[2J\x1b[H", .{});
     try writer.print("{s}: {s}\r\n", .{ prompt, query });
     try writer.print("--------------------------------\r\n", .{});
 
+    var total_matches: usize = 0;
+    for (items) |item| {
+        if (containsInsensitive(item.label, query)) {
+            total_matches += 1;
+        }
+    }
+    const numeric_enabled = appconfig.numericSelectionEnabledForMode(numeric_selection_mode, total_matches, query);
+
     var match_index: usize = 0;
     for (items) |item| {
         if (containsInsensitive(item.label, query)) {
             match_index += 1;
-            if (no_numeric_selection) {
-                try writer.print("{s}\r\n", .{item.label});
-            } else {
+            if (numeric_enabled and match_index <= appconfig.numeric_shortcut_max) {
                 try writer.print("{d}. {s}\r\n", .{ match_index, item.label });
+            } else {
+                try writer.print("{s}\r\n", .{item.label});
             }
         }
     }

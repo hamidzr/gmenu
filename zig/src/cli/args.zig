@@ -91,12 +91,24 @@ pub fn applyArgs(allocator: std.mem.Allocator, args: []const [:0]const u8, confi
             continue;
         }
         if (std.mem.eql(u8, arg, "--no-numeric-selection")) {
-            config.no_numeric_selection = true;
+            config.numeric_selection_mode = .off;
             continue;
         }
         if (std.mem.startsWith(u8, arg, "--no-numeric-selection=")) {
             const value = arg["--no-numeric-selection=".len..];
-            config.no_numeric_selection = try parse.parseBool(value);
+            const disabled = try parse.parseBool(value);
+            config.numeric_selection_mode = if (disabled) .off else .on;
+            continue;
+        }
+        if (std.mem.eql(u8, arg, "--numeric-selection-mode")) {
+            i += 1;
+            if (i >= args.len) return error.MissingValue;
+            config.numeric_selection_mode = try parse.parseNumericSelectionMode(args[i]);
+            continue;
+        }
+        if (std.mem.startsWith(u8, arg, "--numeric-selection-mode=")) {
+            const value = arg["--numeric-selection-mode=".len..];
+            config.numeric_selection_mode = try parse.parseNumericSelectionMode(value);
             continue;
         }
         if (std.mem.eql(u8, arg, "--show-icons")) {

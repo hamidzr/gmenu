@@ -147,7 +147,13 @@ pub fn applyEnv(allocator: std.mem.Allocator, config: *appconfig.Config) !void {
         if (err != error.EnvironmentVariableNotFound) return err;
     }
     if (envValue(allocator, "GMENU_NO_NUMERIC_SELECTION")) |value| {
-        config.no_numeric_selection = try parse.parseBool(value);
+        const disabled = try parse.parseBool(value);
+        config.numeric_selection_mode = if (disabled) .off else .on;
+    } else |err| {
+        if (err != error.EnvironmentVariableNotFound) return err;
+    }
+    if (envValue(allocator, "GMENU_NUMERIC_SELECTION_MODE")) |value| {
+        config.numeric_selection_mode = try parse.parseNumericSelectionMode(value);
     } else |err| {
         if (err != error.EnvironmentVariableNotFound) return err;
     }

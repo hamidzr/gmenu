@@ -41,6 +41,10 @@ pub fn updateMatchLabel(app_state: *state.AppState) void {
 
 pub fn applyFilter(app_state: *state.AppState, query: []const u8) void {
     app_state.model.applyFilter(query, app_state.config.search);
+    if (app_state.index_column) |index_column| {
+        const enabled = app_state.config.numericSelectionEnabled(app_state.model.filtered.items.len, query);
+        index_column.msgSend(void, "setHidden:", .{!enabled});
+    }
     app_state.table_view.msgSend(void, "reloadData", .{});
     updateSelection(app_state);
     updateMatchLabel(app_state);

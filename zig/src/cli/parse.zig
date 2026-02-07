@@ -35,6 +35,27 @@ pub fn parseBool(value: []const u8) !bool {
     return error.InvalidBool;
 }
 
+pub fn parseNumericSelectionMode(value: []const u8) !appconfig.NumericSelectionMode {
+    if (std.ascii.eqlIgnoreCase(value, "off") or
+        std.ascii.eqlIgnoreCase(value, "false") or
+        std.ascii.eqlIgnoreCase(value, "0") or
+        std.ascii.eqlIgnoreCase(value, "no"))
+    {
+        return .off;
+    }
+    if (std.ascii.eqlIgnoreCase(value, "on") or
+        std.ascii.eqlIgnoreCase(value, "true") or
+        std.ascii.eqlIgnoreCase(value, "1") or
+        std.ascii.eqlIgnoreCase(value, "yes"))
+    {
+        return .on;
+    }
+    if (std.ascii.eqlIgnoreCase(value, "auto")) {
+        return .auto;
+    }
+    return error.InvalidNumericSelectionMode;
+}
+
 pub fn parseColorOptional(value: []const u8) !?appconfig.Color {
     const trimmed = std.mem.trim(u8, value, " \t");
     if (trimmed.len == 0) return null;

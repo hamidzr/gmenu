@@ -49,6 +49,7 @@ fn printHelp() void {
         \\      --terminal               Terminal mode
         \\      --follow-stdin           Keep running and append stdin
         \\      --ipc-only               Ignore stdin and wait for IPC updates
+        \\      --numeric-selection-mode <mode> off|on|auto
         \\      --no-numeric-selection   Disable numeric shortcuts
         \\      --show-icons             Show icon hint column
         \\      --min-width <px>         Minimum window width

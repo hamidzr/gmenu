@@ -7,6 +7,7 @@ const updates = @import("updates.zig");
 pub const AppState = struct {
     model: menu.Model,
     table_view: objc.Object,
+    index_column: ?objc.Object,
     text_field: objc.Object,
     match_label: objc.Object,
     handler: objc.Object,

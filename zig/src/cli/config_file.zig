@@ -20,6 +20,7 @@ const config_key_variants = [_]ConfigKeyVariant{
     .{ .canonical = "terminal_mode", .camel = "terminalMode" },
     .{ .canonical = "follow_stdin", .camel = "followStdin" },
     .{ .canonical = "ipc_only", .camel = "ipcOnly" },
+    .{ .canonical = "numeric_selection_mode", .camel = "numericSelectionMode" },
     .{ .canonical = "no_numeric_selection", .camel = "noNumericSelection" },
     .{ .canonical = "show_icons", .camel = "showIcons" },
     .{ .canonical = "limit", .camel = "" },
@@ -104,7 +105,7 @@ pub fn writeDefaultConfig(allocator: std.mem.Allocator, menu_id: [:0]const u8) !
         \\ipc_only: false
         \\auto_accept: false
         \\accept_custom_selection: true
-        \\no_numeric_selection: true
+        \\numeric_selection_mode: auto
         \\show_icons: false
         \\min_width: {d}
         \\min_height: {d}
@@ -200,8 +201,13 @@ fn applyConfigKV(allocator: std.mem.Allocator, config: *appconfig.Config, key: [
         config.accept_custom_selection = try parse.parseBool(value);
         return;
     }
+    if (eqKey(key, "numeric_selection_mode") or eqKey(key, "numericSelectionMode")) {
+        config.numeric_selection_mode = try parse.parseNumericSelectionMode(value);
+        return;
+    }
     if (eqKey(key, "no_numeric_selection") or eqKey(key, "noNumericSelection")) {
-        config.no_numeric_selection = try parse.parseBool(value);
+        const disabled = try parse.parseBool(value);
+        config.numeric_selection_mode = if (disabled) .off else .on;
         return;
     }
     if (eqKey(key, "show_icons") or eqKey(key, "showIcons")) {
