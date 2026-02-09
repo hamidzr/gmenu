@@ -157,3 +157,43 @@ test "fuzzy matches agenda after direct hit for anda" {
     filterIndices(labels[0..], "anda", .{ .method = .fuzzy }, &matches, &out);
     try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 0 }, out.items);
 }
+
+test "today query returns only lock screen and today note" {
+    const labels = [_][]const u8{
+        "[OS] Lock Screen - put the display to sleep immediately",
+        "Edit: ~/notes/today.md",
+        "Edit: ~/notes/agenda.md",
+        "Open: ~/notes/week.md",
+    };
+
+    var matches = std.ArrayList(Match).empty;
+    var out = std.ArrayList(usize).empty;
+    defer matches.deinit(std.testing.allocator);
+    defer out.deinit(std.testing.allocator);
+
+    try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
+    try out.ensureTotalCapacity(std.testing.allocator, labels.len);
+
+    filterIndices(labels[0..], "today", .{ .method = .fuzzy, .levenshtein_fallback = true }, &matches, &out);
+    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 0 }, out.items);
+}
+
+test "fuzzy ranks direct substring above subsequence match" {
+    const labels = [_][]const u8{
+        // matches "today" via subsequence (to + d + a + y), but not as a verbatim substring
+        "to d a y",
+        // matches "today" as a direct substring
+        "today.md",
+    };
+
+    var matches = std.ArrayList(Match).empty;
+    var out = std.ArrayList(usize).empty;
+    defer matches.deinit(std.testing.allocator);
+    defer out.deinit(std.testing.allocator);
+
+    try matches.ensureTotalCapacity(std.testing.allocator, labels.len);
+    try out.ensureTotalCapacity(std.testing.allocator, labels.len);
+
+    filterIndices(labels[0..], "today", .{ .method = .fuzzy, .levenshtein_fallback = true }, &matches, &out);
+    try std.testing.expectEqualSlices(usize, &[_]usize{ 1, 0 }, out.items);
+}

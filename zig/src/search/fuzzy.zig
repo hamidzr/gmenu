@@ -60,7 +60,8 @@ pub fn fuzzySearchBrute(
 
     for (labels, 0..) |label, idx| {
         if (containsSmartCase(label, query)) {
-            matches.appendAssumeCapacity(.{ .index = idx, .score = 0 });
+            // direct substring matches should rank ahead of fuzzy subsequence matches when we sort later
+            matches.appendAssumeCapacity(.{ .index = idx, .score = 1 });
         }
     }
     for (labels, 0..) |label, idx| {
@@ -88,7 +89,8 @@ fn fuzzySearchBruteOnIndices(
     for (indices) |idx| {
         const label = labels[idx];
         if (containsSmartCase(label, query)) {
-            matches.appendAssumeCapacity(.{ .index = idx, .score = 0 });
+            // direct substring matches should rank ahead of fuzzy subsequence matches when we sort later
+            matches.appendAssumeCapacity(.{ .index = idx, .score = 1 });
         }
     }
     for (indices) |idx| {
