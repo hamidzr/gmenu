@@ -272,10 +272,9 @@ pub fn run(config: appconfig.Config) !void {
         scroll_view.msgSend(void, "setBackgroundColor:", .{list_color});
         scroll_view.msgSend(void, "setBorderType:", .{@as(c_ulong, 0)});
     }
-    // Note: setSelectionHighlightColor: is not a valid NSTableView method
-    // Custom selection colors require using setSelectionHighlightStyle: with NSTableViewSelectionHighlightStyleNone
-    // and implementing custom cell rendering. For now, we use the default system selection color.
-    _ = config.selection_color; // prevent unused variable warning
+    // TODO: config.selection_color is accepted but not applied yet.
+    // Custom selection colors require NSTableViewSelectionHighlightStyleNone
+    // and implementing custom cell rendering.
 
     content_view.msgSend(void, "addSubview:", .{scroll_view});
     content_view.msgSend(void, "addSubview:", .{text_field});
