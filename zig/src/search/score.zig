@@ -96,4 +96,3 @@ fn equalFold(a: u8, b: u8) bool {
     if (a == b) return true;
     return std.ascii.toLower(a) == std.ascii.toLower(b);
 }
-
