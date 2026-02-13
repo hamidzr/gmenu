@@ -78,42 +78,37 @@ pub fn saveCache(app_state: *state.AppState, selection: []const u8) void {
 pub fn acceptSelection(app_state: *state.AppState) void {
     if (app_state.config.ipc_only) {
         if (app_state.model.selectedItem()) |item| {
-            saveCache(app_state, item.label);
-            const payload = item.ipc_payload orelse item.label;
-            std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{payload}) catch {};
-            quit(app_state, 0);
+            outputAndQuit(app_state, item.label, item.ipc_payload orelse item.label);
         }
         if (app_state.model.filtered.items.len == 0) {
             quit(app_state, exit_codes.user_canceled);
         }
-        const item_index = app_state.model.filtered.items[0];
-        const item = app_state.model.items[item_index];
-        saveCache(app_state, item.label);
-        const payload = item.ipc_payload orelse item.label;
-        std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{payload}) catch {};
-        quit(app_state, 0);
+        const item = firstFilteredItem(app_state);
+        outputAndQuit(app_state, item.label, item.ipc_payload orelse item.label);
     }
 
     if (app_state.model.filtered.items.len == 0) {
-        if (!app_state.config.accept_custom_selection) {
-            return;
-        }
+        if (!app_state.config.accept_custom_selection) return;
         const query = currentQuery(app_state);
-        saveCache(app_state, query);
-        std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{query}) catch {};
-        quit(app_state, 0);
+        outputAndQuit(app_state, query, query);
     }
 
     if (app_state.model.selectedItem()) |item| {
-        saveCache(app_state, item.label);
-        std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
-        quit(app_state, 0);
+        outputAndQuit(app_state, item.label, item.label);
     }
 
+    const item = firstFilteredItem(app_state);
+    outputAndQuit(app_state, item.label, item.label);
+}
+
+fn firstFilteredItem(app_state: *state.AppState) menu.MenuItem {
     const item_index = app_state.model.filtered.items[0];
-    const item = app_state.model.items[item_index];
-    saveCache(app_state, item.label);
-    std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{item.label}) catch {};
+    return app_state.model.items[item_index];
+}
+
+fn outputAndQuit(app_state: *state.AppState, label: []const u8, output: []const u8) void {
+    saveCache(app_state, label);
+    std.fs.File.stdout().deprecatedWriter().print("{s}\n", .{output}) catch {};
     quit(app_state, 0);
 }
 
