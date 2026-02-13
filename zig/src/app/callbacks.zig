@@ -310,31 +310,22 @@ pub fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c
     if (event == null) return;
 
     const obj = objc.Object.fromId(target);
-    const app_state = state.g_state;
 
-    if (app_state != null) {
-        const event_obj = objc.Object.fromId(event);
-        const chars = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
-        const utf8_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
-        if (utf8_ptr != null) {
-            const text = std.mem.sliceTo(utf8_ptr.?, 0);
-            if (text.len == 1) {
-                const ch = text[0];
-                const modifiers = event_obj.msgSend(c_ulong, "modifierFlags", .{});
-                if ((modifiers & NSEventModifierFlagCommand) != 0 and (ch == 'a' or ch == 'A')) {
-                    app_state.?.text_field.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
-                    return;
-                }
+    if (state.g_state) |app_state| {
+        if (eventChar(event)) |ec| {
+            if ((ec.modifiers & NSEventModifierFlagCommand) != 0 and (ec.char == 'a' or ec.char == 'A')) {
+                app_state.text_field.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
+                return;
+            }
 
-                if ((modifiers & NSEventModifierFlagControl) != 0 and (ch == 'l' or ch == 'L')) {
-                    app_state.?.text_field.msgSend(void, "setStringValue:", .{nsString("")});
-                    logic.applyFilter(app_state.?, "");
-                    return;
-                }
+            if ((ec.modifiers & NSEventModifierFlagControl) != 0 and (ec.char == 'l' or ec.char == 'L')) {
+                app_state.text_field.msgSend(void, "setStringValue:", .{nsString("")});
+                logic.applyFilter(app_state, "");
+                return;
+            }
 
-                if (handleNumericShortcut(app_state.?, ch)) {
-                    return;
-                }
+            if (handleNumericShortcut(app_state, ec.char)) {
+                return;
             }
         }
     }
@@ -349,18 +340,10 @@ pub fn performKeyEquivalent(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id
     if (event == null) return false;
 
     const obj = objc.Object.fromId(target);
-    const event_obj = objc.Object.fromId(event);
-    const chars = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
-    const utf8_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
-    if (utf8_ptr != null) {
-        const text = std.mem.sliceTo(utf8_ptr.?, 0);
-        if (text.len == 1) {
-            const ch = text[0];
-            const modifiers = event_obj.msgSend(c_ulong, "modifierFlags", .{});
-            if ((modifiers & NSEventModifierFlagCommand) != 0 and (ch == 'a' or ch == 'A')) {
-                obj.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
-                return true;
-            }
+    if (eventChar(event)) |ec| {
+        if ((ec.modifiers & NSEventModifierFlagCommand) != 0 and (ec.char == 'a' or ec.char == 'A')) {
+            obj.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
+            return true;
         }
     }
 
@@ -373,13 +356,10 @@ const EventChar = struct {
     modifiers: c_ulong,
 };
 
-fn currentEventChar() ?EventChar {
-    const NSApplication = objc.getClass("NSApplication").?;
-    const app = NSApplication.msgSend(objc.Object, "sharedApplication", .{});
-    const event = app.msgSend(objc.c.id, "currentEvent", .{});
-    if (event == null) return null;
-
-    const event_obj = objc.Object.fromId(event);
+/// extract single-char + modifier flags from an NSEvent id
+fn eventChar(event_id: objc.c.id) ?EventChar {
+    if (event_id == null) return null;
+    const event_obj = objc.Object.fromId(event_id);
     const chars = event_obj.msgSend(objc.Object, "charactersIgnoringModifiers", .{});
     const utf8_ptr = chars.msgSend(?[*:0]const u8, "UTF8String", .{});
     if (utf8_ptr == null) return null;
@@ -388,10 +368,13 @@ fn currentEventChar() ?EventChar {
 
     const modifiers = event_obj.msgSend(c_ulong, "modifierFlags", .{});
     const masked = modifiers & (NSEventModifierFlagShift | NSEventModifierFlagControl | NSEventModifierFlagOption | NSEventModifierFlagCommand);
-    return .{
-        .char = text[0],
-        .modifiers = masked,
-    };
+    return .{ .char = text[0], .modifiers = masked };
+}
+
+fn currentEventChar() ?EventChar {
+    const NSApplication = objc.getClass("NSApplication").?;
+    const app = NSApplication.msgSend(objc.Object, "sharedApplication", .{});
+    return eventChar(app.msgSend(objc.c.id, "currentEvent", .{}));
 }
 
 fn handleNumericShortcut(app_state: *state.AppState, ch: u8) bool {
