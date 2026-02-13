@@ -33,12 +33,7 @@ pub fn run(config: appconfig.Config) !void {
     const allocator = arena.allocator();
 
     var items: []menu.MenuItem = &[_]menu.MenuItem{};
-    if (config.ipc_only) {
-        items = allocator.alloc(menu.MenuItem, 0) catch {
-            std.fs.File.stderr().deprecatedWriter().print("zmenu: unable to allocate items\n", .{}) catch {};
-            std.process.exit(exit_codes.unknown_error);
-        };
-    } else if (!config.follow_stdin) {
+    if (!config.ipc_only and !config.follow_stdin) {
         items = logic.readItems(allocator, config.show_icons) catch {
             std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
             std.process.exit(exit_codes.unknown_error);
