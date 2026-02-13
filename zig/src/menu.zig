@@ -96,6 +96,25 @@ fn iconFromName(name: []const u8) ?IconKind {
     return null;
 }
 
+pub fn readItems(allocator: std.mem.Allocator, parse_icons: bool) ![]MenuItem {
+    var input = try readStdinLines(allocator, stdin_max_bytes);
+    defer input.deinit(allocator);
+
+    if (input.lines.len == 0) return error.NoInput;
+
+    var items = std.ArrayList(MenuItem).empty;
+    errdefer items.deinit(allocator);
+
+    for (input.lines) |line| {
+        const item = try parseItem(allocator, line, items.items.len, parse_icons);
+        try items.append(allocator, item);
+    }
+
+    if (items.items.len == 0) return error.NoInput;
+
+    return items.toOwnedSlice(allocator);
+}
+
 pub const Model = struct {
     items: []MenuItem,
     labels: [][]const u8,

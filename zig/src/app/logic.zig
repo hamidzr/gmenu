@@ -117,21 +117,4 @@ pub fn acceptSelection(app_state: *state.AppState) void {
     quit(app_state, 0);
 }
 
-pub fn readItems(allocator: std.mem.Allocator, parse_icons: bool) ![]menu.MenuItem {
-    var input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
-    defer input.deinit(allocator);
-
-    if (input.lines.len == 0) return error.NoInput;
-
-    var items = std.ArrayList(menu.MenuItem).empty;
-    errdefer items.deinit(allocator);
-
-    for (input.lines) |line| {
-        const item = try menu.parseItem(allocator, line, items.items.len, parse_icons);
-        try items.append(allocator, item);
-    }
-
-    if (items.items.len == 0) return error.NoInput;
-
-    return items.toOwnedSlice(allocator);
-}
+pub const readItems = menu.readItems;

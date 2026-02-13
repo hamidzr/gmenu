@@ -5,7 +5,7 @@ const menu = @import("menu.zig");
 const exit_codes = @import("exit_codes.zig");
 
 pub fn run(config: appconfig.Config, allocator: std.mem.Allocator) !void {
-    const items = readItems(allocator) catch {
+    const items = menu.readItems(allocator, false) catch {
         std.fs.File.stderr().deprecatedWriter().print("zmenu: stdin is empty\n", .{}) catch {};
         std.process.exit(exit_codes.unknown_error);
     };
@@ -186,21 +186,3 @@ fn containsInsensitive(haystack: []const u8, needle: []const u8) bool {
     return false;
 }
 
-fn readItems(allocator: std.mem.Allocator) ![]menu.MenuItem {
-    var input = try menu.readStdinLines(allocator, menu.stdin_max_bytes);
-    defer input.deinit(allocator);
-
-    if (input.lines.len == 0) return error.NoInput;
-
-    var items = std.ArrayList(menu.MenuItem).empty;
-    errdefer items.deinit(allocator);
-
-    for (input.lines) |line| {
-        const item = try menu.parseItem(allocator, line, items.items.len, false);
-        try items.append(allocator, item);
-    }
-
-    if (items.items.len == 0) return error.NoInput;
-
-    return items.toOwnedSlice(allocator);
-}
