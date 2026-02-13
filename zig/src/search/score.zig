@@ -58,7 +58,7 @@ pub fn sahilmScore(pattern: []const u8, candidate: []const u8) ?i32 {
             if (matched_index > -1) {
                 if (matched_count == 0) {
                     const penalty = @as(i32, @intCast(matched_index)) * unmatched_leading_char_penalty;
-                    best_score += maxInt(penalty, max_unmatched_leading_char_penalty);
+                    best_score += @max(penalty, max_unmatched_leading_char_penalty);
                 }
                 total_score += best_score;
                 matched_count += 1;
@@ -97,7 +97,3 @@ fn equalFold(a: u8, b: u8) bool {
     return std.ascii.toLower(a) == std.ascii.toLower(b);
 }
 
-fn maxInt(a: i32, b: i32) i32 {
-    if (a > b) return a;
-    return b;
-}

@@ -54,18 +54,12 @@ fn levenshteinDistance(a: []const u8, b: []const u8, row: []usize, ignore_case: 
             const deletion = old + 1;
             const insertion = row[j] + 1;
             const substitution = prev + cost;
-            row[j + 1] = min3(deletion, insertion, substitution);
+            row[j + 1] = @min(deletion, @min(insertion, substitution));
             prev = old;
         }
     }
 
     return row[b_len];
-}
-
-fn min3(a: usize, b: usize, c: usize) usize {
-    var out = if (a < b) a else b;
-    if (c < out) out = c;
-    return out;
 }
 
 fn distanceScore(distance: usize) i32 {
