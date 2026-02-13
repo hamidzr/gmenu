@@ -1,8 +1,9 @@
 const std = @import("std");
+const ipc = @import("ipc.zig");
 
 pub fn create(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
     const pid_name = if (name.len == 0) "zmenu" else name;
-    const temp_dir = try tempDir(allocator);
+    const temp_dir = try ipc.tempDir(allocator);
     const filename = try std.mem.concat(allocator, u8, &.{ pid_name, ".pid" });
     const pid_path = try std.fs.path.join(allocator, &.{ temp_dir, filename });
 
@@ -69,8 +70,3 @@ fn pidIsAlive(pid: std.posix.pid_t) bool {
     return true;
 }
 
-fn tempDir(_: std.mem.Allocator) ![]const u8 {
-    const env = std.posix.getenv("TMPDIR") orelse std.posix.getenv("TMP") orelse std.posix.getenv("TEMP");
-    if (env) |value| return value[0..value.len];
-    return "/tmp";
-}
