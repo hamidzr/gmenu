@@ -2,6 +2,11 @@
 
 A fast, fuzzy menu selector for desktop and terminal environments, inspired by dmenu and rofi.
 
+> **Heads up:** This Go implementation was an experiment to validate the concept and explore startup
+> speed gains. The rewrite in Zig, [zmenu](zig/), delivers native macOS AppKit performance and is now
+> the recommended version, new development is happening there. See [`zig/README.md`](zig/README.md)
+> to get started.
+
 ## Features
 
 - **GUI Mode**: Desktop interface using Fyne framework
