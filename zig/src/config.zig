@@ -78,7 +78,7 @@ pub fn defaults() Config {
         .search = .{
             .method = .fuzzy,
             .preserve_order = false,
-            .limit = 10,
+            .limit = 0,
             .levenshtein_fallback = true,
         },
         .terminal_mode = false,

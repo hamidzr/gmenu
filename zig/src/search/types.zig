@@ -9,7 +9,7 @@ pub const SearchMethod = enum {
 pub const Options = struct {
     method: SearchMethod = .fuzzy,
     preserve_order: bool = false,
-    limit: usize = 10,
+    limit: usize = 0,
     levenshtein_fallback: bool = true,
 };
 
