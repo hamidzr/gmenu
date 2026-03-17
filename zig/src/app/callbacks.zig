@@ -34,17 +34,6 @@ pub fn controlTextDidChange(target: objc.c.id, sel: objc.c.SEL, notification: ob
     }
 
     const query: []const u8 = std.mem.sliceTo(utf8_ptr.?, 0);
-    if (currentEventChar()) |event_char| {
-        if (event_char.modifiers == 0 and event_char.char >= '1' and event_char.char <= '9') {
-            var query_for_mode = query;
-            if (query.len > 0 and query[query.len - 1] == event_char.char) {
-                query_for_mode = query[0 .. query.len - 1];
-            }
-            if (handleNumericShortcutWithQuery(app_state, event_char.char, query_for_mode)) {
-                return;
-            }
-        }
-    }
     logic.applyFilter(app_state, query);
 }
 
@@ -78,14 +67,6 @@ pub fn controlTextViewDoCommandBySelector(
         logic.moveSelection(app_state, -1);
         return true;
     }
-    if (command == objc.sel("insertText:").value or command == objc.sel("noop:").value) {
-        if (currentEventChar()) |event_char| {
-            if (event_char.modifiers == 0 and handleNumericShortcut(app_state, event_char.char)) {
-                return true;
-            }
-        }
-    }
-
     return false;
 }
 
@@ -323,10 +304,6 @@ pub fn keyDown(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id) callconv(.c
                 logic.applyFilter(app_state, "");
                 return;
             }
-
-            if (handleNumericShortcut(app_state, ec.char)) {
-                return;
-            }
         }
     }
 
@@ -341,9 +318,16 @@ pub fn performKeyEquivalent(target: objc.c.id, sel: objc.c.SEL, event: objc.c.id
 
     const obj = objc.Object.fromId(target);
     if (eventChar(event)) |ec| {
-        if ((ec.modifiers & NSEventModifierFlagCommand) != 0 and (ec.char == 'a' or ec.char == 'A')) {
-            obj.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
-            return true;
+        if ((ec.modifiers & NSEventModifierFlagCommand) != 0) {
+            if (ec.char == 'a' or ec.char == 'A') {
+                obj.msgSend(void, "selectText:", .{@as(objc.c.id, null)});
+                return true;
+            }
+            if (state.g_state) |app_state| {
+                if (handleNumericShortcut(app_state, ec.char)) {
+                    return true;
+                }
+            }
         }
     }
 
@@ -369,12 +353,6 @@ fn eventChar(event_id: objc.c.id) ?EventChar {
     const modifiers = event_obj.msgSend(c_ulong, "modifierFlags", .{});
     const masked = modifiers & (NSEventModifierFlagShift | NSEventModifierFlagControl | NSEventModifierFlagOption | NSEventModifierFlagCommand);
     return .{ .char = text[0], .modifiers = masked };
-}
-
-fn currentEventChar() ?EventChar {
-    const NSApplication = objc.getClass("NSApplication").?;
-    const app = NSApplication.msgSend(objc.Object, "sharedApplication", .{});
-    return eventChar(app.msgSend(objc.c.id, "currentEvent", .{}));
 }
 
 fn handleNumericShortcut(app_state: *state.AppState, ch: u8) bool {
