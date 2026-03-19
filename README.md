@@ -4,7 +4,7 @@ A fast, fuzzy menu selector for desktop and terminal environments, inspired by d
 
 > **Heads up:** This Go implementation was an experiment to validate the concept and explore startup
 > speed gains. The rewrite in Zig, [zmenu](zig/), delivers native macOS AppKit performance and is now
-> the recommended version, new development is happening there. See [`zig/README.md`](zig/README.md)
+> the recommended version, new development is happening there. See [zmenu](https://github.com/hamidzr/zmenu)
 > to get started.
 
 ## Features
