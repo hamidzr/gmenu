@@ -3,9 +3,9 @@
 A fast, fuzzy menu selector for desktop and terminal environments, inspired by dmenu and rofi.
 
 > **Heads up:** This Go implementation was an experiment to validate the concept and explore startup
-> speed gains. The rewrite in Zig, [zmenu](zig/), delivers native macOS AppKit performance and is now
-> the recommended version, new development is happening there. See [zmenu](https://github.com/hamidzr/zmenu)
-> to get started.
+> speed gains. The rewrite in Zig, [zmenu](https://github.com/hamidzr/zmenu), delivers native macOS AppKit
+> performance and is now the recommended version, new development is happening there. Install it with
+> `brew install latentbyte/tap/zmenu`, or see the [zmenu product page](https://latentbyte.com/products/zmenu).
 
 ## Features
 
